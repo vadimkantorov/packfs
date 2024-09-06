@@ -1,5 +1,5 @@
 # libarchivepreload
-Demo of abusing https://github.com/libarchive/libarchive to make `LD_PRELOAD`-based overrides of file-related functions
+Demo of abusing https://github.com/libarchive/libarchive to make `LD_PRELOAD`-based overrides of file-related functions. The `LD_PRELOAD`-based approach is useful when one doesn't have FUSE kernel module installed or does not have root permissions do use https://github.com/google/fuse-archive/ and it's wasteful to decompress a given archive.
 
 ```shell
 cc -shared -fPIC libarchivepreload.c -o libarchivepreload.so -ldl
@@ -13,6 +13,10 @@ LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /us
 LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
 ```
 
+# Limitations
+- this demo does not optimize for iterative entry reads or iterative seeks, https://github.com/google/fuse-archive/ makes an attempt in that direction; also see https://github.com/libarchive/libarchive/issues/2306 for future support of fast seeks in ZIP / TAR / CPIO in libarchive
+
 # References
 - https://github.com/google/fuse-archive/
 - https://gist.github.com/vadimkantorov/2a4e092889b7132acd3b7ddfc2f2f907
+- https://github.com/libarchive/libarchive/issues/2306
