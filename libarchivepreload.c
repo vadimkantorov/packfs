@@ -180,7 +180,7 @@ struct packfs_context* packfs_ensure_context()
             size_t filenames_start = 0;
             for(size_t i = 0; i < packfs_ctx.packfs_archive_files_num; i++)
             {
-                fprintf(stderr, "%s: %s\n", packfs_archive_filename, packfs_ctx.packfs_archive_filenames + filenames_start);
+                fprintf(stderr, "packfs: %s: %s\n", packfs_archive_filename, packfs_ctx.packfs_archive_filenames + filenames_start);
                 filenames_start += packfs_ctx.packfs_archive_filenames_lens[i] + 1;
             }
 #endif
