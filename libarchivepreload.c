@@ -48,6 +48,7 @@ struct packfs_context
     off_t (*orig_lseek)(int fd, off_t offset, int whence);
     int (*orig_stat)(const char *restrict path, struct stat *restrict statbuf);
     int (*orig_fstat)(int fd, struct stat * statbuf);
+    int (*orig_statx)(int dirfd, const char *restrict pathname, int flags, unsigned int mask, struct statx *restrict statxbuf);
     FILE* (*orig_fopen)(const char *path, const char *mode);
     int (*orig_fileno)(FILE* stream);
     
@@ -76,6 +77,7 @@ struct packfs_context* packfs_ensure_context()
         packfs_ctx.orig_lseek  = dlsym(RTLD_NEXT, "lseek");
         packfs_ctx.orig_stat   = dlsym(RTLD_NEXT, "stat");
         packfs_ctx.orig_fstat  = dlsym(RTLD_NEXT, "fstat");
+        packfs_ctx.orig_statx  = dlsym(RTLD_NEXT, "statx");
         packfs_ctx.orig_fopen  = dlsym(RTLD_NEXT, "fopen");
         packfs_ctx.orig_fileno = dlsym(RTLD_NEXT, "fileno");
         
@@ -578,6 +580,20 @@ int fstat(int fd, struct stat * statbuf)
     int res = packfs_ctx->orig_fstat(fd, statbuf);
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: fstat(%d, %p) == %d\n", fd, (void*)statbuf, res);
+#endif
+    return res;
+}
+
+int statx(int dirfd, const char *restrict pathname, int flags, unsigned int mask, struct statx *restrict statxbuf);
+{
+    struct packfs_context* packfs_ctx = packfs_ensure_context();
+    if(!packfs_ctx->disabled)
+    {
+    }
+
+    int res = packfs_ctx->orig_statx(dirfd, pathname, flags, mask, statxbuf);
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: statx(%d, \"%s\", %d, %zu, %p) == %d\n", dirfd, pathname, flags, mask, (void*)statxbuf, res);
 #endif
     return res;
 }
