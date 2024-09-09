@@ -2,7 +2,7 @@
 Demo of abusing https://github.com/libarchive/libarchive to make `LD_PRELOAD`-based overrides of file-related functions. The `LD_PRELOAD`-based approach is useful when one doesn't have FUSE kernel module installed or does not have root permissions do use https://github.com/google/fuse-archive/ and it's wasteful to decompress a given archive.
 
 ```shell
-cc -shared -fPIC libarchivepreload.c -o libarchivepreload.so -ldl
+cc -shared -fPIC libarchivepreload.c -o libarchivepreload.so -ldl larchive -Llibarchive/.libs -Ilibarchive -Ilibarchive/libarchive   
 
 zip libarchivepreload.zip libarchivepreload.c
 

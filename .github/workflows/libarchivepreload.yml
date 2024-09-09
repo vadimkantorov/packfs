@@ -9,12 +9,17 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Build
-        run: cc -shared -fPIC libarchivepreload.c -o libarchivepreload.so -ldl
+        run: make
       
       - name: Test
         run: |
           zip libarchivepreload.zip libarchivepreload.c
-          LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /usr/bin/ls
-          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls libarchivepreload.zip
-          LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /usr/bin/cat libarchivepreload.c
-          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
+          LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /usr/bin/cat /mnt/perlpackarchive/libarchivepreload.c
+          #LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /usr/bin/ls
+          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls libarchivepreload.zip
+          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
+          
+          #LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /usr/bin/ls
+          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls libarchivepreload.zip
+          #LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /usr/bin/cat libarchivepreload.c
+          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
