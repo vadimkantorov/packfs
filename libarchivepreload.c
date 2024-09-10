@@ -690,12 +690,12 @@ DIR* opendir(const char *path)
 
 struct dirent* readdir(DIR *dirp)
 {
-    struct packfs_context* packfs_ctx = packfs_ensure_context(path);
+    struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     if(!packfs_ctx->disabled)
     {
     }
     
-    DIR* res = packfs_ctx->orig_readdir(path);
+    struct dirent* res = packfs_ctx->orig_readdir(path);
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: readdir(%p) == %p\n", (void*)dirp, (void*)res);
 #endif
