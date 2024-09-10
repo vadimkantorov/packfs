@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <dirent.h>
 
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -51,6 +52,9 @@ struct packfs_context
     int (*orig_statx)(int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statbuf);
     FILE* (*orig_fopen)(const char *path, const char *mode);
     int (*orig_fileno)(FILE* stream);
+    DIR* (*orig_opendir)(const char *path);
+    struct dirent* (*orig_readdir)(DIR *dirp);
+    int (*orig_closedir)(DIR *dirp);
     
     int packfs_filefd[packfs_filefd_max - packfs_filefd_min];
     FILE* packfs_fileptr[packfs_filefd_max - packfs_filefd_min];
@@ -118,6 +122,9 @@ struct packfs_context* packfs_ensure_context(const char* path)
         packfs_ctx.orig_statx  = dlsym(RTLD_NEXT, "statx");
         packfs_ctx.orig_fopen  = dlsym(RTLD_NEXT, "fopen");
         packfs_ctx.orig_fileno = dlsym(RTLD_NEXT, "fileno");
+        packfs_ctx.orig_opendir= dlsym(RTLD_NEXT, "opendir");
+        packfs_ctx.orig_readdir= dlsym(RTLD_NEXT, "readdir");
+        packfs_ctx.orig_closedir=dlsym(RTLD_NEXT, "closedir");
         
 #define PACKFS_STRING_VALUE_(x) #x
 #define PACKFS_STRING_VALUE(x) PACKFS_STRING_VALUE_(x)
