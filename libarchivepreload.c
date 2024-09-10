@@ -162,7 +162,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         
         packfs_ctx.disabled = (packfs_archive_filename != NULL && strlen(packfs_archive_filename) > 0) ? 0 : 1;
 #ifdef PACKFS_LOG 
-            fprintf(stderr, "packfs: disabled: %d, %s\n", packfs_ctx.disabled, packfs_archive_filename);
+            fprintf(stderr, "packfs: disabled: %d, %s, prefix: %s\n", packfs_ctx.disabled, packfs_archive_filename, packfs_ctx->packfs_archive_prefix);
 #endif
         
         struct archive *a = archive_read_new();
@@ -403,6 +403,9 @@ int packfs_stat(struct packfs_context* packfs_ctx, const char* path, int fd, str
     {
         for(size_t i = 0, filenames_start = 0; i < packfs_ctx->packfs_archive_files_num; filenames_start += (packfs_ctx->packfs_archive_filenames_lens[i] + 1), i++)
         {
+#ifdef PACKFS_LOG
+            fprintf(stderr, "packfs: relpath query: %s <?> relpath database: %s\n", path + prefix_strlen, packfs_ctx->packfs_archive_filenames + filenames_start);
+#endif
             if(0 == strcmp(path + prefix_strlen, packfs_ctx->packfs_archive_filenames + filenames_start))
             {
                 *statbuf = (struct stat){0};
@@ -646,7 +649,7 @@ int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, st
         struct stat statbufobj = {0}; 
         int res = packfs_stat(packfs_ctx, path, -1, &statbufobj);
         if(res == 0)
-        {
+         {
             *statbuf = (struct statx){0};
             statbuf->stx_size = statbufobj.st_size;
             statbuf->stx_mode = statbufobj.st_mode;
