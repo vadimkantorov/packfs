@@ -17,7 +17,7 @@ jobs:
         run: |
           make libarchivepreload.zip
           
-          strace -ff /usr/bin/ls 
+          strace -ff /usr/bin/ls libarchivepreload.c
           echo TEST1
           strace -ff /usr/bin/ls libarchive
 
