@@ -151,6 +151,9 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 packfs_ctx.packfs_archive_prefix[path_prefix_len] = '\0';
                 packfs_archive_filename = packfs_ctx.packfs_archive_prefix;
             }
+#ifdef PACKFS_LOG 
+            fprtinf(stderr, "packfs: %s\n", packfs_ctx.packfs_archive_filename);
+#endif
         }
         
         packfs_ctx.disabled = strlen(packfs_ctx.packfs_archive_prefix) > 0 ? 0 : 1;
