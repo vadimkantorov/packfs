@@ -16,15 +16,16 @@ jobs:
       - name: Test
         run: |
           make libarchivepreload.zip
-          LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /usr/bin/cat /mnt/libarchivepreload/libarchivepreload.c
-          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
-          #strace -ff /usr/bin/ls /mnt/libarchivepreload/
-          #LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /usr/bin/ls  /mnt/libarchivepreload/
-          #LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip strace -ff /usr/bin/ls  /mnt/libarchivepreload/ || true
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls libarchivepreload.zip
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
           
-          #LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /usr/bin/ls
+          echo TEST1
+          strace -ff /usr/bin/ls /mnt/libarchivepreload/
+          echo TEST2
+          LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip strace -ff /usr/bin/ls  /mnt/libarchivepreload/ || true
+          echo TEST3
+          
+          #LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /usr/bin/ls  /mnt/libarchivepreload/
           #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls libarchivepreload.zip
-          #LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /usr/bin/cat libarchivepreload.c
+          
+          
+          #LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /usr/bin/cat /mnt/libarchivepreload/libarchivepreload.c
           #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c

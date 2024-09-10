@@ -127,8 +127,8 @@ struct packfs_context* packfs_ensure_context(const char* path)
         ""
 #endif
         );
-#undef PACKFS_STRING_VALUE_
 #undef PACKFS_STRING_VALUE
+#undef PACKFS_STRING_VALUE_
 
         packfs_ctx.packfs_archive_files_num = 0;
         packfs_ctx.packfs_archive_mmapsize = 0;
