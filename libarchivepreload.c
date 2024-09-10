@@ -172,7 +172,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         
         do
         {
-            if(packfs_archive_filename == NULL || 0 == strlen(packfs_archive_filename) || 0 == strncmp(packfs_ctx.packfs_archive_prefix, packfs_archive_filename, strlen(packfs_ctx.packfs_archive_prefix)))
+            if( packfs_archive_filename == NULL || 0 == strlen(packfs_archive_filename) )// || 0 == strncmp(packfs_ctx.packfs_archive_prefix, packfs_archive_filename, strlen(packfs_ctx.packfs_archive_prefix)))
                 break;
             
             int fd = open(packfs_archive_filename, O_RDONLY);
