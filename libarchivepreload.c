@@ -673,3 +673,45 @@ int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, st
 #endif
     return res;
 }
+    
+DIR* opendir(const char *path)
+{
+    struct packfs_context* packfs_ctx = packfs_ensure_context(path);
+    if(!packfs_ctx->disabled)
+    {
+    }
+    
+    DIR* res = packfs_ctx->orig_opendir(path);
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: opendir(\"%s\") == %p\n", path, (void*)res);
+#endif
+    return res;
+}
+
+struct dirent* readdir(DIR *dirp)
+{
+    struct packfs_context* packfs_ctx = packfs_ensure_context(path);
+    if(!packfs_ctx->disabled)
+    {
+    }
+    
+    DIR* res = packfs_ctx->orig_readdir(path);
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: readdir(%p) == %p\n", (void*)dirp, (void*)res);
+#endif
+    return res;
+}
+
+int closedir(DIR *dirp)
+{
+    struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
+    if(!packfs_ctx->disabled)
+    {
+    }
+    
+    int res = packfs_ctx->orig_closedir(dirp);
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: closedir(%p) == %d\n", (void*)dirp, res);
+#endif
+    return res;
+}
