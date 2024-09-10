@@ -160,6 +160,9 @@ struct packfs_context* packfs_ensure_context(const char* path)
         }
         
         packfs_ctx.disabled = (packfs_archive_filename != NULL && strlen(packfs_archive_filename) > 0) ? 0 : 1;
+#ifdef PACKFS_LOG 
+            fprintf(stderr, "packfs: disabled: %d\n", packfs_ctx.disabled);
+#endif
         
         struct archive *a = archive_read_new();
         archive_read_support_format_tar(a);
