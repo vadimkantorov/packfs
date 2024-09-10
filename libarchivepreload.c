@@ -152,7 +152,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 packfs_archive_filename = packfs_ctx.packfs_archive_prefix;
             }
 #ifdef PACKFS_LOG 
-            fprintf(stderr, "packfs: %s\n", packfs_archive_filename);
+            fprintf(stderr, "packfs: %s ( %s )\n", packfs_archive_filename, path);
 #endif
         }
         
