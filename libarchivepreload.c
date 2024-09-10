@@ -149,9 +149,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         if(packfs_archive_filename == NULL)
         {
             path = packfs_sanitize_path(path);
-            fprintf(stderr, "packfs: enabling before\n");
             size_t path_prefix_len = packfs_archive_prefix_extract(path);
-            fprintf(stderr, "packfs: enabling after\n");
             if(path_prefix_len > 0)
             {
                 strcpy(packfs_ctx.packfs_archive_prefix, path);
