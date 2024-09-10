@@ -83,11 +83,12 @@ size_t packfs_archive_prefix_extract(const char* path)
     if(path == NULL)
         return 0;
 
-    for(const char* res = path; ; res = strchr(res, packfs_pathsep))
+    for(const char* res = strchr(path, packfs_pathsep); ; res = strchr(res, packfs_pathsep))
     {
         size_t prefix_len = res == NULL ? strlen(path) : (res - path);
+        fprintf(stderr, "pacfs: here %s\n", res);
         
-        for(size_t i = 0; i < sizeof(packfs_archive_suffixes) / sizeof(packfs_archive_suffixes[0]); i ++)
+        for(size_t i = 0; i < sizeof(packfs_archive_suffixes) / sizeof(packfs_archive_suffixes[0]); i++)
         {
             size_t suffix_len = strlen(packfs_archive_suffixes[i]);
             if(prefix_len >= suffix_len && 0 == strncmp(packfs_archive_suffixes[i], path + prefix_len - suffix_len, suffix_len))
@@ -96,6 +97,7 @@ size_t packfs_archive_prefix_extract(const char* path)
 
         if(res == NULL)
             break;
+        res++;
     }
     return 0;
 }
@@ -147,7 +149,9 @@ struct packfs_context* packfs_ensure_context(const char* path)
         if(packfs_archive_filename == NULL)
         {
             path = packfs_sanitize_path(path);
+            fprintf(stderr, "packfs: enabling before\n");
             size_t path_prefix_len = packfs_archive_prefix_extract(path);
+            fprintf(stderr, "packfs: enabling after\n");
             if(path_prefix_len > 0)
             {
                 strcpy(packfs_ctx.packfs_archive_prefix, path);
@@ -394,10 +398,13 @@ int packfs_access(struct packfs_context* packfs_ctx, const char* path)
 int packfs_stat(struct packfs_context* packfs_ctx, const char* path, int fd, struct stat *restrict statbuf)
 {
     path = packfs_sanitize_path(path);
+    size_t prefix_strlen = strlen(packfs_ctx->packfs_archive_prefix);
+    if(packfs_ctx->packfs_archive_prefix[prefix_strlen] != packfs_pathsep)
+        prefix_strlen++;
     
     if(0 == packfs_strncmp(packfs_ctx->packfs_archive_prefix, path, strlen(packfs_ctx->packfs_archive_prefix)))
     {
-        for(size_t i = 0, filenames_start = 0, prefix_strlen = strlen(packfs_ctx->packfs_archive_prefix); i < packfs_ctx->packfs_archive_files_num; filenames_start += (packfs_ctx->packfs_archive_filenames_lens[i] + 1), i++)
+        for(size_t i = 0, filenames_start = 0; i < packfs_ctx->packfs_archive_files_num; filenames_start += (packfs_ctx->packfs_archive_filenames_lens[i] + 1), i++)
         {
             if(0 == strcmp(path + prefix_strlen, packfs_ctx->packfs_archive_filenames + filenames_start))
             {
