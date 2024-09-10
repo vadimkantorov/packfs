@@ -20,3 +20,7 @@ LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchi
 - https://github.com/google/fuse-archive/
 - https://gist.github.com/vadimkantorov/2a4e092889b7132acd3b7ddfc2f2f907
 - https://github.com/libarchive/libarchive/issues/2306
+- https://github.com/coreutils/coreutils/blob/master/src/ls.c
+- https://github.com/coreutils/coreutils/blob/master/src/cat.c
+- https://git.busybox.net/busybox/tree/coreutils/ls.c
+- https://git.busybox.net/busybox/tree/coreutils/cat.c
