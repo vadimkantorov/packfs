@@ -140,6 +140,9 @@ struct packfs_context* packfs_ensure_context(const char* path)
 
     if(packfs_ctx.initialized == 1 && packfs_ctx.disabled == 1)
     {
+#ifdef PACKFS_LOG 
+            fprintf(stderr, "packfs: enabling\n");
+#endif
         const char* packfs_archive_filename = getenv("LIBARCHIVEPRELOAD");
         if(packfs_archive_filename == NULL)
         {
@@ -156,7 +159,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
 #endif
         }
         
-        packfs_ctx.disabled = strlen(packfs_ctx.packfs_archive_prefix) > 0 ? 0 : 1;
+        packfs_ctx.disabled = (packfs_archive_filename != NULL && strlen(packfs_archive_filename) > 0) ? 0 : 1;
         
         struct archive *a = archive_read_new();
         archive_read_support_format_tar(a);
