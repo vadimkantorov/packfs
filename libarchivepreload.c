@@ -636,7 +636,7 @@ int fstat(int fd, struct stat * statbuf)
 
 int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statbuf)
 {
-    struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
+    struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
         struct stat statbufobj = {0}; 
