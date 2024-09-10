@@ -48,7 +48,7 @@ struct packfs_context
     off_t (*orig_lseek)(int fd, off_t offset, int whence);
     int (*orig_stat)(const char *restrict path, struct stat *restrict statbuf);
     int (*orig_fstat)(int fd, struct stat * statbuf);
-    int (*orig_statx)(int dirfd, const char *restrict pathname, int flags, unsigned int mask, struct statx *restrict statxbuf);
+    int (*orig_statx)(int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statbuf);
     FILE* (*orig_fopen)(const char *path, const char *mode);
     int (*orig_fileno)(FILE* stream);
     
@@ -176,12 +176,12 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 break;
             
             int fd = open(packfs_archive_filename, O_RDONLY);
-            struct stat file_info = {0}; 
-            if(fd >= 0 && fstat(fd, &file_info) >= 0)
+            struct stat statbufobj = {0}; 
+            if(fd >= 0 && fstat(fd, &statbufobj) >= 0)
             {
                 if(packfs_archive_use_mmap)
                 {
-                    packfs_ctx.packfs_archive_mmapsize = file_info.st_size;
+                    packfs_ctx.packfs_archive_mmapsize = statbufobj.st_size;
                     packfs_ctx.packfs_archive_fileptr = mmap(NULL, packfs_ctx.packfs_archive_mmapsize, PROT_READ, MAP_PRIVATE, fd, 0);
                 }
                 else
@@ -226,7 +226,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 {
                     size_t entry_byte_size = (size_t)archive_entry_size(entry);
                     size_t entry_byte_offset = last_file_offset + (size_t)(firstblock_buff - last_file_buff);
-                    const char* entryname = archive_entry_pathname(entry);
+                    const char* entryname = archive_entry_path(entry);
                     strcpy(packfs_ctx.packfs_archive_filenames + filenames_lens_total, entryname);
                     packfs_ctx.packfs_archive_filenames_lens[packfs_ctx.packfs_archive_files_num] = strlen(entryname);
                     packfs_ctx.packfs_archive_offsets[packfs_ctx.packfs_archive_files_num] = entry_byte_offset;
@@ -634,16 +634,28 @@ int fstat(int fd, struct stat * statbuf)
     return res;
 }
 
-int statx(int dirfd, const char *restrict pathname, int flags, unsigned int mask, struct statx *restrict statxbuf)
+int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statbuf)
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     if(!packfs_ctx->disabled)
     {
+        struct stat statbufobj = {0}; 
+        int res = packfs_stat(packfs_ctx, path, -1, &statbufobj);
+        if(res == 0)
+        {
+            *statbuf = {0};
+            statbuf->stx_size = statbufobj.st_size;
+            statbuf->stx_mode = statbufobj.st_mode;
+        }
+#ifdef PACKFS_LOG
+        fprintf(stderr, "packfs: Statx(%d, \"%s\", %d, %u, %p) == %d\n", dirfd, path, flags, mask, (void*)statbuf, res);
+#endif
+        return res;
     }
 
-    int res = packfs_ctx->orig_statx(dirfd, pathname, flags, mask, statxbuf);
+    int res = packfs_ctx->orig_statx(dirfd, path, flags, mask, statbuf);
 #ifdef PACKFS_LOG
-    fprintf(stderr, "packfs: statx(%d, \"%s\", %d, %u, %p) == %d\n", dirfd, pathname, flags, mask, (void*)statxbuf, res);
+    fprintf(stderr, "packfs: statx(%d, \"%s\", %d, %u, %p) == %d\n", dirfd, path, flags, mask, (void*)statbuf, res);
 #endif
     return res;
 }
