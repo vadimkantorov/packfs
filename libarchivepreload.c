@@ -226,7 +226,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 {
                     size_t entry_byte_size = (size_t)archive_entry_size(entry);
                     size_t entry_byte_offset = last_file_offset + (size_t)(firstblock_buff - last_file_buff);
-                    const char* entryname = archive_entry_path(entry);
+                    const char* entryname = archive_entry_pathname(entry);
                     strcpy(packfs_ctx.packfs_archive_filenames + filenames_lens_total, entryname);
                     packfs_ctx.packfs_archive_filenames_lens[packfs_ctx.packfs_archive_files_num] = strlen(entryname);
                     packfs_ctx.packfs_archive_offsets[packfs_ctx.packfs_archive_files_num] = entry_byte_offset;
@@ -643,7 +643,7 @@ int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, st
         int res = packfs_stat(packfs_ctx, path, -1, &statbufobj);
         if(res == 0)
         {
-            *statbuf = {0};
+            *statbuf = (struct statx){0};
             statbuf->stx_size = statbufobj.st_size;
             statbuf->stx_mode = statbufobj.st_mode;
         }
