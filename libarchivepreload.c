@@ -396,7 +396,7 @@ int packfs_stat(struct packfs_context* packfs_ctx, const char* path, int fd, str
 {
     path = packfs_sanitize_path(path);
     size_t prefix_strlen = strlen(packfs_ctx->packfs_archive_prefix);
-    if(packfs_ctx->packfs_archive_prefix[prefix_strlen] != packfs_pathsep)
+    if(prefix_strlen > 0 && packfs_ctx->packfs_archive_prefix[prefix_strlen - 1] != packfs_pathsep)
         prefix_strlen++;
     
     if(0 == packfs_strncmp(packfs_ctx->packfs_archive_prefix, path, strlen(packfs_ctx->packfs_archive_prefix)))
