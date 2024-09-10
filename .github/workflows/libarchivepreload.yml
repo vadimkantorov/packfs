@@ -17,8 +17,14 @@ jobs:
         run: |
           make libarchivepreload.zip
           
-          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
-          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
+          echo TEST0
+          LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /usr/bin/ls -lah /mnt/libarchivepreload/libarchivepreload.c  || true
+          echo TEST1
+          LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip strace -f /usr/bin/ls -lah /mnt/libarchivepreload/libarchivepreload.c  || true
+          echo TEST2
+
+          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
+          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
           
           #LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /usr/bin/ls -lah /mnt/libarchivepreload/libarchivepreload.c 
           #LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /usr/bin/cat /mnt/libarchivepreload/libarchivepreload.c
