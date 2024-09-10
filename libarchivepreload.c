@@ -86,7 +86,6 @@ size_t packfs_archive_prefix_extract(const char* path)
     for(const char* res = strchr(path, packfs_pathsep); ; res = strchr(res, packfs_pathsep))
     {
         size_t prefix_len = res == NULL ? strlen(path) : (res - path);
-        fprintf(stderr, "pacfs: here %s\n", res);
         
         for(size_t i = 0; i < sizeof(packfs_archive_suffixes) / sizeof(packfs_archive_suffixes[0]); i++)
         {
