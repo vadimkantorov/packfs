@@ -17,11 +17,11 @@ jobs:
         run: |
           make libarchivepreload.zip
           
+          strace -ff /usr/bin/ls 
           echo TEST1
-          strace -ff /usr/bin/ls /mnt/libarchivepreload/
-          echo TEST2
-          LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip strace -ff /usr/bin/ls  /mnt/libarchivepreload/ || true
-          echo TEST3
+          strace -ff /usr/bin/ls libarchive
+
+          #LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip strace -ff /usr/bin/ls  /mnt/libarchivepreload/ || true
           
           #LD_PRELOAD=$PWD/libarchivepreload.so LIBARCHIVEPRELOAD=libarchivepreload.zip /usr/bin/ls  /mnt/libarchivepreload/
           #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls libarchivepreload.zip
