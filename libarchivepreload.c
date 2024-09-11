@@ -34,8 +34,8 @@ static ssize_t new_file_read(struct archive *a, void *client_data, const void **
 enum {
     packfs_filefd_min = 1000000000, 
     packfs_filefd_max = 1000001000, 
-    packfs_filepath_max_len = 128, 
-    packfs_archive_filenames_num = 1024,  
+    packfs_entries_name_maxlen = 128, 
+    packfs_archive_entries_nummax = 1024,  
     packfs_archive_use_mmap = 0
 };
 struct packfs_context
@@ -57,15 +57,16 @@ struct packfs_context
     int (*orig_closedir)(DIR *dirp);
     
     int packfs_filefd[packfs_filefd_max - packfs_filefd_min];
-    FILE* packfs_fileptr[packfs_filefd_max - packfs_filefd_min];
+    void* packfs_fileptr[packfs_filefd_max - packfs_filefd_min];
     size_t packfs_filesize[packfs_filefd_max - packfs_filefd_min];
     
-    size_t packfs_archive_files_num;
-    char packfs_archive_prefix[packfs_filepath_max_len];
+    size_t packfs_archive_entries_num;
+    char packfs_archive_prefix[packfs_entries_name_maxlen];
     void* packfs_archive_fileptr;
     size_t packfs_archive_mmapsize;
-    size_t packfs_archive_filenames_lens[packfs_archive_filenames_num], packfs_archive_offsets[packfs_archive_filenames_num], packfs_archive_sizes[packfs_archive_filenames_num];
-    char packfs_archive_filenames[packfs_archive_filenames_num * packfs_filepath_max_len];
+    size_t packfs_archive_entries_names_lens[packfs_archive_entries_nummax], packfs_archive_offsets[packfs_archive_entries_nummax], packfs_archive_sizes[packfs_archive_entries_nummax];
+    char packfs_archive_entries_names[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
+    int packfs_archive_entries_isfile[packfs_archive_entries_nummax];
 };
 
 const char packfs_pathsep = '/';
@@ -138,7 +139,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
 #undef PACKFS_STRING_VALUE
 #undef PACKFS_STRING_VALUE_
 
-        packfs_ctx.packfs_archive_files_num = 0;
+        packfs_ctx.packfs_archive_entries_num = 0;
         packfs_ctx.packfs_archive_mmapsize = 0;
         packfs_ctx.packfs_archive_fileptr = NULL;
         
@@ -216,31 +217,41 @@ struct packfs_context* packfs_ensure_context(const char* path)
             if(archive_read_open1(a) != ARCHIVE_OK)
                 break;
             
-            size_t filenames_lens_total = 0;
-            while(1)
+            for(size_t entrynames_lens_total = 0; ;)
             {
                 int r = archive_read_next_header(a, &entry);
                 if (r == ARCHIVE_EOF)
                     break;
                 if (r != ARCHIVE_OK)
                     break; //fprintf(stderr, "%s\n", archive_error_string(a));
+                    
+                strcpy(packfs_ctx.packfs_archive_entries_names + entrynames_lens_total, "");
+                entrynames_lens_total++;
+                packfs_ctx.packfs_archive_entries_names_lens[packfs_ctx.packfs_archive_entries_num] = 0;
+                packfs_ctx.packfs_archive_entries_isfile[packfs_ctx.packfs_archive_entries_num] = 0;
+                packfs_ctx.packfs_archive_entries_num++;
 
                 const void* firstblock_buff;
                 size_t firstblock_len;
                 int64_t firstblock_offset;
                 r = archive_read_data_block(a, &firstblock_buff, &firstblock_len, &firstblock_offset);
                 int filetype = archive_entry_filetype(entry);
-                if(filetype == AE_IFREG && archive_entry_size_is_set(entry) != 0 && last_file_buff != NULL && last_file_buff <= firstblock_buff && firstblock_buff < last_file_buff + last_file_block_size)
+                const char* entryname = archive_entry_pathname(entry);
+                
+                int is_uncompressed_entry = filetype == AE_IFREG && archive_entry_size_is_set(entry) != 0 && last_file_buff != NULL && last_file_buff <= firstblock_buff && firstblock_buff < last_file_buff + last_file_block_size;
+                int is_dir = filetype == AE_IFDIR;
+                size_t entry_byte_size = (size_t)archive_entry_size(entry);
+                size_t entry_byte_offset = is_uncompressed_entry ? (last_file_offset + (size_t)(firstblock_buff - last_file_buff)):0;
+
+                if(is_uncompressed_entry || is_dir)
                 {
-                    size_t entry_byte_size = (size_t)archive_entry_size(entry);
-                    size_t entry_byte_offset = last_file_offset + (size_t)(firstblock_buff - last_file_buff);
-                    const char* entryname = archive_entry_pathname(entry);
-                    strcpy(packfs_ctx.packfs_archive_filenames + filenames_lens_total, entryname);
-                    packfs_ctx.packfs_archive_filenames_lens[packfs_ctx.packfs_archive_files_num] = strlen(entryname);
-                    packfs_ctx.packfs_archive_offsets[packfs_ctx.packfs_archive_files_num] = entry_byte_offset;
-                    packfs_ctx.packfs_archive_sizes[packfs_ctx.packfs_archive_files_num] = entry_byte_size;
-                    filenames_lens_total += packfs_ctx.packfs_archive_filenames_lens[packfs_ctx.packfs_archive_files_num] + 1;
-                    packfs_ctx.packfs_archive_files_num++;
+                    strcpy(packfs_ctx.packfs_archive_entries_names + entrynames_lens_total, entryname);
+                    entrynames_lens_total += packfs_ctx.packfs_archive_entries_names_lens[packfs_ctx.packfs_archive_entries_num] + 1;
+                    packfs_ctx.packfs_archive_entries_names_lens[packfs_ctx.packfs_archive_entries_num] = strlen(entryname);
+                    packfs_ctx.packfs_archive_entries_isfile[packfs_ctx.packfs_archive_entries_num] = is_uncompressed_entry;
+                    packfs_ctx.packfs_archive_offsets[packfs_ctx.packfs_archive_entries_num] = entry_byte_offset;
+                    packfs_ctx.packfs_archive_sizes[packfs_ctx.packfs_archive_entries_num] = entry_byte_size;
+                    packfs_ctx.packfs_archive_entries_num++;
                 }
                     
                 r = archive_read_data_skip(a);
@@ -250,8 +261,8 @@ struct packfs_context* packfs_ensure_context(const char* path)
                     break; //fprintf(stderr, "%s\n", archive_error_string(a));
             }
 #ifdef PACKFS_LOG
-            for(size_t i = 0,filenames_start = 0; i < packfs_ctx.packfs_archive_files_num; filenames_start += (packfs_ctx.packfs_archive_filenames_lens[i] + 1), i++)
-                fprintf(stderr, "packfs: %s: %s\n", packfs_archive_filename, packfs_ctx.packfs_archive_filenames + filenames_start);
+            for(size_t i = 0, packfs_archive_entries_names_offset = 0; i < packfs_ctx.packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx.packfs_archive_entries_names_lens[i] + 1), i++)
+                fprintf(stderr, "packfs: %s: %s\n", packfs_archive_filename, packfs_ctx.packfs_archive_entries_names + packfs_archive_entries_names_offset);
 #endif
 
         }
@@ -270,16 +281,15 @@ int packfs_open(struct packfs_context* packfs_ctx, const char* path, FILE** out)
     FILE* fileptr = NULL;
     size_t filesize = 0;
     
-    if(packfs_ctx->packfs_archive_files_num > 0 && strncmp(packfs_ctx->packfs_archive_prefix, path, strlen(packfs_ctx->packfs_archive_prefix)) == 0)
+    if(packfs_ctx->packfs_archive_entries_num > 0 && strncmp(packfs_ctx->packfs_archive_prefix, path, strlen(packfs_ctx->packfs_archive_prefix)) == 0)
     {
         const char* path_without_prefix = path + strlen(packfs_ctx->packfs_archive_prefix);
-        if(path_without_prefix[0] == '/')
+        if(path_without_prefix[0] == packfs_pathsep)
             path_without_prefix++;
 
-        size_t filenames_start = 0;
-        for(size_t i = 0; i < packfs_ctx->packfs_archive_files_num; i++)
+        for(size_t i = 0, packfs_archive_entries_names_offset = 0; i < packfs_ctx->packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx->packfs_archive_entries_names_lens[i] + 1), i++)
         {
-            if(0 == strcmp(packfs_ctx->packfs_archive_filenames + filenames_start, path_without_prefix))
+            if(0 == strcmp(packfs_ctx->packfs_archive_entries_names + packfs_archive_entries_names_offset, path_without_prefix))
             {
                 filesize = packfs_ctx->packfs_archive_sizes[i];
                 size_t offset = packfs_ctx->packfs_archive_offsets[i];
@@ -301,7 +311,6 @@ int packfs_open(struct packfs_context* packfs_ctx, const char* path, FILE** out)
                 }
                 break;
             }
-            filenames_start += packfs_ctx->packfs_archive_filenames_lens[i] + 1;
         }
     }
     
@@ -388,9 +397,9 @@ int packfs_access(struct packfs_context* packfs_ctx, const char* path)
 
     if(0 == packfs_strncmp(packfs_ctx->packfs_archive_prefix, path, strlen(packfs_ctx->packfs_archive_prefix)))
     {
-        for(size_t i = 0, filenames_start = 0, prefix_strlen = strlen(packfs_ctx->packfs_archive_prefix); i < packfs_ctx->packfs_archive_files_num; filenames_start += (packfs_ctx->packfs_archive_filenames_lens[i] + 1), i++)
+        for(size_t i = 0, packfs_archive_entries_names_offset = 0, prefix_strlen = strlen(packfs_ctx->packfs_archive_prefix); i < packfs_ctx->packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx->packfs_archive_entries_names_lens[i] + 1), i++)
         {
-            if(0 == strcmp(path + prefix_strlen, packfs_ctx->packfs_archive_filenames + filenames_start))
+            if(0 == strcmp(path + prefix_strlen, packfs_ctx->packfs_archive_entries_names + packfs_archive_entries_names_offset))
                 return 0;
         }
         return -1;
@@ -404,21 +413,29 @@ int packfs_stat(struct packfs_context* packfs_ctx, const char* path, int fd, str
     path = packfs_sanitize_path(path);
     size_t prefix_strlen = strlen(packfs_ctx->packfs_archive_prefix);
     if(prefix_strlen > 0 && packfs_ctx->packfs_archive_prefix[prefix_strlen - 1] != packfs_pathsep)
+    {
+        // does not work correctly if the input is dir and does not end with "/"
         prefix_strlen++;
+    }
     
     if(0 == packfs_strncmp(packfs_ctx->packfs_archive_prefix, path, strlen(packfs_ctx->packfs_archive_prefix)))
     {
-        for(size_t i = 0, filenames_start = 0; i < packfs_ctx->packfs_archive_files_num; filenames_start += (packfs_ctx->packfs_archive_filenames_lens[i] + 1), i++)
+        for(size_t i = 0, packfs_archive_entries_names_offset = 0; i < packfs_ctx->packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx->packfs_archive_entries_names_lens[i] + 1), i++)
         {
 #ifdef PACKFS_LOG
-            fprintf(stderr, "packfs: relpath query: %s <?> relpath database: %s\n", path + prefix_strlen, packfs_ctx->packfs_archive_filenames + filenames_start);
+            fprintf(stderr, "packfs: testing \"%s\" <> \"%s\"\n", path + prefix_strlen, packfs_ctx->packfs_archive_entries_names + packfs_archive_entries_names_offset);
 #endif
-            if(0 == strcmp(path + prefix_strlen, packfs_ctx->packfs_archive_filenames + filenames_start))
+            if(0 == strcmp(path + prefix_strlen, packfs_ctx->packfs_archive_entries_names + packfs_archive_entries_names_offset))
             {
                 *statbuf = (struct stat){0};
+                if(packfs_ctx->packfs_archive_entries_isfile[i])
                 {
                     statbuf->st_size = (off_t)(packfs_ctx->packfs_archive_sizes[i]);
                     statbuf->st_mode = S_IFREG;
+                }
+                else
+                {
+                    statbuf->st_mode = S_IFDIR;
                 }
                 return 0;
             }
