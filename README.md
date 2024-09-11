@@ -24,3 +24,5 @@ LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchi
 - https://github.com/coreutils/coreutils/blob/master/src/cat.c
 - https://git.busybox.net/busybox/tree/coreutils/ls.c
 - https://git.busybox.net/busybox/tree/coreutils/cat.c
+- https://git.musl-libc.org/cgit/musl/tree/src/dirent/opendir.c
+- https://git.musl-libc.org/cgit/musl/tree/src/dirent/readdir.c
