@@ -695,7 +695,7 @@ struct dirent* readdir(DIR *dirp)
     {
     }
     
-    struct dirent* res = packfs_ctx->orig_readdir(path);
+    struct dirent* res = packfs_ctx->orig_readdir(dirp);
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: readdir(%p) == %p\n", (void*)dirp, (void*)res);
 #endif
