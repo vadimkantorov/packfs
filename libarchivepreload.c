@@ -130,18 +130,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         packfs_ctx.orig_fileno = dlsym(RTLD_NEXT, "fileno");
         packfs_ctx.orig_fclose = dlsym(RTLD_NEXT, "fclose");
         
-#define PACKFS_STRING_VALUE_(x) #x
-#define PACKFS_STRING_VALUE(x) PACKFS_STRING_VALUE_(x)
-        strcpy(packfs_ctx.packfs_archive_prefix, 
-#ifdef PACKFS_ARCHIVE_PREFIX
-            PACKFS_STRING_VALUE(PACKFS_ARCHIVE_PREFIX)
-#else
-        ""
-#endif
-        );
-#undef PACKFS_STRING_VALUE
-#undef PACKFS_STRING_VALUE_
-
+        strcpy(packfs_ctx.packfs_archive_prefix, "");
         packfs_ctx.packfs_archive_entries_num = 0;
         packfs_ctx.packfs_archive_mmapsize = 0;
         packfs_ctx.packfs_archive_fileptr = NULL;
@@ -155,8 +144,8 @@ struct packfs_context* packfs_ensure_context(const char* path)
 #ifdef PACKFS_LOG 
             fprintf(stderr, "packfs: enabling\n");
 #endif
-        const char* packfs_archive_filename = getenv("LIBARCHIVEPRELOAD");
-        if(packfs_archive_filename == NULL)
+        const char* packfs_archive_filename = NULL;
+        if(path != NULL)
         {
             path = packfs_sanitize_path(path);
             size_t path_prefix_len = packfs_archive_prefix_extract(path);
@@ -166,11 +155,10 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 packfs_ctx.packfs_archive_prefix[path_prefix_len] = '\0';
                 packfs_archive_filename = packfs_ctx.packfs_archive_prefix;
             }
-#ifdef PACKFS_LOG 
+#ifdef PACKFS_LOG
             fprintf(stderr, "packfs: %s ( %s )\n", packfs_archive_filename, path);
 #endif
         }
-        
         packfs_ctx.disabled = (packfs_archive_filename != NULL && strlen(packfs_archive_filename) > 0) ? 0 : 1;
 #ifdef PACKFS_LOG 
         fprintf(stderr, "packfs: disabled: %d, %s, prefix: %s\n", packfs_ctx.disabled, packfs_archive_filename, packfs_ctx.packfs_archive_prefix);
