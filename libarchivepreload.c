@@ -592,17 +592,14 @@ int fclose(FILE* stream)
     if(!packfs_ctx->disabled)
     {
         int* ptr = packfs_find(packfs_ctx, -1, stream);
-        if(ptr != NULL)
+        int fd = ptr == NULL ? -1 : *ptr;
+        int res = packfs_close(packfs_ctx, fd);
+        if(res >= -1)
         {
-            int fd = *ptr;
-            int res = packfs_close(packfs_ctx, fd);
-            if(res >= -1)
-            {
 #ifdef PACKFS_LOG
-                fprintf(stderr, "packfs: Fclose(%p) == %d\n", (void*)stream, res);
+            fprintf(stderr, "packfs: Fclose(%p) == %d\n", (void*)stream, res);
 #endif
-                return res;
-            }
+            return res;
         }
     }
 
