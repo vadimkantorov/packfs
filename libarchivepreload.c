@@ -16,6 +16,107 @@
 
 #include <archive.h>
 #include <archive_entry.h>
+
+/* Maximum amount of data to write at one time. */
+#define	MAX_WRITE	(1024 * 1024)
+
+/*
+ * This implementation minimizes copying of data and is sparse-file aware.
+ */
+int
+archive_read_data_into_FILE(struct archive *a, FILE* f)
+{
+	int r;
+	const void *buff;
+	size_t size, bytes_to_write;
+	ssize_t bytes_written, total_written;
+	off_t offset;
+	off_t output_offset;
+
+	//__archive_check_magic(a, ARCHIVE_READ_MAGIC, ARCHIVE_STATE_DATA, "archive_read_data_into_FILE");
+
+	total_written = 0;
+	output_offset = 0;
+
+	while ((r = archive_read_data_block(a, &buff, &size, &offset)) ==
+	    ARCHIVE_OK) {
+		const char *p = buff;
+		if (offset > output_offset) {
+			//output_offset = lseek(fd,
+			//    offset - output_offset, SEEK_CUR);
+                        output_offset = fseek(f, 
+                              (off_t)(offset - output_offset), SEEK_CUR); // any problems with off_t being unsufficiently short dtype?
+			if (output_offset != offset) {
+				archive_set_error(a, errno, "Seek error");
+				return (ARCHIVE_FATAL);
+			}
+		}
+		while (size > 0) {
+			bytes_to_write = size;
+			if (bytes_to_write > MAX_WRITE)
+				bytes_to_write = MAX_WRITE;
+			//bytes_written = write(fd, p, bytes_to_write);
+			bytes_written = fwrite(p, 1, bytes_to_write, f);
+			if (bytes_written < 0) {
+				archive_set_error(a, errno, "Write error");
+				return (ARCHIVE_FATAL);
+			}
+			output_offset += bytes_written;
+			total_written += bytes_written;
+			p += bytes_written;
+			size -= bytes_written;
+		}
+	}
+
+	if (r != ARCHIVE_EOF)
+		return (r);
+	return (ARCHIVE_OK);
+}
+
+int open_archive_and_extract_entry_to_FILE(const char* pathname, const char* entryname, FILE* f)
+{
+        struct archive *a = archive_read_new();
+        archive_read_support_format_tar(a);
+        archive_read_support_format_iso9660(a);
+        archive_read_support_format_zip(a);
+        struct archive_entry *entry;
+        
+        do
+        {
+            if(archive_read_open_filename(a, pathname, 10240) != ARCHIVE_OK)
+                break;
+            
+            while (1)
+            {
+                int r = archive_read_next_header(a, &entry);
+                if (r == ARCHIVE_EOF)
+                    break;
+                if (r != ARCHIVE_OK)
+                    break; //fprintf(stderr, "%s\n", archive_error_string(a));
+
+                if(0 == strcmp(entryname, archive_entry_pathname(entry)))
+                {
+                   r = archive_read_data_into_FILE(a, f);
+                   if (r == ARCHIVE_EOF)
+                       break;
+                   if (r != ARCHIVE_OK)
+                       break; //fprintf(stderr, "%s\n", archive_error_string(a));
+                }
+                else
+                {
+                    r = archive_read_data_skip(a);
+                    if (r == ARCHIVE_EOF)
+                        break;
+                    if (r != ARCHIVE_OK)
+                        break; //fprintf(stderr, "%s\n", archive_error_string(a));
+                }
+            }
+        }
+        while(0);
+        archive_read_close(a);
+        archive_read_free(a);
+}
+
 // https://github.com/libarchive/libarchive/issues/2295
 // define required for #include <archive_read_private.h>
 #define __LIBARCHIVE_BUILD
@@ -185,6 +286,9 @@ struct packfs_context* packfs_ensure_context(const char* path)
         {
             path = packfs_sanitize_path(path);
             size_t path_prefix_len = packfs_archive_prefix_extract(path);
+#ifdef PACKFS_LOG
+            fprintf(stderr, "packfs: path_prefix_len: \"%s\" %zu \n", path, path_prefix_len);
+#endif
             if(path_prefix_len > 0)
             {
                 strcpy(packfs_ctx.packfs_archive_prefix, path);
@@ -269,7 +373,6 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 int isdir = filetype == AE_IFDIR;
                 size_t entry_byte_size = (size_t)archive_entry_size(entry);
                 size_t entry_byte_offset = isuncompressedentry ? (last_file_offset + (size_t)(firstblock_buff - last_file_buff)):0;
-
                 if(isuncompressedentry || isdir)
                 {
                     strcpy(packfs_ctx.packfs_archive_entries_names + entrynames_lens_total, entryname);
