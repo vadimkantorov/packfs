@@ -75,7 +75,7 @@ archive_read_data_into_FILE(struct archive *a, FILE* f)
 	return (ARCHIVE_OK);
 }
 
-int open_archive_and_extract_entry_to_FILE(const char* pathname, const char* entryname, FILE* f)
+int open_archive_and_extract_entry_to_FILE(FILE* h, const char* entryname, FILE* f)
 {
         struct archive *a = archive_read_new();
         archive_read_support_format_tar(a);
@@ -85,7 +85,8 @@ int open_archive_and_extract_entry_to_FILE(const char* pathname, const char* ent
         
         do
         {
-            if(archive_read_open_filename(a, pathname, 10240) != ARCHIVE_OK)
+            fseek(h, 0, SEEK_SET);
+            if(archive_read_open_FILE(a, h) != ARCHIVE_OK)
                 break;
             
             while (1)
@@ -253,6 +254,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         
         strcpy(packfs_ctx.packfs_archive_prefix, "");
         packfs_ctx.packfs_archive_entries_num = 0;
+        packfs_ctx.packfs_archive_fileptr = NULL;
         
         packfs_ctx.initialized = 1;
         packfs_ctx.disabled = 1;
@@ -281,23 +283,24 @@ struct packfs_context* packfs_ensure_context(const char* path)
             fprintf(stderr, "packfs: prefix: \"%s\" ( \"%s\" )\n", packfs_archive_filename, path);
 #endif
         }
-        packfs_ctx.disabled = (packfs_archive_filename != NULL && strlen(packfs_archive_filename) > 0) ? 0 : 1;
-#ifdef PACKFS_LOG 
-        fprintf(stderr, "packfs: disabled: %d, \"%s\", prefix: \"%s\"\n", packfs_ctx.disabled, packfs_archive_filename, packfs_ctx.packfs_archive_prefix);
-#endif
         
         struct archive *a = archive_read_new();
         archive_read_support_format_tar(a);
         archive_read_support_format_iso9660(a);
         archive_read_support_format_zip(a);
         struct archive_entry *entry;
-        
+
         do
         {
             if( packfs_archive_filename == NULL || 0 == strlen(packfs_archive_filename) )// || 0 == strncmp(packfs_ctx.packfs_archive_prefix, packfs_archive_filename, strlen(packfs_ctx.packfs_archive_prefix)))
                 break;
+
+            packfs_ctx.packfs_archive_fileptr = fopen(packfs_archive_filename, "rb");
+
+            if(packfs_ctx.packfs_archive_fileptr == NULL)
+                break;
             
-            if(archive_read_open_filename(a, packfs_archive_filename, 10240) != ARCHIVE_OK)
+            if(archive_read_open_FILE(a, packfs_ctx.packfs_archive_fileptr) != ARCHIVE_OK)
                 break;
             
             //if(archive_read_open1(a) != ARCHIVE_OK)
@@ -338,10 +341,15 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 fprintf(stderr, "packfs: %s: %s\n", packfs_archive_filename, packfs_ctx.packfs_archive_entries_names + packfs_archive_entries_names_offset);
 #endif
 
+            packfs_ctx.disabled = (packfs_archive_filename != NULL && strlen(packfs_archive_filename) > 0) ? 0 : 1;
+#ifdef PACKFS_LOG 
+            fprintf(stderr, "packfs: disabled: %d, \"%s\", prefix: \"%s\"\n", packfs_ctx.disabled, packfs_archive_filename, packfs_ctx.packfs_archive_prefix);
+#endif
         }
         while(0);
         archive_read_close(a);
         archive_read_free(a);
+        
     }
     
     return &packfs_ctx;
@@ -433,7 +441,9 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
             {
                 filesize = packfs_ctx->packfs_archive_sizes[i];
                 fileptr = fmemopen(NULL, filesize, "rb+");
-                open_archive_and_extract_entry_to_FILE(packfs_ctx->packfs_archive_prefix, entry_path, fileptr);
+                
+
+                open_archive_and_extract_entry_to_FILE(packfs_ctx->packfs_archive_fileptr, entry_path, fileptr);
                 fseek(fileptr, 0, SEEK_SET);
                 break;
             }
