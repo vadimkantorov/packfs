@@ -17,109 +17,6 @@
 #include <archive.h>
 #include <archive_entry.h>
 
-/* Maximum amount of data to write at one time. */
-#define	MAX_WRITE	(1024 * 1024)
-
-/*
- * This implementation minimizes copying of data and is sparse-file aware.
- */
-int
-archive_read_data_into_FILE(struct archive *a, FILE* f)
-{
-	int r;
-	const void *buff;
-	size_t size, bytes_to_write;
-	ssize_t bytes_written, total_written;
-	off_t offset;
-	off_t output_offset;
-
-	//__archive_check_magic(a, ARCHIVE_READ_MAGIC, ARCHIVE_STATE_DATA, "archive_read_data_into_FILE");
-
-	total_written = 0;
-	output_offset = 0;
-
-	while ((r = archive_read_data_block(a, &buff, &size, &offset)) ==
-	    ARCHIVE_OK) {
-		const char *p = buff;
-		if (offset > output_offset) {
-                        if(fseek(f, 
-                              (long)(offset - output_offset), SEEK_CUR) != 0)
-                        {
-                            archive_set_error(a, errno, "Seek error");
-                            return (ARCHIVE_FATAL);
-                        }
-                        output_offset = (off_t)ftell(f);
-			if (output_offset != offset) {
-				archive_set_error(a, errno, "Seek error: offset does not match the expected value");
-				return (ARCHIVE_FATAL);
-			}
-		}
-		while (size > 0) {
-			bytes_to_write = size;
-			if (bytes_to_write > MAX_WRITE)
-				bytes_to_write = MAX_WRITE;
-			bytes_written = fwrite(p, 1, bytes_to_write, f);
-			if (bytes_written < 0) {
-				archive_set_error(a, errno, "Write error");
-				return (ARCHIVE_FATAL);
-			}
-			output_offset += bytes_written;
-			total_written += bytes_written;
-			p += bytes_written;
-			size -= bytes_written;
-		}
-	}
-
-	if (r != ARCHIVE_EOF)
-		return (r);
-	return (ARCHIVE_OK);
-}
-
-int open_archive_and_extract_entry_to_FILE(FILE* h, const char* entryname, FILE* f)
-{
-        struct archive *a = archive_read_new();
-        archive_read_support_format_tar(a);
-        archive_read_support_format_iso9660(a);
-        archive_read_support_format_zip(a);
-        struct archive_entry *entry;
-        
-        do
-        {
-            fseek(h, 0, SEEK_SET);
-            if(archive_read_open_FILE(a, h) != ARCHIVE_OK)
-                break;
-            
-            while (1)
-            {
-                int r = archive_read_next_header(a, &entry);
-                if (r == ARCHIVE_EOF)
-                    break;
-                if (r != ARCHIVE_OK)
-                    break; //fprintf(stderr, "%s\n", archive_error_string(a));
-
-                if(0 == strcmp(entryname, archive_entry_pathname(entry)))
-                {
-                   r = archive_read_data_into_FILE(a, f);
-                   if (r == ARCHIVE_EOF)
-                       break;
-                   if (r != ARCHIVE_OK)
-                       break; //fprintf(stderr, "%s\n", archive_error_string(a));
-                }
-                else
-                {
-                    r = archive_read_data_skip(a);
-                    if (r == ARCHIVE_EOF)
-                        break;
-                    if (r != ARCHIVE_OK)
-                        break; //fprintf(stderr, "%s\n", archive_error_string(a));
-                }
-            }
-        }
-        while(0);
-        archive_read_close(a);
-        archive_read_free(a);
-}
-
 enum
 {
     packfs_filefd_min = 1000000000, 
@@ -128,6 +25,16 @@ enum
     packfs_archive_entries_nummax = 1024,  
     packfs_pathsep = '/'
 };
+
+struct archive* packfs_archive_read_new()
+{
+    struct archive *a = archive_read_new();
+    archive_read_support_format_tar(a);
+    archive_read_support_format_iso9660(a);
+    archive_read_support_format_zip(a);
+    return a;
+}
+
 struct packfs_context
 {
     int initialized, disabled;
@@ -289,10 +196,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         fprintf(stderr, "packfs: disabled: %d, \"%s\", prefix: \"%s\"\n", packfs_ctx.disabled, packfs_archive_filename, packfs_ctx.packfs_archive_prefix);
 #endif
         
-        struct archive *a = archive_read_new();
-        archive_read_support_format_tar(a);
-        archive_read_support_format_iso9660(a);
-        archive_read_support_format_zip(a);
+        struct archive* a = packfs_archive_read_new();
         struct archive_entry *entry;
 
         do
@@ -441,9 +345,57 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
             {
                 filesize = packfs_ctx->packfs_archive_sizes[i];
                 fileptr = fmemopen(NULL, filesize, "rb+");
-                
+    
+                struct archive* a = packfs_archive_read_new();
+                struct archive_entry *entry;
+                do
+                {
+                    fseek(packfs_ctx->packfs_archive_fileptr, 0, SEEK_SET);
+                    if(archive_read_open_FILE(a, packfs_ctx->packfs_archive_fileptr) != ARCHIVE_OK)
+                        break;
+                    
+                    while (1)
+                    {
+                        int r = archive_read_next_header(a, &entry);
+                        if (r == ARCHIVE_EOF)
+                            break;
+                        if (r != ARCHIVE_OK)
+                            break; //fprintf(stderr, "%s\n", archive_error_string(a));
 
-                open_archive_and_extract_entry_to_FILE(packfs_ctx->packfs_archive_fileptr, entry_path, fileptr);
+                        if(0 == strcmp(entry_path, archive_entry_pathname(entry)))
+                        {
+                            enum { MAX_WRITE = 1024 * 1024};
+                            const void *buff;
+                            size_t size;
+                            off_t offset;
+
+                            while ((r = archive_read_data_block(a, &buff, &size, &offset)) == ARCHIVE_OK)
+                            {
+                                // assert(offset <= output_offset), do not support sparse files just yet, https://github.com/libarchive/libarchive/issues/2299
+                                const char* p = buff;
+                                while (size > 0)
+                                {
+                                    ssize_t bytes_written = fwrite(p, 1, size, fileptr);
+                                    p += bytes_written;
+                                    size -= bytes_written;
+                                }
+                            }
+                            break;
+                        }
+                        else
+                        {
+                            r = archive_read_data_skip(a);
+                            if (r == ARCHIVE_EOF)
+                                break;
+                            if (r != ARCHIVE_OK)
+                                break; //fprintf(stderr, "%s\n", archive_error_string(a));
+                        }
+                    }
+                }
+                while(0);
+                archive_read_close(a);
+                archive_read_free(a);
+
                 fseek(fileptr, 0, SEEK_SET);
                 break;
             }
