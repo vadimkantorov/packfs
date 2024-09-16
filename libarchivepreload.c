@@ -31,6 +31,7 @@ struct packfs_context
     int initialized, disabled;
     
     int (*orig_open)(const char *path, int flags);
+    int (*orig_openat)(int dirfd, const char *path, int flags);
     int (*orig_close)(int fd);
     ssize_t (*orig_read)(int fd, void* buf, size_t count);
     int (*orig_access)(const char *path, int flags);
@@ -146,6 +147,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
     if(packfs_ctx.initialized != 1)
     {
         packfs_ctx.orig_open   = dlsym(RTLD_NEXT, "open");
+        packfs_ctx.orig_openat = dlsym(RTLD_NEXT, "openat");
         packfs_ctx.orig_read   = dlsym(RTLD_NEXT, "read");
         packfs_ctx.orig_access = dlsym(RTLD_NEXT, "access");
         packfs_ctx.orig_lseek  = dlsym(RTLD_NEXT, "lseek");
@@ -614,10 +616,8 @@ int open(const char *path, int flags, ...)
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
-#ifdef PACKFS_LOG
-        fprintf(stderr, "packfs: Open(\"%s\", %d)\n", path, flags);
-#endif
-        FILE* stream = packfs_open(packfs_ctx, path);
+        void* stream = ((flags & O_DIRECTORY) != 0) ? packfs_opendir(packfs_ctx, path) : packfs_open(packfs_ctx, path);
+        //FILE* stream = packfs_open(packfs_ctx, path);
         if(stream != NULL)
         {
             int* ptr = packfs_find(packfs_ctx, -1, stream);
@@ -630,6 +630,30 @@ int open(const char *path, int flags, ...)
     }
     
     int res = packfs_ctx->orig_open(path, flags);
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: open(\"%s\", %d) == %d\n", path, flags, res);
+#endif
+    return res;
+}
+
+int openat(int dirfd, const char *path, int flags, ...)
+{
+    struct packfs_context* packfs_ctx = packfs_ensure_context(path);
+    if(!packfs_ctx->disabled && dirfd == AT_FDCWD)
+    {
+        void* stream = ((flags & O_DIRECTORY) != 0) ? packfs_opendir(packfs_ctx, path) : packfs_open(packfs_ctx, path);
+        if(stream != NULL)
+        {
+            int* ptr = packfs_find(packfs_ctx, -1, stream);
+            int res = ptr == NULL ? -1 : (*ptr);
+#ifdef PACKFS_LOG
+            fprintf(stderr, "packfs: Open(\"%s\", %d) == %d\n", path, flags, res);
+#endif
+            return res;
+        }
+    }
+    
+    int res = packfs_ctx->orig_openat(path, flags);
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: open(\"%s\", %d) == %d\n", path, flags, res);
 #endif
