@@ -15,7 +15,7 @@ jobs:
       
       - name: Test
         run: |
-          zip libarchivepreload.zip libarchivepreload.c
+          zip libarchivepreload.zip libarchivepreload.c .git
           
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
