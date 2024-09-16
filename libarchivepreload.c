@@ -616,7 +616,7 @@ int open(const char *path, int flags, ...)
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
-        void* stream = ((flags & O_DIRECTORY) != 0) ? packfs_opendir(packfs_ctx, path) : packfs_open(packfs_ctx, path);
+        void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(packfs_ctx, path) : (void*)packfs_open(packfs_ctx, path);
         //FILE* stream = packfs_open(packfs_ctx, path);
         if(stream != NULL)
         {
@@ -641,7 +641,7 @@ int openat(int dirfd, const char *path, int flags, ...)
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled && dirfd == AT_FDCWD)
     {
-        void* stream = ((flags & O_DIRECTORY) != 0) ? packfs_opendir(packfs_ctx, path) : packfs_open(packfs_ctx, path);
+        void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(packfs_ctx, path) : (void*)packfs_open(packfs_ctx, path);
         if(stream != NULL)
         {
             int* ptr = packfs_find(packfs_ctx, -1, stream);
@@ -653,9 +653,9 @@ int openat(int dirfd, const char *path, int flags, ...)
         }
     }
     
-    int res = packfs_ctx->orig_openat(path, flags);
+    int res = packfs_ctx->orig_openat(dirfd, path, flags);
 #ifdef PACKFS_LOG
-    fprintf(stderr, "packfs: open(\"%s\", %d) == %d\n", path, flags, res);
+    fprintf(stderr, "packfs: openat(%d, \"%s\", %d) == %d\n", dirfd, path, flags, res);
 #endif
     return res;
 }
