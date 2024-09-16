@@ -42,12 +42,15 @@ archive_read_data_into_FILE(struct archive *a, FILE* f)
 	    ARCHIVE_OK) {
 		const char *p = buff;
 		if (offset > output_offset) {
-			//output_offset = lseek(fd,
-			//    offset - output_offset, SEEK_CUR);
-                        output_offset = fseek(f, 
-                              (off_t)(offset - output_offset), SEEK_CUR); // any problems with off_t being unsufficiently short dtype?
+                        if(fseek(f, 
+                              (long)(offset - output_offset), SEEK_CUR) != 0)
+                        {
+                            archive_set_error(a, errno, "Seek error");
+                            return (ARCHIVE_FATAL);
+                        }
+                        output_offset = (off_t)ftell(f);
 			if (output_offset != offset) {
-				archive_set_error(a, errno, "Seek error");
+				archive_set_error(a, errno, "Seek error: offset does not match the expected value");
 				return (ARCHIVE_FATAL);
 			}
 		}
@@ -55,7 +58,6 @@ archive_read_data_into_FILE(struct archive *a, FILE* f)
 			bytes_to_write = size;
 			if (bytes_to_write > MAX_WRITE)
 				bytes_to_write = MAX_WRITE;
-			//bytes_written = write(fd, p, bytes_to_write);
 			bytes_written = fwrite(p, 1, bytes_to_write, f);
 			if (bytes_written < 0) {
 				archive_set_error(a, errno, "Write error");
@@ -117,28 +119,12 @@ int open_archive_and_extract_entry_to_FILE(const char* pathname, const char* ent
         archive_read_free(a);
 }
 
-// https://github.com/libarchive/libarchive/issues/2295
-// define required for #include <archive_read_private.h>
-#define __LIBARCHIVE_BUILD
-#include <archive_read_private.h>
-void* last_file_buff; size_t last_file_block_size; size_t last_file_offset; archive_read_callback* old_file_read; archive_seek_callback* old_file_seek;
-static ssize_t new_file_read(struct archive *a, void *client_data, const void **buff)
-{
-    // struct read_file_data copied from https://github.com/libarchive/libarchive/blob/master/libarchive/archive_read_open_filename.c
-    struct read_file_data {int fd; size_t block_size; void* buffer;} *mine = client_data;
-    last_file_buff = mine->buffer;
-    last_file_block_size = mine->block_size;
-    last_file_offset = old_file_seek(a, client_data, 0, SEEK_CUR);
-    return old_file_read(a, client_data, buff);
-}
-
 enum
 {
     packfs_filefd_min = 1000000000, 
     packfs_filefd_max = 1000001000, 
     packfs_entries_name_maxlen = 128, 
     packfs_archive_entries_nummax = 1024,  
-    packfs_archive_use_mmap = 0,
     packfs_pathsep = '/'
 };
 struct packfs_context
@@ -168,8 +154,7 @@ struct packfs_context
     size_t packfs_archive_entries_num;
     char packfs_archive_prefix[packfs_entries_name_maxlen];
     void* packfs_archive_fileptr;
-    size_t packfs_archive_mmapsize;
-    size_t packfs_archive_entries_names_lens[packfs_archive_entries_nummax], packfs_archive_offsets[packfs_archive_entries_nummax], packfs_archive_sizes[packfs_archive_entries_nummax];
+    size_t packfs_archive_entries_names_lens[packfs_archive_entries_nummax], packfs_archive_sizes[packfs_archive_entries_nummax];
     char packfs_archive_entries_names[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
     int packfs_archive_entries_isdir[packfs_archive_entries_nummax];
 };
@@ -245,7 +230,6 @@ int packfs_indir(const char* dir_path, const char* path)
     return 0;
 }
 
-
 struct packfs_context* packfs_ensure_context(const char* path)
 {
     static struct packfs_context packfs_ctx = {0};
@@ -269,8 +253,6 @@ struct packfs_context* packfs_ensure_context(const char* path)
         
         strcpy(packfs_ctx.packfs_archive_prefix, "");
         packfs_ctx.packfs_archive_entries_num = 0;
-        packfs_ctx.packfs_archive_mmapsize = 0;
-        packfs_ctx.packfs_archive_fileptr = NULL;
         
         packfs_ctx.initialized = 1;
         packfs_ctx.disabled = 1;
@@ -315,40 +297,18 @@ struct packfs_context* packfs_ensure_context(const char* path)
             if( packfs_archive_filename == NULL || 0 == strlen(packfs_archive_filename) )// || 0 == strncmp(packfs_ctx.packfs_archive_prefix, packfs_archive_filename, strlen(packfs_ctx.packfs_archive_prefix)))
                 break;
             
-            int fd = open(packfs_archive_filename, O_RDONLY);
-            struct stat statbufobj = {0}; 
-            if(fd >= 0 && fstat(fd, &statbufobj) >= 0)
-            {
-                if(packfs_archive_use_mmap)
-                {
-                    packfs_ctx.packfs_archive_mmapsize = statbufobj.st_size;
-                    packfs_ctx.packfs_archive_fileptr = mmap(NULL, packfs_ctx.packfs_archive_mmapsize, PROT_READ, MAP_PRIVATE, fd, 0);
-                }
-                else
-                {
-                    packfs_ctx.packfs_archive_mmapsize = 0;
-                    packfs_ctx.packfs_archive_fileptr = fopen(packfs_archive_filename, "rb");
-                }
-            }
-            close(fd);
-
-            if(packfs_ctx.packfs_archive_fileptr == NULL)
-                break;
-
             if(archive_read_open_filename(a, packfs_archive_filename, 10240) != ARCHIVE_OK)
                 break;
             
-            // struct archive_read in https://github.com/libarchive/libarchive/blob/master/libarchive/archive_read_private.h
-            struct archive_read *_a = ((struct archive_read *)a);
-            old_file_read = _a->client.reader;
-            old_file_seek = _a->client.seeker;
-            a->state = ARCHIVE_STATE_NEW;
-            archive_read_set_read_callback(a, new_file_read);
-
-            if(archive_read_open1(a) != ARCHIVE_OK)
-                break;
+            //if(archive_read_open1(a) != ARCHIVE_OK)
+            //    break;
             
-            for(size_t entrynames_lens_total = 0; ;)
+            strcpy(packfs_ctx.packfs_archive_entries_names, "");
+            packfs_ctx.packfs_archive_entries_names_lens[packfs_ctx.packfs_archive_entries_num] = 0;
+            packfs_ctx.packfs_archive_entries_isdir[packfs_ctx.packfs_archive_entries_num] = 1;
+            packfs_ctx.packfs_archive_entries_num++;
+            
+            for(size_t entrynames_lens_total = 1; ;)
             {
                 int r = archive_read_next_header(a, &entry);
                 if (r == ARCHIVE_EOF)
@@ -356,33 +316,16 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 if (r != ARCHIVE_OK)
                     break; //fprintf(stderr, "%s\n", archive_error_string(a));
                     
-                strcpy(packfs_ctx.packfs_archive_entries_names + entrynames_lens_total, "");
-                entrynames_lens_total++;
-                packfs_ctx.packfs_archive_entries_names_lens[packfs_ctx.packfs_archive_entries_num] = 0;
-                packfs_ctx.packfs_archive_entries_isdir[packfs_ctx.packfs_archive_entries_num] = 1;
-                packfs_ctx.packfs_archive_entries_num++;
-
-                const void* firstblock_buff;
-                size_t firstblock_len;
-                int64_t firstblock_offset;
-                r = archive_read_data_block(a, &firstblock_buff, &firstblock_len, &firstblock_offset);
                 int filetype = archive_entry_filetype(entry);
                 const char* entryname = archive_entry_pathname(entry);
-                
-                int isuncompressedentry = filetype == AE_IFREG && archive_entry_size_is_set(entry) != 0 && last_file_buff != NULL && last_file_buff <= firstblock_buff && firstblock_buff < last_file_buff + last_file_block_size;
-                int isdir = filetype == AE_IFDIR;
                 size_t entry_byte_size = (size_t)archive_entry_size(entry);
-                size_t entry_byte_offset = isuncompressedentry ? (last_file_offset + (size_t)(firstblock_buff - last_file_buff)):0;
-                if(isuncompressedentry || isdir)
-                {
-                    strcpy(packfs_ctx.packfs_archive_entries_names + entrynames_lens_total, entryname);
-                    entrynames_lens_total += packfs_ctx.packfs_archive_entries_names_lens[packfs_ctx.packfs_archive_entries_num] + 1;
-                    packfs_ctx.packfs_archive_entries_names_lens[packfs_ctx.packfs_archive_entries_num] = strlen(entryname);
-                    packfs_ctx.packfs_archive_entries_isdir[packfs_ctx.packfs_archive_entries_num] = isdir;
-                    packfs_ctx.packfs_archive_offsets[packfs_ctx.packfs_archive_entries_num] = entry_byte_offset;
-                    packfs_ctx.packfs_archive_sizes[packfs_ctx.packfs_archive_entries_num] = entry_byte_size;
-                    packfs_ctx.packfs_archive_entries_num++;
-                }
+                
+                strcpy(packfs_ctx.packfs_archive_entries_names + entrynames_lens_total, entryname);
+                entrynames_lens_total += packfs_ctx.packfs_archive_entries_names_lens[packfs_ctx.packfs_archive_entries_num] + 1;
+                packfs_ctx.packfs_archive_entries_names_lens[packfs_ctx.packfs_archive_entries_num] = strlen(entryname);
+                packfs_ctx.packfs_archive_entries_isdir[packfs_ctx.packfs_archive_entries_num] = filetype == AE_IFDIR;
+                packfs_ctx.packfs_archive_sizes[packfs_ctx.packfs_archive_entries_num] = entry_byte_size;
+                packfs_ctx.packfs_archive_entries_num++;
                     
                 r = archive_read_data_skip(a);
                 if (r == ARCHIVE_EOF)
@@ -489,23 +432,9 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
             if(0 == strcmp(entry_path, path_without_prefix))
             {
                 filesize = packfs_ctx->packfs_archive_sizes[i];
-                size_t offset = packfs_ctx->packfs_archive_offsets[i];
-                if(packfs_ctx->packfs_archive_mmapsize != 0)
-                {
-                    fileptr = fmemopen((char*)packfs_ctx->packfs_archive_fileptr + offset, filesize, "rb");
-                }
-                else
-                {
-                    fileptr = fmemopen(NULL, filesize, "rb+");
-                    fseek((FILE*)packfs_ctx->packfs_archive_fileptr, offset, SEEK_SET);
-                    char buf[8192];
-                    for(size_t size = filesize, len = 0; size > 0; size -= len)
-                    {
-                        len = fread(buf, 1, sizeof(buf) <= size ? sizeof(buf) : size, (FILE*)packfs_ctx->packfs_archive_fileptr);
-                        fwrite(buf, 1, len, fileptr);
-                    }
-                    fseek(fileptr, 0, SEEK_SET);
-                }
+                fileptr = fmemopen(NULL, filesize, "rb+");
+                open_archive_and_extract_entry_to_FILE(packfs_ctx->packfs_archive_prefix, entry_path, fileptr);
+                fseek(fileptr, 0, SEEK_SET);
                 break;
             }
         }
