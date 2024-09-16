@@ -4,17 +4,16 @@ Demo of abusing https://github.com/libarchive/libarchive to make `LD_PRELOAD`-ba
 ```shell
 cc -shared -fPIC libarchivepreload.c -o libarchivepreload.so -ldl libarchive/.libs/libarchive.a  -Llibarchive/.libs -Ilibarchive -Ilibarchive/libarchive #-DPACKFS_LOG 
 
-zip libarchivepreload.zip libarchivepreload.c
+zip -r libarchivepreload.zip libarchivepreload.c .git
 
-LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/
-LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
-LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
+LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/
+LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
+LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
 
-# TODO: figure out how to build .so with static zlib, maybe need to rebuild a static zlib with fPIC?
 LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
 
 # not supported because it uses fstatat with a non-trivial dirfd
-#LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
+#LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
 ```
 
 # Limitations
