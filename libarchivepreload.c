@@ -800,7 +800,7 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
         if(res >= -1)
         {
 #ifdef PACKFS_LOG
-            fprintf(stderr, "packfs: Fstat(%d, \"%s\", %p, %d) == %d\n", dirfd, path, (void*)statbuf, flags, res);
+            fprintf(stderr, "packfs: Fstat(%d, \"%s\", %p, %d) == %d. ISDIR: %zu\n", dirfd, path, (void*)statbuf, flags, res, isdir);
 #endif
             return res;
         }
