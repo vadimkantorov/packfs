@@ -15,7 +15,7 @@ jobs:
       
       - name: Test
         run: |
-          zip libarchivepreload.zip libarchivepreload.c .git
+          zip -r libarchivepreload.zip libarchivepreload.c .git
           
           # TODO: figure out how to build .so with static zlib, maybe need to fix up fPIC relocation?
 
