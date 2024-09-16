@@ -17,14 +17,11 @@ jobs:
         run: |
           zip -0 libarchivepreload.zip libarchivepreload.c
           
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
           
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
           
-          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
-          #LD_PRELOAD=$PWD/libarchivepreload.so strace -f /usr/bin/find libarchivepreload.zip
-          
-          #strace -f /usr/bin/find libarchivepreload.zip
-          #LD_PRELOAD=$PWD/libarchivepreload.so strace -f /usr/bin/find libarchivepreload.zip
+          # not supported because it uses non-trivial fstatat
+          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
