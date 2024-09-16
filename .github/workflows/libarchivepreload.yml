@@ -25,5 +25,5 @@ jobs:
           
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
           
-          strace -f /usr/bin/find libarchivepreload.zip
-          LD_PRELOAD=$PWD/libarchivepreload.so strace -f /usr/bin/find libarchivepreload.zip
+          #strace -f /usr/bin/find libarchivepreload.zip
+          #LD_PRELOAD=$PWD/libarchivepreload.so strace -f /usr/bin/find libarchivepreload.zip
