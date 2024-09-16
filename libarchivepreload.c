@@ -283,6 +283,11 @@ struct packfs_context* packfs_ensure_context(const char* path)
             fprintf(stderr, "packfs: prefix: \"%s\" ( \"%s\" )\n", packfs_archive_filename, path);
 #endif
         }
+
+        packfs_ctx.disabled = (packfs_archive_filename != NULL && strlen(packfs_archive_filename) > 0) ? 0 : 1;
+#ifdef PACKFS_LOG 
+        fprintf(stderr, "packfs: disabled: %d, \"%s\", prefix: \"%s\"\n", packfs_ctx.disabled, packfs_archive_filename, packfs_ctx.packfs_archive_prefix);
+#endif
         
         struct archive *a = archive_read_new();
         archive_read_support_format_tar(a);
@@ -339,11 +344,6 @@ struct packfs_context* packfs_ensure_context(const char* path)
 #ifdef PACKFS_LOG
             for(size_t i = 0, packfs_archive_entries_names_offset = 0; i < packfs_ctx.packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx.packfs_archive_entries_names_lens[i] + 1), i++)
                 fprintf(stderr, "packfs: %s: %s\n", packfs_archive_filename, packfs_ctx.packfs_archive_entries_names + packfs_archive_entries_names_offset);
-#endif
-
-            packfs_ctx.disabled = (packfs_archive_filename != NULL && strlen(packfs_archive_filename) > 0) ? 0 : 1;
-#ifdef PACKFS_LOG 
-            fprintf(stderr, "packfs: disabled: %d, \"%s\", prefix: \"%s\"\n", packfs_ctx.disabled, packfs_archive_filename, packfs_ctx.packfs_archive_prefix);
 #endif
         }
         while(0);
