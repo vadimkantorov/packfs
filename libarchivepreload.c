@@ -26,15 +26,6 @@ enum
     packfs_pathsep = '/'
 };
 
-struct archive* packfs_archive_read_new()
-{
-    struct archive *a = archive_read_new();
-    archive_read_support_format_tar(a);
-    archive_read_support_format_iso9660(a);
-    archive_read_support_format_zip(a);
-    return a;
-}
-
 struct packfs_context
 {
     int initialized, disabled;
@@ -46,6 +37,7 @@ struct packfs_context
     off_t (*orig_lseek)(int fd, off_t offset, int whence);
     int (*orig_stat)(const char *restrict path, struct stat *restrict statbuf);
     int (*orig_fstat)(int fd, struct stat * statbuf);
+    int (*orig_fstatat)(int dirfd, const char* path, struct stat * statbuf, int flags);
     int (*orig_statx)(int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statbuf);
     FILE* (*orig_fopen)(const char *path, const char *mode);
     int (*orig_fclose)(FILE* stream);
@@ -100,9 +92,18 @@ const char* packfs_lstrip_prefix(const char* path, const char* prefix)
     return NULL;
 }
 
+struct archive* packfs_archive_read_new()
+{
+    struct archive *a = archive_read_new();
+    archive_read_support_format_tar(a);
+    archive_read_support_format_iso9660(a);
+    archive_read_support_format_zip(a);
+    return a;
+}
+
 size_t packfs_archive_prefix_extract(const char* path)
 {
-    const char* packfs_archive_suffixes[] = {".tar", ".zip", ".iso"};
+    const char* packfs_archive_suffixes[] = {".tar", ".iso", ".zip"};
     
     if(path == NULL)
         return 0;
@@ -150,6 +151,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         packfs_ctx.orig_lseek  = dlsym(RTLD_NEXT, "lseek");
         packfs_ctx.orig_stat   = dlsym(RTLD_NEXT, "stat");
         packfs_ctx.orig_fstat  = dlsym(RTLD_NEXT, "fstat");
+        packfs_ctx.orig_fstatat= dlsym(RTLD_NEXT, "fstatat");
         packfs_ctx.orig_statx  = dlsym(RTLD_NEXT, "statx");
         packfs_ctx.orig_close  = dlsym(RTLD_NEXT, "close");
         packfs_ctx.orig_opendir= dlsym(RTLD_NEXT, "opendir");
@@ -778,6 +780,35 @@ int fstat(int fd, struct stat * statbuf)
     int res = packfs_ctx->orig_fstat(fd, statbuf);
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: fstat(%d, %p) == %d\n", fd, (void*)statbuf, res);
+#endif
+    return res;
+}
+
+int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
+{
+    struct packfs_context* packfs_ctx = packfs_ensure_context(path);
+    if(!packfs_ctx->disabled && dirfd == AT_FDCWD)
+    {
+        *statbuf = (struct stat){0};
+        size_t size, isdir;
+        int res = packfs_stat(packfs_ctx, path, -1, &isdir, &size);
+        if(res == 0)
+        {
+            statbuf->st_mode = isdir ? S_IFDIR : S_IFREG;
+            statbuf->st_size = size;
+        }
+        if(res >= -1)
+        {
+#ifdef PACKFS_LOG
+            fprintf(stderr, "packfs: Fstat(%d, \"%s\", %p, %d) == %d\n", dirfd, path, (void*)statbuf, flags, res);
+#endif
+            return res;
+        }
+    }
+    
+    int res = packfs_ctx->orig_fstatat(dirfd, path, statbuf, flags);
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: fstat(%d, \"%s\", %p, %d) == %d\n", dirfd, path, (void*)statbuf, flags, res);
 #endif
     return res;
 }
