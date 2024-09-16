@@ -29,3 +29,17 @@ LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ca
 - https://git.busybox.net/busybox/tree/coreutils/cat.c
 - https://git.musl-libc.org/cgit/musl/tree/src/dirent/opendir.c
 - https://git.musl-libc.org/cgit/musl/tree/src/dirent/readdir.c
+
+- https://stackoverflow.com/questions/77100299/implementing-a-simple-version-of-readdir-with-system-call
+- https://stackoverflow.com/questions/74890409/what-happens-in-c-function-readdir-from-dirent-h
+- https://stackoverflow.com/questions/24103009/is-it-possible-to-implement-readdir-in-ubuntu-12-10-kernel-3-5
+- https://unix.stackexchange.com/questions/625899/correctly-implementing-seeking-in-fuse-readdir-operation
+- https://github.com/facebook/sapling/blob/5cc682e8ff24ef182be2dbe07e484396539e80f4/eden/fs/inodes/TreeInode.cpp#L1798-L1833- https://github.com/facebook/sapling/blob/main/eden/fs/docs/InodeLifetime.md
+- https://lwn.net/Articles/544520/
+- https://lwn.net/Articles/544298/
+- https://github.com/TheAssassin/AppImageLauncher/issues/361
+- https://github.com/sholtrop/ldpfuse/
+- https://github.com/google/fuse-archive/blob/main/src/main.cc
+- https://superuser.com/questions/1601311/fuse-fs-without-root-privileges-e-g-a-ld-preload-gateway-or-a-proot-plugin
+- https://theses.liacs.nl/pdf/2021-2022-HoltropS.pdf
+- https://github.com/fritzw/ld-preload-open
