@@ -241,7 +241,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 const char* entryname = archive_entry_pathname(entry);
                 size_t entryname_len = strlen(entryname);
                 
-                if(entryname_len > 0 && entryname[entryname_len - 1] == packfs_sep)
+                if(entryname_len > 0 && entryname[entryname_len - 1] == packfs_pathsep)
                     entryname_len--;
                 strncpy(packfs_ctx.packfs_archive_entries_names + entrynames_lens_total, entryname, entryname_len);
                 packfs_ctx.packfs_archive_entries_names_lens[packfs_ctx.packfs_archive_entries_num] = entryname_len;
