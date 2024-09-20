@@ -927,7 +927,7 @@ DIR* fdopendir(int dirfd)
         if(stream != NULL)
         {
 #ifdef PACKFS_LOG
-            fprintf(stderr, "packfs: Fdpendir(%d) == %p\n", dirfd, (void*)stream);
+            fprintf(stderr, "packfs: Fdopendir(%d) == %p\n", dirfd, (void*)stream);
 #endif
             return stream;
         }
