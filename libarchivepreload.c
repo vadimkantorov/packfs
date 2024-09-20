@@ -47,6 +47,7 @@ struct packfs_context
     DIR* (*orig_fdopendir)(int dirfd);
     struct dirent* (*orig_readdir)(DIR *dirp);
     int (*orig_closedir)(DIR *dirp);
+    int (*orig_fcntl)(int fd, int action, ...);
     
     int packfs_filefd     [packfs_filefd_max - packfs_filefd_min];
     int packfs_fileisdir  [packfs_filefd_max - packfs_filefd_min];
@@ -164,6 +165,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         packfs_ctx.orig_fopen  = dlsym(RTLD_NEXT, "fopen");
         packfs_ctx.orig_fileno = dlsym(RTLD_NEXT, "fileno");
         packfs_ctx.orig_fclose = dlsym(RTLD_NEXT, "fclose");
+        packfs_ctx.orig_fcntl  = dlsym(RTLD_NEXT, "fcntl");
         
         strcpy(packfs_ctx.packfs_archive_prefix, "");
         packfs_ctx.packfs_archive_entries_num = 0;
@@ -941,7 +943,6 @@ DIR* fdopendir(int dirfd)
     return res;
 }
 
-
 struct dirent* readdir(DIR* stream)
 {
 #ifdef PACKFS_LOG
@@ -986,4 +987,25 @@ int closedir(DIR* stream)
 #endif
     
     return res;
+}
+
+/*
+int fcntl(int fd, int action, ...)
+{
+    struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
+    
+    if(!packfs_ctx->disabled)
+    {
+    }
+    
+    int res = packfs_ctx->orig_fcntl(fd, action);
+    return res;
+}
+*/
+
+int dup_cloexec (dirfd)
+{
+    if(dirfd < packfs_filefd_min || dirfd >= packfs_filefd_max)
+        return fcntl (dirfd, F_DUPFD_CLOEXEC, 0);
+    return dirfd;
 }
