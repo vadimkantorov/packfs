@@ -915,6 +915,7 @@ DIR* opendir(const char *path)
     return res;
 }
 
+/*
 DIR* fdopendir(int dirfd)
 {
 #ifdef PACKFS_LOG
@@ -939,6 +940,7 @@ DIR* fdopendir(int dirfd)
 #endif
     return res;
 }
+*/
 
 struct dirent* readdir(DIR* stream)
 {
