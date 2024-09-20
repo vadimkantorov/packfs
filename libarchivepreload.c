@@ -438,9 +438,6 @@ int packfs_close(struct packfs_context* packfs_ctx, int fd)
 
     for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
     {
-#ifdef PACKFS_LOG
-        fprintf(stderr, "packfs: close: %d %d\n", fd, packfs_ctx->packfs_filefd[k]);
-#endif
         if(packfs_ctx->packfs_filefd[k] == fd)
         {
             int res = (!packfs_ctx->packfs_fileisdir[k]) ? packfs_ctx->orig_fclose(packfs_ctx->packfs_fileptr[k]) : 0;
