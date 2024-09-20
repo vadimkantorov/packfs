@@ -1001,10 +1001,13 @@ int fcntl(int fd, int action, ...)
     if(!packfs_ctx->disabled)
     {
         int res = packfs_fcntl(packfs_ctx, fd, action);
+        if(res >= -1)
+        {
 #ifdef PACKFS_LOG
-        fprintf(stderr, "packfs: Fcntl(%d, %d, ...) == %d\n", fd, action, res);
+            fprintf(stderr, "packfs: Fcntl(%d, %d, ...) == %d\n", fd, action, res);
 #endif
-        return res;
+            return res;
+        }
     }
     
     int res = packfs_ctx->orig_fcntl(fd, action);
