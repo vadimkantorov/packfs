@@ -831,7 +831,7 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
             path = buf;
         }
 #ifdef PACKFS_LOG
-        fprintf(stderr, "packfs: Fstatat: %s\n", path);
+        fprintf(stderr, "packfs: Fstatat: %d / %s\n", dirfd, path);
 #endif
 
         *statbuf = (struct stat){0};
@@ -844,7 +844,7 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
         }
 
 #ifdef PACKFS_LOG
-        fprintf(stderr, "packfs: Fstat(%d, \"%s\", %p, %d) == %d. ISDIR: %zu\n", dirfd, path, (void*)statbuf, flags, res, isdir);
+        fprintf(stderr, "packfs: Fstatat(%d, \"%s\", %p, %d) == %d. ISDIR: %zu\n", dirfd, path, (void*)statbuf, flags, res, isdir);
 #endif
         if(res >= -1)
         {
@@ -854,7 +854,7 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
     
     int res = packfs_ctx->orig_fstatat(dirfd, path, statbuf, flags);
 #ifdef PACKFS_LOG
-    fprintf(stderr, "packfs: fstat(%d, \"%s\", %p, %d) == %d\n", dirfd, path, (void*)statbuf, flags, res);
+    fprintf(stderr, "packfs: fstatat(%d, \"%s\", %p, %d) == %d\n", dirfd, path, (void*)statbuf, flags, res);
 #endif
     return res;
 }
