@@ -820,6 +820,9 @@ int fstat(int fd, struct stat * statbuf)
 
 int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
 {
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: Fstatat enter: %d / %s\n", dirfd, path);
+#endif
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
