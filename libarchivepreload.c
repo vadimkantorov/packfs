@@ -942,6 +942,9 @@ DIR* fdopendir(int dirfd)
 
 struct dirent* readdir(DIR* stream)
 {
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: Readdir enter: %p\n", (void*)stream);
+#endif
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     if(!packfs_ctx->disabled)
     {
