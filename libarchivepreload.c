@@ -267,9 +267,9 @@ struct packfs_context* packfs_ensure_context(const char* path)
 
 struct packfs_dir
 {
+    struct dirent entry;
     char dir_entry_name[packfs_entries_name_maxlen];
     size_t entry_index;
-    struct dirent entry;
 };
 
 struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, struct packfs_dir* stream)
@@ -641,8 +641,16 @@ int open(const char *path, int flags, ...)
 int openat(int dirfd, const char *path, int flags, ...)
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
-    if(!packfs_ctx->disabled && dirfd == AT_FDCWD)
+    if(!packfs_ctx->disabled)
     {
+        struct packfs_dir* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
+        char buf[2 * packfs_entries_name_maxlen] = "";
+        if(ptr != NULL)
+        {
+            snprintf(buf, strlen(buf), "%s%c%s", ptr->dir_entry_name, (char)packfs_pathsep, path);
+            path = buf;
+        }
+        
         void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(packfs_ctx, path) : (void*)packfs_open(packfs_ctx, path);
         if(stream != NULL)
         {
@@ -813,8 +821,16 @@ int fstat(int fd, struct stat * statbuf)
 int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
-    if(!packfs_ctx->disabled && dirfd == AT_FDCWD)
+    if(!packfs_ctx->disabled)
     {
+        struct packfs_dir* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
+        char buf[2 * packfs_entries_name_maxlen] = "";
+        if(ptr != NULL)
+        {
+            snprintf(buf, strlen(buf), "%s%c%s", ptr->dir_entry_name, (char)packfs_pathsep, path);
+            path = buf;
+        }
+
         *statbuf = (struct stat){0};
         size_t size, isdir;
         int res = packfs_stat(packfs_ctx, path, -1, &isdir, &size);
