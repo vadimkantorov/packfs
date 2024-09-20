@@ -19,13 +19,12 @@ jobs:
           
           # TODO: figure out how to build .so with static zlib, maybe need to fix up fPIC relocation?
 
-          LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/
-          LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
-          LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
+          #LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/
+          #LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
+          #LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
+          #LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
           
-          LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
-          
-          LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
+          LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so strace -f /usr/bin/find libarchivepreload.zip
        
       - name: Artifacts
         uses: actions/upload-artifact@v4
