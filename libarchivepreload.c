@@ -1003,9 +1003,10 @@ int fcntl(int fd, int action, ...)
 }
 */
 
-int dup_cloexec (dirfd)
+int dup_cloexec(int dirfd)
 {
     if(dirfd < packfs_filefd_min || dirfd >= packfs_filefd_max)
         return fcntl (dirfd, F_DUPFD_CLOEXEC, 0);
+
     return dirfd;
 }
