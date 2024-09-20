@@ -432,6 +432,10 @@ int packfs_close(struct packfs_context* packfs_ctx, int fd)
     if(fd < packfs_filefd_min || fd >= packfs_filefd_max)
         return -2;
 
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: closing: %d\n", fd);
+#endif
+
     for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
     {
 #ifdef PACKFS_LOG
@@ -450,7 +454,7 @@ int packfs_close(struct packfs_context* packfs_ctx, int fd)
             return res;
         }
     }
-    return -2;
+    return -1;
 }
 
 void* packfs_find(struct packfs_context* packfs_ctx, int fd, void* ptr)
