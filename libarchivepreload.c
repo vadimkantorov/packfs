@@ -657,7 +657,7 @@ int openat(int dirfd, const char *path, int flags, ...)
             int* ptr = packfs_find(packfs_ctx, -1, stream);
             int res = ptr == NULL ? -1 : (*ptr);
 #ifdef PACKFS_LOG
-            fprintf(stderr, "packfs: Openat(\"%s\", %d) == %d\n", path, flags, res);
+            fprintf(stderr, "packfs: Openat(%d, \"%s\", %d) == %d\n", dirfd, path, flags, res);
 #endif
             return res;
         }
