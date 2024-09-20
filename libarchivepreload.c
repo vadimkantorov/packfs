@@ -44,6 +44,7 @@ struct packfs_context
     int (*orig_fclose)(FILE* stream);
     int (*orig_fileno)(FILE* stream);
     DIR* (*orig_opendir)(const char *path);
+    DIR* (*orig_fdopendir)(int dirfd);
     struct dirent* (*orig_readdir)(DIR *dirp);
     int (*orig_closedir)(DIR *dirp);
     
@@ -157,6 +158,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         packfs_ctx.orig_statx  = dlsym(RTLD_NEXT, "statx");
         packfs_ctx.orig_close  = dlsym(RTLD_NEXT, "close");
         packfs_ctx.orig_opendir= dlsym(RTLD_NEXT, "opendir");
+        packfs_ctx.orig_fdopendir=dlsym(RTLD_NEXT, "fdopendir");
         packfs_ctx.orig_readdir= dlsym(RTLD_NEXT, "readdir");
         packfs_ctx.orig_closedir=dlsym(RTLD_NEXT, "closedir");
         packfs_ctx.orig_fopen  = dlsym(RTLD_NEXT, "fopen");
@@ -909,6 +911,31 @@ DIR* opendir(const char *path)
     DIR* res = packfs_ctx->orig_opendir(path);
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: opendir(\"%s\") == %p\n", path, (void*)res);
+#endif
+    return res;
+}
+
+DIR* fdopendir(int dirfd)
+{
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: Fdopendir enter: %d\n", dirfd);
+#endif
+    struct packfs_context* packfs_ctx = packfs_ensure_context(path);
+    if(!packfs_ctx->disabled)
+    {
+        DIR* stream = packfs_find(packfs_ctx, dirfd, NULL);
+        if(stream != NULL)
+        {
+#ifdef PACKFS_LOG
+            fprintf(stderr, "packfs: Fdpendir(%d) == %p\n", dirfd, (void*)stream);
+#endif
+            return stream;
+        }
+    }
+    
+    DIR* res = packfs_ctx->orig_fdopendir(dirfd);
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: fdopendir(%d) == %p\n", dirfd, (void*)res);
 #endif
     return res;
 }
