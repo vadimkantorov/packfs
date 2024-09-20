@@ -237,11 +237,14 @@ struct packfs_context* packfs_ensure_context(const char* path)
                     break; //fprintf(stderr, "%s\n", archive_error_string(a));
                     
                 int filetype = archive_entry_filetype(entry);
-                const char* entryname = archive_entry_pathname(entry);
                 size_t entry_byte_size = (size_t)archive_entry_size(entry);
+                const char* entryname = archive_entry_pathname(entry);
+                size_t entryname_len = strlen(entryname);
                 
-                strcpy(packfs_ctx.packfs_archive_entries_names + entrynames_lens_total, entryname);
-                packfs_ctx.packfs_archive_entries_names_lens[packfs_ctx.packfs_archive_entries_num] = strlen(entryname);
+                if(entryname_len > 0 && entryname[entryname_len - 1] == packfs_sep)
+                    entryname_len--;
+                strncpy(packfs_ctx.packfs_archive_entries_names + entrynames_lens_total, entryname, entryname_len);
+                packfs_ctx.packfs_archive_entries_names_lens[packfs_ctx.packfs_archive_entries_num] = entryname_len;
                 
                 packfs_ctx.packfs_archive_entries_isdir[packfs_ctx.packfs_archive_entries_num] = filetype == AE_IFDIR;
                 packfs_ctx.packfs_archive_sizes[packfs_ctx.packfs_archive_entries_num] = entry_byte_size;
