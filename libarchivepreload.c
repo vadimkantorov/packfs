@@ -989,24 +989,27 @@ int closedir(DIR* stream)
     return res;
 }
 
-/*
+int packfs_fcntl(struct packfs_context* packfs_ctx, int fd, int action)
+{
+    return fd;
+}
+
 int fcntl(int fd, int action, ...)
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     
     if(!packfs_ctx->disabled)
     {
+        int res = packfs_fcntl(packfs_ctx, fd, action);
+#ifdef PACKFS_LOG
+        fprintf(stderr, "packfs: Fcntl(%d, %d, ...) == %d\n", fd, action, res);
+#endif
+        return res;
     }
     
     int res = packfs_ctx->orig_fcntl(fd, action);
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: fcntl(%d, %d, ...) == %d\n", fd, action, res);
+#endif
     return res;
-}
-*/
-
-int dup_cloexec(int dirfd)
-{
-    if(dirfd < packfs_filefd_min || dirfd >= packfs_filefd_max)
-        return fcntl (dirfd, F_DUPFD_CLOEXEC, 0);
-
-    return dirfd;
 }
