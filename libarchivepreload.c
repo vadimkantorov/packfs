@@ -791,6 +791,9 @@ int stat(const char *restrict path, struct stat *restrict statbuf)
 
 int fstat(int fd, struct stat * statbuf)
 {
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: Fstat enter: %d\n", fd);
+#endif
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     if(!packfs_ctx->disabled)
     {
