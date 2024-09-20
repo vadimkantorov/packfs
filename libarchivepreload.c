@@ -920,7 +920,7 @@ DIR* fdopendir(int dirfd)
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: Fdopendir enter: %d\n", dirfd);
 #endif
-    struct packfs_context* packfs_ctx = packfs_ensure_context(path);
+    struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     if(!packfs_ctx->disabled)
     {
         DIR* stream = packfs_find(packfs_ctx, dirfd, NULL);
