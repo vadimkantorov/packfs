@@ -830,6 +830,9 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
             snprintf(buf, strlen(buf), "%s%c%s", ptr->dir_entry_name, (char)packfs_pathsep, path);
             path = buf;
         }
+#ifdef PACKFS_LOG
+        fprintf(stderr, "packfs: Fstatat: %s\n", path);
+#endif
 
         *statbuf = (struct stat){0};
         size_t size, isdir;
@@ -839,11 +842,12 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
             statbuf->st_mode = isdir ? S_IFDIR : S_IFREG;
             statbuf->st_size = size;
         }
+
+#ifdef PACKFS_LOG
+        fprintf(stderr, "packfs: Fstat(%d, \"%s\", %p, %d) == %d. ISDIR: %zu\n", dirfd, path, (void*)statbuf, flags, res, isdir);
+#endif
         if(res >= -1)
         {
-#ifdef PACKFS_LOG
-            fprintf(stderr, "packfs: Fstat(%d, \"%s\", %p, %d) == %d. ISDIR: %zu\n", dirfd, path, (void*)statbuf, flags, res, isdir);
-#endif
             return res;
         }
     }
