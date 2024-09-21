@@ -71,9 +71,10 @@ void packfs_join_path(char* dest, const char* archive_prefix, const char* dirpat
 {
     if(strlen(dirpath) > 0)
         sprintf(dest, "%s%c%s%c%s", archive_prefix, (char)packfs_pathsep, dirpath, (char)packfs_pathsep, path);
-    else
+    else if(0 == strcmp(archive_prefix, path))
         strcpy(dest, path);
-        //sprintf(dest, "%s%c%s", archive_prefix, (char)packfs_pathsep, path);
+    else
+        sprintf(dest, "%s%c%s", archive_prefix, (char)packfs_pathsep, path);
 }
 
 const char* packfs_basename(const char* path)
