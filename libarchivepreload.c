@@ -893,7 +893,7 @@ int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, st
     if(!packfs_ctx->disabled)
     {
         size_t size, isdir, d_ino;
-        int res = packfs_stat(packfs_ctx, path, -1, &isdir, &size);
+        int res = packfs_stat(packfs_ctx, path, -1, &isdir, &size, &d_ino);
         if(res == 0)
         {
             *statbuf = (struct statx){0};
