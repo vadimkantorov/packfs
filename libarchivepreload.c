@@ -530,7 +530,7 @@ int packfs_access(struct packfs_context* packfs_ctx, const char* path)
     return -2;
 }
 
-int packfs_stat(struct packfs_context* packfs_ctx, const char* path, int fd, size_t* isdir, size_t* size)
+int packfs_stat(struct packfs_context* packfs_ctx, const char* path, int fd, size_t* isdir, size_t* size, size_t* d_ino)
 {
     path = packfs_sanitize_path(path);
     const char* path_without_prefix = packfs_lstrip_prefix(path, packfs_ctx->packfs_archive_prefix);
@@ -547,6 +547,7 @@ int packfs_stat(struct packfs_context* packfs_ctx, const char* path, int fd, siz
             {
                 *size = packfs_ctx->packfs_archive_sizes[i];
                 *isdir = packfs_ctx->packfs_archive_entries_isdir[i];
+                *d_ino = i;
                 return 0;
             }
         }
@@ -788,12 +789,13 @@ int stat(const char *restrict path, struct stat *restrict statbuf)
     if(!packfs_ctx->disabled)
     {
         *statbuf = (struct stat){0};
-        size_t size, isdir;
-        int res = packfs_stat(packfs_ctx, path, -1, &isdir, &size);
+        size_t size, isdir, d_ino;
+        int res = packfs_stat(packfs_ctx, path, -1, &isdir, &size, &d_ino);
         if(res == 0)
         {
             statbuf->st_mode = isdir ? S_IFDIR : S_IFREG;
             statbuf->st_size = size;
+            statbuf->st_ino = (ino_t)d_ino;
         }
         if(res >= -1)
         {
@@ -820,12 +822,13 @@ int fstat(int fd, struct stat * statbuf)
     if(!packfs_ctx->disabled)
     {
         *statbuf = (struct stat){0};
-        size_t size, isdir;
-        int res = packfs_stat(packfs_ctx, NULL, fd, &isdir, &size);
+        size_t size, isdir, d_ino;
+        int res = packfs_stat(packfs_ctx, NULL, fd, &isdir, &size, &d_ino);
         if(res == 0)
         {
             statbuf->st_mode = isdir ? S_IFDIR : S_IFREG;
             statbuf->st_size = size;
+            statbuf->st_ino = (ino_t)d_ino;
         }
         if(res >= -1)
         {
@@ -859,12 +862,13 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
 #endif
 
         *statbuf = (struct stat){0};
-        size_t size, isdir;
-        int res = packfs_stat(packfs_ctx, path, -1, &isdir, &size);
+        size_t size, isdir, d_ino;
+        int res = packfs_stat(packfs_ctx, path, -1, &isdir, &size, &d_ino);
         if(res == 0)
         {
             statbuf->st_mode = isdir ? S_IFDIR : S_IFREG;
             statbuf->st_size = size;
+            statbuf->st_ino = (ino_t)d_ino;
         }
 
 #ifdef PACKFS_LOG
@@ -888,13 +892,14 @@ int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, st
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
-        size_t size, isdir;
+        size_t size, isdir, d_ino;
         int res = packfs_stat(packfs_ctx, path, -1, &isdir, &size);
         if(res == 0)
         {
             *statbuf = (struct statx){0};
             statbuf->stx_mode = isdir ? S_IFDIR : S_IFREG;
             statbuf->stx_size = size;
+            statbuf->stx_ino = d_ino;
         }
 #ifdef PACKFS_LOG
         fprintf(stderr, "packfs: Statx(%d, \"%s\", %d, %u, %p) == %d\n", dirfd, path, flags, mask, (void*)statbuf, res);
