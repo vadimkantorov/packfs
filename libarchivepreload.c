@@ -67,6 +67,14 @@ const char* packfs_sanitize_path(const char* path)
     return (path != NULL && strlen(path) > 2 && path[0] == '.' && path[1] == packfs_pathsep) ? (path + 2) : path;
 }
 
+void packfs_join_path(char* dest, const char* archive_prefix, const char* dirpath, const char* path)
+{
+    if(strlen(dirpath) > 0)
+        sprintf(dest, "%s%c%s%c%s", archive_prefix, (char)packfs_pathsep, dirpath, (char)packfs_pathsep, path);
+    else
+        sprintf(dest, "%s%c%s", archive_prefix, (char)packfs_pathsep, path);
+}
+
 const char* packfs_basename(const char* path)
 {
     const char* last_slash = strrchr(path, packfs_pathsep);
@@ -660,12 +668,7 @@ int openat(int dirfd, const char *path, int flags, ...)
     if(!packfs_ctx->disabled)
     {
         struct packfs_dir* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
-        char buf[2 * packfs_entries_name_maxlen] = "";
-        if(ptr != NULL && strlen(ptr->dir_entry_name) > 0)
-        {
-            snprintf(buf, sizeof(buf), "%s%c%s", ptr->dir_entry_name, (char)packfs_pathsep, path);
-            path = buf;
-        }
+        char buf[2 * packfs_entries_name_maxlen] = ""; packfs_join_path(buf, packfs_ctx->packfs_archive_prefix, ptr != NULL ? ptr->dir_entry_name : "", path);
         
         void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(packfs_ctx, path) : (void*)packfs_open(packfs_ctx, path);
         if(stream != NULL)
@@ -846,12 +849,8 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
     if(!packfs_ctx->disabled)
     {
         struct packfs_dir* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
-        char buf[2 * packfs_entries_name_maxlen] = "";
-        if(ptr != NULL && strlen(ptr->dir_entry_name) > 0)
-        {
-            snprintf(buf, sizeof(buf), "%s%c%s", ptr->dir_entry_name, (char)packfs_pathsep, path);
-            path = buf;
-        }
+        char buf[2 * packfs_entries_name_maxlen] = ""; packfs_join_path(buf, packfs_ctx->packfs_archive_prefix, ptr != NULL ? ptr->dir_entry_name : "", path);
+
 #ifdef PACKFS_LOG
         fprintf(stderr, "packfs: Fstatat: %d / %s\n", dirfd, path);
 #endif
