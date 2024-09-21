@@ -302,6 +302,7 @@ struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, struct packfs_d
         {
             stream->entry.d_type = packfs_ctx->packfs_archive_entries_isdir[i] ? DT_DIR : DT_REG;
             strcpy(stream->entry.d_name, packfs_basename(path));
+            stream->entry.d_ino = (ino_t)i;
             stream->entry_index = i;
             return &stream->entry;
         }
