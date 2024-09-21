@@ -668,7 +668,7 @@ int openat(int dirfd, const char *path, int flags, ...)
     if(!packfs_ctx->disabled)
     {
         struct packfs_dir* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
-        char buf[2 * packfs_entries_name_maxlen] = ""; packfs_join_path(buf, packfs_ctx->packfs_archive_prefix, ptr != NULL ? ptr->dir_entry_name : "", path);
+        char buf[2 * packfs_entries_name_maxlen] = ""; packfs_join_path(buf, packfs_ctx->packfs_archive_prefix, ptr != NULL ? ptr->dir_entry_name : "", path); path = buf;
         
         void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(packfs_ctx, path) : (void*)packfs_open(packfs_ctx, path);
         if(stream != NULL)
@@ -843,16 +843,16 @@ int fstat(int fd, struct stat * statbuf)
 int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
 {
 #ifdef PACKFS_LOG
-    fprintf(stderr, "packfs: Fstatat enter: %d / %s\n", dirfd, path);
+    fprintf(stderr, "packfs: Fstatat enter: %d / \"%s\"\n", dirfd, path);
 #endif
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
         struct packfs_dir* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
-        char buf[2 * packfs_entries_name_maxlen] = ""; packfs_join_path(buf, packfs_ctx->packfs_archive_prefix, ptr != NULL ? ptr->dir_entry_name : "", path);
+        char buf[2 * packfs_entries_name_maxlen] = ""; packfs_join_path(buf, packfs_ctx->packfs_archive_prefix, ptr != NULL ? ptr->dir_entry_name : "", path); path = buf;
 
 #ifdef PACKFS_LOG
-        fprintf(stderr, "packfs: Fstatat: %d / %s\n", dirfd, path);
+        fprintf(stderr, "packfs: Fstatat: %d / \"%s\"\n", dirfd, path);
 #endif
 
         *statbuf = (struct stat){0};
