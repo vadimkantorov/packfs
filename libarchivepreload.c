@@ -663,7 +663,7 @@ int openat(int dirfd, const char *path, int flags, ...)
         char buf[2 * packfs_entries_name_maxlen] = "";
         if(ptr != NULL)
         {
-            snprintf(buf, strlen(buf), "%s%c%s", ptr->dir_entry_name, (char)packfs_pathsep, path);
+            snprintf(buf, sizeof(buf), "%s%c%s", ptr->dir_entry_name, (char)packfs_pathsep, path);
             path = buf;
         }
         
@@ -849,7 +849,7 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
         char buf[2 * packfs_entries_name_maxlen] = "";
         if(ptr != NULL)
         {
-            snprintf(buf, strlen(buf), "%s%c%s", ptr->dir_entry_name, (char)packfs_pathsep, path);
+            snprintf(buf, sizeof(buf), "%s%c%s", ptr->dir_entry_name, (char)packfs_pathsep, path);
             path = buf;
         }
 #ifdef PACKFS_LOG
