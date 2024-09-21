@@ -661,7 +661,7 @@ int openat(int dirfd, const char *path, int flags, ...)
     {
         struct packfs_dir* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
         char buf[2 * packfs_entries_name_maxlen] = "";
-        if(ptr != NULL)
+        if(ptr != NULL && strlen(ptr->dir_entry_name) > 0)
         {
             snprintf(buf, sizeof(buf), "%s%c%s", ptr->dir_entry_name, (char)packfs_pathsep, path);
             path = buf;
@@ -847,7 +847,7 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
     {
         struct packfs_dir* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
         char buf[2 * packfs_entries_name_maxlen] = "";
-        if(ptr != NULL)
+        if(ptr != NULL && strlen(ptr->dir_entry_name) > 0)
         {
             snprintf(buf, sizeof(buf), "%s%c%s", ptr->dir_entry_name, (char)packfs_pathsep, path);
             path = buf;
