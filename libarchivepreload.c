@@ -64,7 +64,22 @@ struct packfs_context
 
 const char* packfs_sanitize_path(const char* path)
 {
-    return (path != NULL && strlen(path) > 2 && path[0] == '.' && path[1] == packfs_pathsep) ? (path + 2) : path;
+    //return (path != NULL && strlen(path) > 2 && path[0] == '.' && path[1] == packfs_pathsep) ? (path + 2) : path;
+
+    const char* newpath = (path != NULL && strlen(path) > 2 && path[0] == '.' && path[1] == packfs_pathsep) ? (path + 2) : path;
+    const size_t newpath_len = strlen(newpath);
+
+    if(newpath_len >= 3 && newpath[newpath_len - 1] == '.' && newpath[newpath_len - 2] == '.'  && newpath[newpath_len - 3] == packfs_pathsep)
+    {
+        char* newpath_copy = strdup(newpath); // TODO:remove dynamic allocation
+        newpath_copy[newpath_len - 3] = '\0';
+        char* last_slash = strrchr(newpath_copy, packfs_pathsep);
+        if(last_slash != NULL)
+            *last_slash = '\0';
+        return newpath_copy;
+    }
+
+    return newpath;
 }
 
 void packfs_join_path(char* dest, const char* archive_prefix, const char* dirpath, const char* path)
