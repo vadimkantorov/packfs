@@ -74,12 +74,12 @@ const char* packfs_sanitize_path(const char* path)
     if(newpath_len >= 3 && newpath[newpath_len - 1] == '.' && newpath[newpath_len - 2] == '.'  && newpath[newpath_len - 3] == packfs_pathsep)
     {
         char* newpath_copy = strdup(newpath); // TODO:remove dynamic allocation
-        /*
+        
         newpath_copy[newpath_len - 3] = '\0';
         char* last_slash = strrchr(newpath_copy, packfs_pathsep);
         if(last_slash != NULL)
             *last_slash = '\0';
-        */
+        
         return newpath_copy;
     }
     return newpath;
