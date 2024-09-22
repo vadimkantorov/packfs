@@ -64,8 +64,9 @@ struct packfs_context
 
 const char* packfs_sanitize_path(const char* path)
 {
-    //return (path != NULL && strlen(path) > 2 && path[0] == '.' && path[1] == packfs_pathsep) ? (path + 2) : path;
+    return (path != NULL && strlen(path) > 2 && path[0] == '.' && path[1] == packfs_pathsep) ? (path + 2) : path;
 
+    /*
     const char* newpath = (path != NULL && strlen(path) > 2 && path[0] == '.' && path[1] == packfs_pathsep) ? (path + 2) : path;
     const size_t newpath_len = strlen(newpath);
 
@@ -78,8 +79,8 @@ const char* packfs_sanitize_path(const char* path)
             *last_slash = '\0';
         return newpath_copy;
     }
-
     return newpath;
+    */
 }
 
 void packfs_join_path(char* dest, const char* archive_prefix, const char* dirpath, const char* path)
