@@ -736,7 +736,7 @@ int close(int fd)
 #ifdef PACKFS_LOG
             fprintf(stderr, "packfs: Close(%d) == %d / %d\n", fd, res, (int)errno);
 #endif
-            return res;
+            errno = 0; return res;
         }
     }
     
