@@ -48,6 +48,7 @@ struct packfs_context
     struct dirent* (*orig_readdir)(DIR *dirp);
     int (*orig_closedir)(DIR *dirp);
     int (*orig_fcntl)(int fd, int action, ...);
+    int (*orig_fchdir)(int fd);
     
     int packfs_filefd     [packfs_filefd_max - packfs_filefd_min];
     int packfs_fileisdir  [packfs_filefd_max - packfs_filefd_min];
@@ -195,6 +196,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         packfs_ctx.orig_fileno = dlsym(RTLD_NEXT, "fileno");
         packfs_ctx.orig_fclose = dlsym(RTLD_NEXT, "fclose");
         packfs_ctx.orig_fcntl  = dlsym(RTLD_NEXT, "fcntl");
+        packfs_ctx.orig_fchdir = dlsym(RTLD_NEXT, "fchdir");
         
         strcpy(packfs_ctx.packfs_archive_prefix, "");
         packfs_ctx.packfs_archive_entries_num = 0;
@@ -332,7 +334,14 @@ struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, struct packfs_d
 
 struct packfs_dir* packfs_opendir(struct packfs_context* packfs_ctx, const char* path)
 {
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: packfs_opendir: before: \"%s\"\n", path);
+#endif
     path = packfs_sanitize_path(path);
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: packfs_opendir:  after: \"%s\"\n", path);
+#endif
+
     const char* path_without_prefix = packfs_lstrip_prefix(path, packfs_ctx->packfs_archive_prefix);
 
     struct packfs_dir* fileptr = NULL;
@@ -347,6 +356,9 @@ struct packfs_dir* packfs_opendir(struct packfs_context* packfs_ctx, const char*
 #endif
             if(packfs_ctx->packfs_archive_entries_isdir[i] && 0 == strcmp(entry_path, path_without_prefix))
             {
+#ifdef PACKFS_LOG
+                fprintf(stderr, "packfs: testing \"%s\" <> \"%s\" 1\n", path_without_prefix, entry_path);
+#endif
                 fileptr = malloc(sizeof(struct packfs_dir));
                 *fileptr = (struct packfs_dir){0};
                 fileptr->entry_index = i;
@@ -693,6 +705,10 @@ int open(const char *path, int flags, ...)
 
 int openat(int dirfd, const char *path, int flags, ...)
 {
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: openat: enter(%d, \"%s\", %d)\n", dirfd, path, flags);
+#endif
+    
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
@@ -1067,6 +1083,15 @@ int fcntl(int fd, int action, ...)
     int res = packfs_ctx->orig_fcntl(fd, action);
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: fcntl(%d, %d, ...) == %d\n", fd, action, res);
+#endif
+    return res;
+}
+
+int fchdir(int fd)
+{
+    int res = packfs_ctx->orig_fchdir(fd);
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: fchdir(%d) == %d\n", fd, res);
 #endif
     return res;
 }
