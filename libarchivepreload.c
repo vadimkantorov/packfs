@@ -720,9 +720,16 @@ int openat(int dirfd, const char *path, int flags, ...)
 
 int close(int fd)
 {
+#ifdef PACKFS_LOG
+    fprintf(stderr, "packfs: close enter: %d\n", (int)errno);
+#endif
+    
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     if(!packfs_ctx->disabled)
     {
+#ifdef PACKFS_LOG
+        fprintf(stderr, "packfs: Close before: %d\n", (int)errno);
+#endif
         int res = packfs_close(packfs_ctx, fd);
         if(res >= -1)
         {
@@ -841,7 +848,7 @@ int stat(const char *restrict path, struct stat *restrict statbuf)
 int fstat(int fd, struct stat * statbuf)
 {
 #ifdef PACKFS_LOG
-    fprintf(stderr, "packfs: Fstat enter: %d\n", fd);
+    fprintf(stderr, "packfs: Fstat enter: %d / %d\n", fd, (int)errno);
 #endif
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     if(!packfs_ctx->disabled)
