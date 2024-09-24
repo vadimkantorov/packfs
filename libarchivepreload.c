@@ -734,7 +734,10 @@ int close(int fd)
         if(res >= -1)
         {
 #ifdef PACKFS_LOG
-            errno = 0; fprintf(stderr, "packfs: Close(%d) == %d / %d\n", fd, res, (int)errno);
+            fprintf(stderr, "packfs: Close before errno set: %d\n", (int)errno);
+            errno = 0;
+            fprintf(stderr, "packfs: Close after errno set: %d\n", (int)errno);
+            fprintf(stderr, "packfs: Close(%d) == %d / %d\n", fd, res, (int)errno);
 #endif
             return res;
         }
