@@ -473,7 +473,13 @@ int packfs_close(struct packfs_context* packfs_ctx, int fd)
     {
         if(packfs_ctx->packfs_filefd[k] == fd)
         {
-            if(packfs_ctx->packfs_fileisdir[k]) return 0;//-1;
+            if(packfs_ctx->packfs_fileisdir[k])
+            {
+#ifdef PACKFS_LOG
+                fprintf(stderr, "packfs: closed fakely dir: %d\n", fd);
+#endif
+                return 0;//-1;
+            }
 
             int res = (!packfs_ctx->packfs_fileisdir[k]) ? packfs_ctx->orig_fclose(packfs_ctx->packfs_fileptr[k]) : 0;
             packfs_ctx->packfs_fileisdir[k] = 0;
@@ -721,7 +727,7 @@ int close(int fd)
         if(res >= -1)
         {
 #ifdef PACKFS_LOG
-            fprintf(stderr, "packfs: Close(%d) == %d\n", fd, res);
+            fprintf(stderr, "packfs: Close(%d) == %d / %d\n", fd, res, (int)errno);
 #endif
             return res;
         }
@@ -852,7 +858,7 @@ int fstat(int fd, struct stat * statbuf)
         if(res >= -1)
         {
 #ifdef PACKFS_LOG
-            fprintf(stderr, "packfs: Fstat(%d, %p) == %d\n", fd, (void*)statbuf, res);
+            fprintf(stderr, "packfs: Fstat(%d, %p) == %d / %d\n", fd, (void*)statbuf, res, (int)errno);
 #endif
             return res;
         }
