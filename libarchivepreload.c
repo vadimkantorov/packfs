@@ -1089,6 +1089,8 @@ int fcntl(int fd, int action, ...)
 
 int fchdir(int fd)
 {
+    struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
+
     int res = packfs_ctx->orig_fchdir(fd);
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: fchdir(%d) == %d\n", fd, res);
