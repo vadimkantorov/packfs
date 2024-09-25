@@ -315,7 +315,8 @@ struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, struct packfs_d
     for(size_t i = 0, packfs_archive_entries_names_offset = 0; i < packfs_ctx->packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx->packfs_archive_entries_names_lens[i] + 1), i++)
     {
         const char* path = packfs_ctx->packfs_archive_entries_names + packfs_archive_entries_names_offset;
-        const char* dir_entry_name = stream->dir_entry_name;
+        //const char* dir_entry_name = stream->dir_entry_name;
+        const char* dir_entry_name = packfs_ctx->packfs_archive_entries_names + (size_t)stream->entry.d_off;
 #ifdef PACKFS_LOG
         fprintf(stderr, "packfs: readdir testing \"%s\" <> \"%s\" %d\n", dir_entry_name, path, packfs_indir(dir_entry_name, path));
 #endif
