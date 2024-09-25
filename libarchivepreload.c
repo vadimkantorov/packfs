@@ -308,7 +308,7 @@ struct packfs_dir
 {
     struct dirent entry;
     char dir_entry_name[packfs_entries_name_maxlen];
-    size_t entry_index;
+    //size_t entry_index;
 };
 
 struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, struct packfs_dir* stream)
@@ -325,7 +325,7 @@ struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, struct packfs_d
         {
             stream->entry.d_type = packfs_ctx->packfs_archive_entries_isdir[i] ? DT_DIR : DT_REG;
             strcpy(stream->entry.d_name, packfs_basename(path));
-            stream->entry_index = i;
+            //stream->entry_index = i;
             stream->entry.d_ino = (ino_t)i;
             return &stream->entry;
         }
@@ -363,7 +363,7 @@ struct packfs_dir* packfs_opendir(struct packfs_context* packfs_ctx, const char*
 #endif
                 fileptr = malloc(sizeof(struct packfs_dir));
                 *fileptr = (struct packfs_dir){0};
-                fileptr->entry_index = i;
+                //fileptr->entry_index = i;
                 fileptr->entry.d_ino = (ino_t)i;
                 fileptr->entry.d_off = (off_t)i;
                 strcpy(fileptr->dir_entry_name, packfs_ctx->packfs_archive_entries_names + packfs_archive_entries_names_offset);
