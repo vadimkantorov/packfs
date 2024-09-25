@@ -307,7 +307,6 @@ struct packfs_context* packfs_ensure_context(const char* path)
 struct packfs_dir
 {
     struct dirent entry;
-    //char dir_entry_name[packfs_entries_name_maxlen];
 };
 
 struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, struct packfs_dir* stream)
@@ -315,7 +314,6 @@ struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, struct packfs_d
     for(size_t i = 0, packfs_archive_entries_names_offset = 0; i < packfs_ctx->packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx->packfs_archive_entries_names_lens[i] + 1), i++)
     {
         const char* path = packfs_ctx->packfs_archive_entries_names + packfs_archive_entries_names_offset;
-        //const char* dir_entry_name = stream->dir_entry_name;
         const char* dir_entry_name = packfs_ctx->packfs_archive_entries_names + (size_t)stream->entry.d_off;
 #ifdef PACKFS_LOG
         fprintf(stderr, "packfs: readdir testing \"%s\" <> \"%s\" %d\n", dir_entry_name, path, packfs_indir(dir_entry_name, path));
@@ -364,8 +362,6 @@ struct packfs_dir* packfs_opendir(struct packfs_context* packfs_ctx, const char*
                 *fileptr = (struct packfs_dir){0};
                 fileptr->entry.d_ino = (ino_t)i;
                 fileptr->entry.d_off = (off_t)packfs_archive_entries_names_offset;
-                //const char* dir_entry_name = fileptr->dir_entry_name;
-                //strcpy(dir_entry_name, packfs_ctx->packfs_archive_entries_names + packfs_archive_entries_names_offset);
                 break;
             }
         }
@@ -723,7 +719,6 @@ int openat(int dirfd, const char *path, int flags, ...)
     {
         struct packfs_dir* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
         const char* dir_entry_name = ptr != NULL ? (packfs_ctx->packfs_archive_entries_names + (size_t)ptr->entry.d_off) : "";
-        //const char* dir_entry_name = ptr != NULL ? ptr->dir_entry_name : "";
         char buf[2 * packfs_entries_name_maxlen] = ""; packfs_join_path(buf, packfs_ctx->packfs_archive_prefix, dir_entry_name, path); path = buf;
         
         void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(packfs_ctx, path) : (void*)packfs_open(packfs_ctx, path);
@@ -918,7 +913,6 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
     {
         struct packfs_dir* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
         const char* dir_entry_name = ptr != NULL ? (packfs_ctx->packfs_archive_entries_names + (size_t)ptr->entry.d_off) : "";
-        //const char* dir_entry_name = ptr != NULL ? ptr->dir_entry_name : "";
         char buf[2 * packfs_entries_name_maxlen] = ""; packfs_join_path(buf, packfs_ctx->packfs_archive_prefix, dir_entry_name, path); path = buf;
 
 #ifdef PACKFS_LOG
