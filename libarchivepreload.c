@@ -307,7 +307,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
 struct packfs_dir
 {
     struct dirent entry;
-    char dir_entry_name[packfs_entries_name_maxlen];
+    //char dir_entry_name[packfs_entries_name_maxlen];
 };
 
 struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, struct packfs_dir* stream)
