@@ -54,6 +54,7 @@ struct packfs_context
     int packfs_fileisdir  [packfs_filefd_max - packfs_filefd_min];
     void* packfs_fileptr  [packfs_filefd_max - packfs_filefd_min];
     size_t packfs_filesize[packfs_filefd_max - packfs_filefd_min];
+    size_t packfs_fileino [packfs_filefd_max - packfs_filefd_min];
     
     size_t packfs_archive_entries_num;
     char packfs_archive_prefix[packfs_entries_name_maxlen];
@@ -376,6 +377,7 @@ struct packfs_dir* packfs_opendir(struct packfs_context* packfs_ctx, const char*
             packfs_ctx->packfs_filefd[k] = packfs_filefd_min + k;
             packfs_ctx->packfs_fileptr[k] = fileptr;
             packfs_ctx->packfs_filesize[k] = 0;
+            packfs_ctx->packfs_fileino[k] = fileptr->entry_index;
             return fileptr;
         }
     }
@@ -390,6 +392,7 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
 
     FILE* fileptr = NULL;
     size_t filesize = 0;
+    size_t fileino = 0;
     
     if(packfs_ctx->packfs_archive_entries_num > 0 && path_without_prefix != NULL)
     {
@@ -400,6 +403,7 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
             {
                 filesize = packfs_ctx->packfs_archive_sizes[i];
                 fileptr = fmemopen(NULL, filesize, "rb+");
+                fileino = i;
     
                 struct archive* a = packfs_archive_read_new();
                 struct archive_entry *entry;
@@ -465,6 +469,7 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
             packfs_ctx->packfs_filefd[k] = packfs_filefd_min + k;
             packfs_ctx->packfs_fileptr[k] = fileptr;
             packfs_ctx->packfs_filesize[k] = filesize;
+            packfs_ctx->packfs_fileino[k] = fileino;
             return fileptr;
         }
     }
@@ -498,6 +503,7 @@ int packfs_close(struct packfs_context* packfs_ctx, int fd)
             packfs_ctx->packfs_filefd[k] = 0;
             packfs_ctx->packfs_filesize[k] = 0;
             packfs_ctx->packfs_fileptr[k] = NULL;
+            packfs_ctx->packfs_fileino[k] = 0;
 #ifdef PACKFS_LOG
             fprintf(stderr, "packfs: closed: %d\n", fd);
 #endif
@@ -598,7 +604,8 @@ int packfs_stat(struct packfs_context* packfs_ctx, const char* path, int fd, siz
             if(packfs_ctx->packfs_filefd[k] == fd)
             {
                 *size = packfs_ctx->packfs_filesize[k];
-                *isdir = 0;
+                *isdir = packfs_ctx->packfs_fileisdir[k];
+                *d_ino = packfs_ctx->packfs_fileino[k];
                 return 0;
             }
         }
