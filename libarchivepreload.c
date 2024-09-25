@@ -321,7 +321,7 @@ struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, struct packfs_d
 #endif
         
         //if(i > stream->entry_index && packfs_indir(stream->dir_entry_name, path))
-        if(i > (size_t)stream->entry.d_off && packfs_indir(stream->dir_entry_name, path))
+        if(i > (size_t)stream->entry.d_ino && packfs_indir(stream->dir_entry_name, path))
         {
             stream->entry.d_type = packfs_ctx->packfs_archive_entries_isdir[i] ? DT_DIR : DT_REG;
             strcpy(stream->entry.d_name, packfs_basename(path));
@@ -364,6 +364,7 @@ struct packfs_dir* packfs_opendir(struct packfs_context* packfs_ctx, const char*
                 fileptr = malloc(sizeof(struct packfs_dir));
                 *fileptr = (struct packfs_dir){0};
                 fileptr->entry_index = i;
+                fileptr->entry.d_ino = (ino_t)i;
                 fileptr->entry.d_off = (off_t)i;
                 strcpy(fileptr->dir_entry_name, packfs_ctx->packfs_archive_entries_names + packfs_archive_entries_names_offset);
                 break;
@@ -380,7 +381,7 @@ struct packfs_dir* packfs_opendir(struct packfs_context* packfs_ctx, const char*
             packfs_ctx->packfs_fileptr[k] = fileptr;
             packfs_ctx->packfs_filesize[k] = 0;
             //packfs_ctx->packfs_fileino[k] = fileptr->entry_index;
-            packfs_ctx->packfs_fileino[k] = (size_t)fileptr->entry.d_off;
+            packfs_ctx->packfs_fileino[k] = (size_t)fileptr->entry.d_ino;
             return fileptr;
         }
     }
