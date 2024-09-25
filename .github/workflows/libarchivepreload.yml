@@ -20,13 +20,12 @@ jobs:
           
           # TODO: figure out how to build .so with static zlib, maybe need to fix up fPIC relocation?
 
-          #LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/
-          #LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
-          #LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
-          #LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
-          #LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/stat libarchivepreload.zip/libarchivepreload.c
+          LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/
+          LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
+          LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
+          LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
+          LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/stat libarchivepreload.zip/libarchivepreload.c
           
-          /usr/bin/find .git
           LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
        
       - name: Artifacts
