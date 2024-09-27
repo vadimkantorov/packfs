@@ -190,7 +190,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         packfs_ctx.orig_statx  = dlsym(RTLD_NEXT, "statx");
         packfs_ctx.orig_close  = dlsym(RTLD_NEXT, "close");
         packfs_ctx.orig_opendir= dlsym(RTLD_NEXT, "opendir");
-        packfs_ctx.orig_fdopendir=dlsym(RTLD_NEXT, "fdopendir");
+        packfs_ctx.orig_fdopendir=dlsym(RTLD_NEXT,"fdopendir");
         packfs_ctx.orig_readdir= dlsym(RTLD_NEXT, "readdir");
         packfs_ctx.orig_closedir=dlsym(RTLD_NEXT, "closedir");
         packfs_ctx.orig_fopen  = dlsym(RTLD_NEXT, "fopen");
@@ -210,7 +210,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
     if(packfs_ctx.initialized == 1 && packfs_ctx.disabled == 1)
     {
 #ifdef PACKFS_LOG 
-            fprintf(stderr, "packfs: enabling\n");
+        fprintf(stderr, "packfs: enabling\n");
 #endif
         const char* packfs_archive_filename = NULL;
         if(path != NULL)
