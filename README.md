@@ -20,6 +20,7 @@ LD_PRELOAD=$(cc --print-file-name=libz.so):$PWD/libarchivepreload.so /usr/bin/ca
 - this demo does not optimize for iterative entry reads or iterative seeks, https://github.com/google/fuse-archive/ makes an attempt in that direction; also see https://github.com/libarchive/libarchive/issues/2306 for future support of fast seeks in ZIP / TAR / CPIO in libarchive
 
 # References
+- https://mropert.github.io/2018/02/02/pic_pie_sanitizers/
 - https://github.com/google/fuse-archive/
 - https://gist.github.com/vadimkantorov/2a4e092889b7132acd3b7ddfc2f2f907
 - https://github.com/libarchive/libarchive/issues/2306
