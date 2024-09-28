@@ -11,17 +11,13 @@ jobs:
           submodules: recursive
       
       - name: Build
-        run: |
-          mkdir zlib && curl -L https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz | tar -xzf - --strip-components=1 --directory=zlib
-          cd zlib && CFLAGS=-fPIC ./configure --static && make && cd ..
-          mv zlib/libz.a .
-
-          make
+        run: make
       
       - name: Test
         run: |
-          sudo apt install ltrace
           zip -r libarchivepreload.zip libarchivepreload.c .git
+          
+          sudo apt install ltrace && ltrace /usr/bin/find libarchivepreload.zip
           
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c

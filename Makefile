@@ -1,5 +1,8 @@
-libarchivepreload.so: libarchivepreload.c libarchive/.libs/libarchive.a
-	$(CC) -shared -fPIC $< -o $@ -ldl libarchive/.libs/libarchive.a -lz -Llibarchive/.libs -Ilibarchive -Ilibarchive/libarchive #-DPACKFS_LOG 
+libarchivepreload.so: libarchivepreload.c libarchive/.libs/libarchive.a zlib/libz.a
+	$(CC) -shared -fPIC $< -o $@ -ldl libarchive/.libs/libarchive.a zlib/libz.a -Ilibarchive -Ilibarchive/libarchive # -Llibarchive/.libs #-DPACKFS_LOG 
 
 libarchive/.libs/libarchive.a:
-	cd libarchive && sh build/autogen.sh && sh configure --without-bz2lib --without-libb2 --without-iconv --without-lz4  --without-zstd --without-lzma --without-cng  --without-xml2 --without-expat --without-openssl && $(MAKE)
+	cd libarchive && sh ./build/autogen.sh && sh configure --without-bz2lib --without-libb2 --without-iconv --without-lz4  --without-zstd --without-lzma --without-cng  --without-xml2 --without-expat --without-openssl && $(MAKE)
+
+zlib/libz.a:
+	cd zlib && CFLAGS=-fPIC sh ./configure --static && $(MAKE)
