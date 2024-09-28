@@ -160,6 +160,24 @@ size_t packfs_archive_prefix_extract(const char* path)
     return 0;
 }
 
+int packfs_is_fd_in_range(int fd)
+{
+    return fd >= 0 && fd >= packfs_filefd_min && fd < packfs_filefd_max;
+}
+
+int packfs_is_path_in_range(const char* packfs_archive_prefix, const char* path)
+{
+    if(packfs_archive_prefix == NULL || packfs_archive_prefix[0] == '\0' || path == NULL || path[0] == '\0')
+        return 0;
+
+    size_t prefix_len = strlen(packfs_archive_prefix);
+    size_t path_len = strlen(path);
+
+    // TODO: check ("/a/b", "/a/b/c"), ("/a/b", "/a/bb"), ("/a/b", "/a/b"), ("/a/b", "/a/b/"), ("/a/b/", "/a/b")
+
+    return path_len >= prefix_len && 0 == strncmp(packfs_archive_prefix, path, prefix_len);
+}
+
 int packfs_indir(const char* dir_path, const char* path)
 {
     size_t dir_path_len = strlen(dir_path);
@@ -355,7 +373,7 @@ struct dirent* packfs_opendir(struct packfs_context* packfs_ctx, const char* pat
 #ifdef PACKFS_LOG
                 fprintf(stderr, "packfs: testing \"%s\" <> \"%s\" 1\n", path_without_prefix, entry_path);
 #endif
-                fileptr = malloc(sizeof(struct dirent));
+                fileptr = malloc(sizeof(struct dirent)); // TODO: delete malloc, convert to a static allocation of array of dirent instances
                 *fileptr = (struct dirent){0};
                 fileptr->d_ino = (ino_t)i;
                 fileptr->d_off = (off_t)packfs_archive_entries_names_offset;
