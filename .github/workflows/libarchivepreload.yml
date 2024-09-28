@@ -17,13 +17,13 @@ jobs:
         run: |
           zip -r libarchivepreload.zip libarchivepreload.c .git
           
-          sudo apt install ltrace && ltrace /usr/bin/find .git
+          #sudo apt install ltrace && ltrace /usr/bin/find .git
           
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/stat libarchivepreload.zip/libarchivepreload.c
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/stat libarchivepreload.zip/libarchivepreload.c
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
        
       - name: Artifacts
         uses: actions/upload-artifact@v4

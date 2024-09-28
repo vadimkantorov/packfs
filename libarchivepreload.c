@@ -215,19 +215,19 @@ struct packfs_context* packfs_ensure_context(const char* path)
         const char* packfs_archive_filename = NULL;
         if(path != NULL)
         {
-            path = packfs_sanitize_path(path);
-            size_t path_prefix_len = packfs_archive_prefix_extract(path);
+            const char* path_sanitized = packfs_sanitize_path(path);
+            size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized);
 #ifdef PACKFS_LOG
-            fprintf(stderr, "packfs: path_prefix_len: \"%s\" %zu \n", path, path_prefix_len);
+            fprintf(stderr, "packfs: path_prefix_len: \"%s\" %zu \n", path_sanitized, path_prefix_len);
 #endif
             if(path_prefix_len > 0)
             {
-                strcpy(packfs_ctx.packfs_archive_prefix, path);
+                strcpy(packfs_ctx.packfs_archive_prefix, path_sanitized);
                 packfs_ctx.packfs_archive_prefix[path_prefix_len] = '\0';
                 packfs_archive_filename = packfs_ctx.packfs_archive_prefix;
             }
 #ifdef PACKFS_LOG
-            fprintf(stderr, "packfs: prefix: \"%s\" ( \"%s\" )\n", packfs_archive_filename, path);
+            fprintf(stderr, "packfs: prefix: \"%s\" ( \"%s\" )\n", packfs_archive_filename, path_sanitized);
 #endif
         }
 
@@ -331,12 +331,12 @@ struct dirent* packfs_opendir(struct packfs_context* packfs_ctx, const char* pat
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: packfs_opendir: before: \"%s\"\n", path);
 #endif
-    path = packfs_sanitize_path(path);
+    const char* path_sanitized = packfs_sanitize_path(path);
 #ifdef PACKFS_LOG
-    fprintf(stderr, "packfs: packfs_opendir:  after: \"%s\"\n", path);
+    fprintf(stderr, "packfs: packfs_opendir:  after: \"%s\"\n", path_sanitized);
 #endif
 
-    const char* path_without_prefix = packfs_lstrip_prefix(path, packfs_ctx->packfs_archive_prefix);
+    const char* path_without_prefix = packfs_lstrip_prefix(path_sanitized, packfs_ctx->packfs_archive_prefix);
 
     struct dirent* fileptr = NULL;
     
@@ -380,8 +380,8 @@ struct dirent* packfs_opendir(struct packfs_context* packfs_ctx, const char* pat
 
 FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
 {
-    path = packfs_sanitize_path(path);
-    const char* path_without_prefix = packfs_lstrip_prefix(path, packfs_ctx->packfs_archive_prefix);
+    const char* path_sanitized = packfs_sanitize_path(path);
+    const char* path_without_prefix = packfs_lstrip_prefix(path_sanitized, packfs_ctx->packfs_archive_prefix);
 
     FILE* fileptr = NULL;
     size_t filesize = 0;
@@ -549,8 +549,8 @@ int packfs_seek(struct packfs_context* packfs_ctx, int fd, long offset, int when
 
 int packfs_access(struct packfs_context* packfs_ctx, const char* path)
 {
-    path = packfs_sanitize_path(path);
-    const char* path_without_prefix = packfs_lstrip_prefix(path, packfs_ctx->packfs_archive_prefix);
+    const char* path_sanitized = packfs_sanitize_path(path);
+    const char* path_without_prefix = packfs_lstrip_prefix(path_sanitized, packfs_ctx->packfs_archive_prefix);
 
     if(path_without_prefix != NULL)
     {
@@ -568,8 +568,8 @@ int packfs_access(struct packfs_context* packfs_ctx, const char* path)
 
 int packfs_stat(struct packfs_context* packfs_ctx, const char* path, int fd, size_t* isdir, size_t* size, size_t* d_ino)
 {
-    path = packfs_sanitize_path(path);
-    const char* path_without_prefix = packfs_lstrip_prefix(path, packfs_ctx->packfs_archive_prefix);
+    const char* path_sanitized = packfs_sanitize_path(path);
+    const char* path_without_prefix = packfs_lstrip_prefix(path_sanitized, packfs_ctx->packfs_archive_prefix);
     
     if(path_without_prefix != NULL)
     {
