@@ -64,12 +64,12 @@ struct packfs_context
     int packfs_archive_entries_isdir[packfs_archive_entries_nummax];
 };
 
-const char* packfs_sanitize_path(const char* dest, const char* path)
+void packfs_sanitize_path(char* dest, const char* path)
 {
     if(path == NULL)
     {
         strcpy(dest, "");
-        return dest;
+        return;
     }
     
     const char* newpath = (strlen(path) > 2 && path[0] == '.' && path[1] == packfs_pathsep) ? (path + 2) : path;
@@ -85,7 +85,7 @@ const char* packfs_sanitize_path(const char* dest, const char* path)
             *last_slash = '\0';
     }
 
-    return dest;
+    return;
 }
 
 void packfs_join_path(char* dest, const char* archive_prefix, const char* dirpath, const char* path)
