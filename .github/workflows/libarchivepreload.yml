@@ -17,7 +17,7 @@ jobs:
         run: |
           zip -r libarchivepreload.zip libarchivepreload.c .git
           
-          sudo apt install ltrace && ltrace /usr/bin/find libarchivepreload.zip
+          sudo apt install ltrace && ltrace /usr/bin/find .git
           
           #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
           #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
