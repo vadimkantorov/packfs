@@ -41,3 +41,5 @@ LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
 - https://superuser.com/questions/1601311/fuse-fs-without-root-privileges-e-g-a-ld-preload-gateway-or-a-proot-plugin
 - https://theses.liacs.nl/pdf/2021-2022-HoltropS.pdf
 - https://github.com/fritzw/ld-preload-open
+- https://github.com/strace/strace/blob/8399328f628182cf236a1c39a074d601babdeaa4/src/fcntl.c#L102
+- https://git.savannah.gnu.org/gitweb/?p=gnulib.git;a=blob;f=lib/fcntl.c;h=7cd3a0f976d9f9c9fbb1b5cab5b57780a72cec58;hb=HEAD

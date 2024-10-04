@@ -170,12 +170,20 @@ int packfs_is_path_in_range(const char* packfs_archive_prefix, const char* path)
     if(packfs_archive_prefix == NULL || packfs_archive_prefix[0] == '\0' || path == NULL || path[0] == '\0')
         return 0;
 
+    // 1 "/a/b"  "/a/b/c"
+    // 0 "/a/b"  "/a/bb"
+    // 1 "/a/b"  "/a/b"
+    // 1 "/a/b"  "/a/b/"
+    // 1 "/a/b/" "/a/b"
+    // 0 "/a/bc" "/a/b"
+
     size_t prefix_len = strlen(packfs_archive_prefix);
     size_t path_len = strlen(path);
+    int prefix_endswith_slash = packfs_archive_prefix[prefix_len - 1] == packfs_pathsep;
+    int prefix_ok = 0 == strncmp(packfs_archive_prefix, path, prefix_len - (prefix_endswith_slash ? 1 : 0));
+    size_t prefix_len_m1 = prefix_endswith_slash ? (prefix_len - 1) : prefix_len;
 
-    // TODO: check ("/a/b", "/a/b/c"), ("/a/b", "/a/bb"), ("/a/b", "/a/b"), ("/a/b", "/a/b/"), ("/a/b/", "/a/b")
-
-    return path_len >= prefix_len && 0 == strncmp(packfs_archive_prefix, path, prefix_len);
+    return prefix_ok && ((path_len == prefix_len_m1) || (path_len >= prefix_len && path[prefix_len_m1] == packfs_pathsep));
 }
 
 int packfs_indir(const char* dir_path, const char* path)
@@ -767,16 +775,10 @@ int close(int fd)
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     if(!packfs_ctx->disabled)
     {
-#ifdef PACKFS_LOG
-        fprintf(stderr, "packfs: Close before: %d\n", (int)errno);
-#endif
         int res = packfs_close(packfs_ctx, fd);
         if(res >= -1)
         {
 #ifdef PACKFS_LOG
-            fprintf(stderr, "packfs: Close before errno set: %d\n", (int)errno);
-            errno = 0;
-            fprintf(stderr, "packfs: Close after errno set: %d\n", (int)errno);
             fprintf(stderr, "packfs: Close(%d) == %d / %d\n", fd, res, (int)errno);
 #endif
             return res;
