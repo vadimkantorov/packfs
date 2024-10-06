@@ -205,25 +205,25 @@ struct packfs_context* packfs_ensure_context(const char* path)
 
     if(packfs_ctx.initialized != 1)
     {
-        packfs_ctx.orig_open   = dlsym(RTLD_NEXT, "open");
-        packfs_ctx.orig_openat = dlsym(RTLD_NEXT, "openat");
-        packfs_ctx.orig_read   = dlsym(RTLD_NEXT, "read");
-        packfs_ctx.orig_access = dlsym(RTLD_NEXT, "access");
-        packfs_ctx.orig_lseek  = dlsym(RTLD_NEXT, "lseek");
-        packfs_ctx.orig_stat   = dlsym(RTLD_NEXT, "stat");
-        packfs_ctx.orig_fstat  = dlsym(RTLD_NEXT, "fstat");
-        packfs_ctx.orig_fstatat= dlsym(RTLD_NEXT, "fstatat");
-        packfs_ctx.orig_statx  = dlsym(RTLD_NEXT, "statx");
-        packfs_ctx.orig_close  = dlsym(RTLD_NEXT, "close");
-        packfs_ctx.orig_opendir= dlsym(RTLD_NEXT, "opendir");
-        packfs_ctx.orig_fdopendir=dlsym(RTLD_NEXT,"fdopendir");
-        packfs_ctx.orig_readdir= dlsym(RTLD_NEXT, "readdir");
-        packfs_ctx.orig_closedir=dlsym(RTLD_NEXT, "closedir");
-        packfs_ctx.orig_fopen  = dlsym(RTLD_NEXT, "fopen");
-        packfs_ctx.orig_fileno = dlsym(RTLD_NEXT, "fileno");
-        packfs_ctx.orig_fclose = dlsym(RTLD_NEXT, "fclose");
-        packfs_ctx.orig_fcntl  = dlsym(RTLD_NEXT, "fcntl");
-        packfs_ctx.orig_fchdir = dlsym(RTLD_NEXT, "fchdir");
+        packfs_ctx.orig_open      = dlsym(RTLD_NEXT, "open");
+        packfs_ctx.orig_openat    = dlsym(RTLD_NEXT, "openat");
+        packfs_ctx.orig_read      = dlsym(RTLD_NEXT, "read");
+        packfs_ctx.orig_access    = dlsym(RTLD_NEXT, "access");
+        packfs_ctx.orig_lseek     = dlsym(RTLD_NEXT, "lseek");
+        packfs_ctx.orig_stat      = dlsym(RTLD_NEXT, "stat");
+        packfs_ctx.orig_fstat     = dlsym(RTLD_NEXT, "fstat");
+        packfs_ctx.orig_fstatat   = dlsym(RTLD_NEXT, "fstatat");
+        packfs_ctx.orig_statx     = dlsym(RTLD_NEXT, "statx");
+        packfs_ctx.orig_close     = dlsym(RTLD_NEXT, "close");
+        packfs_ctx.orig_opendir   = dlsym(RTLD_NEXT, "opendir");
+        packfs_ctx.orig_fdopendir = dlsym(RTLD_NEXT, "fdopendir");
+        packfs_ctx.orig_readdir   = dlsym(RTLD_NEXT, "readdir");
+        packfs_ctx.orig_closedir  = dlsym(RTLD_NEXT, "closedir");
+        packfs_ctx.orig_fopen     = dlsym(RTLD_NEXT, "fopen");
+        packfs_ctx.orig_fileno    = dlsym(RTLD_NEXT, "fileno");
+        packfs_ctx.orig_fclose    = dlsym(RTLD_NEXT, "fclose");
+        packfs_ctx.orig_fcntl     = dlsym(RTLD_NEXT, "fcntl");
+        packfs_ctx.orig_fchdir    = dlsym(RTLD_NEXT, "fchdir");
         
         strcpy(packfs_ctx.packfs_archive_prefix, "");
         packfs_ctx.packfs_archive_entries_num = 0;
@@ -1086,18 +1086,21 @@ int closedir(DIR* stream)
     return res;
 }
 
-int packfs_fcntl(struct packfs_context* packfs_ctx, int fd, int action)
+int packfs_dup(struct packfs_context* packfs_ctx, int oldfd, int newfd)
 {
-    return fd;
+    return oldfd;
 }
 
 int fcntl(int fd, int action, ...)
 {
+    int intarg = -1;
+    void* ptrarg = NULL;
+
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     
     if(!packfs_ctx->disabled)
     {
-        int res = packfs_fcntl(packfs_ctx, fd, action);
+        int res = packfs_dup(packfs_ctx, fd);
         if(res >= -1)
         {
 #ifdef PACKFS_LOG
