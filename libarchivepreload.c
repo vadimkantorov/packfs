@@ -28,8 +28,6 @@ enum
 
 struct packfs_context
 {
-    int initialized, disabled;
-    
     int (*orig_open)(const char *path, int flags);
     int (*orig_openat)(int dirfd, const char *path, int flags);
     int (*orig_close)(int fd);
@@ -50,11 +48,14 @@ struct packfs_context
     int (*orig_fcntl)(int fd, int action, ...);
     int (*orig_fchdir)(int fd);
     
-    int packfs_filefd     [packfs_filefd_max - packfs_filefd_min];
-    int packfs_fileisdir  [packfs_filefd_max - packfs_filefd_min];
-    void* packfs_fileptr  [packfs_filefd_max - packfs_filefd_min];
-    size_t packfs_filesize[packfs_filefd_max - packfs_filefd_min];
-    size_t packfs_fileino [packfs_filefd_max - packfs_filefd_min];
+    int initialized, disabled;
+    
+    int packfs_filefd          [packfs_filefd_max - packfs_filefd_min];
+    int packfs_fileisdir       [packfs_filefd_max - packfs_filefd_min];
+    void* packfs_fileptr       [packfs_filefd_max - packfs_filefd_min];
+    size_t packfs_filesize     [packfs_filefd_max - packfs_filefd_min];
+    size_t packfs_fileino      [packfs_filefd_max - packfs_filefd_min];
+    struct dirent packfs_dirent[packfs_filefd_max - packfs_filefd_min];
     
     size_t packfs_archive_entries_num;
     char packfs_archive_prefix[packfs_entries_name_maxlen];
