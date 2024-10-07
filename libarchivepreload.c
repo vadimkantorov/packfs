@@ -521,13 +521,13 @@ int packfs_close(struct packfs_context* packfs_ctx, int fd)
     {
         if(packfs_ctx->packfs_filefd[k] == fd)
         {
-//            if(packfs_ctx->packfs_fileisdir[k])
-//            {
+            if(packfs_ctx->packfs_fileisdir[k])
+            {
 //#ifdef PACKFS_LOG
-//                fprintf(stderr, "packfs: closed fakely dir: %d\n", fd);
+                fprintf(stderr, "packfs: closed fakely dir: %d\n", fd);
 //#endif
-//                return 0;//-1;
-//            }
+                return 0;//-1;
+            }
 
             int res = (!packfs_ctx->packfs_fileisdir[k]) ? packfs_ctx->orig_fclose(packfs_ctx->packfs_fileptr[k]) : 0;
             packfs_ctx->packfs_fileisdir[k] = 0;
@@ -1075,8 +1075,11 @@ struct dirent* readdir(DIR* stream)
     if(!packfs_ctx->disabled)
     {
         int* ptr = packfs_find(packfs_ctx, -1, stream);
+//#ifdef PACKFS_LOG
+        fprintf(stderr, "packfs: Readdir: %d\n", ptr == NULL ? -1 : *ptr);
+//#endif
         if(ptr != NULL)
-            return packfs_readdir(packfs_ctx, (struct dirent*)stream);
+            return packfs_readdir(packfs_ctx, stream);
     }
     
     struct dirent* res = packfs_ctx->orig_readdir(stream);
@@ -1094,6 +1097,10 @@ int closedir(DIR* stream)
     {        
         int* ptr = packfs_find(packfs_ctx, -1, stream);
         int fd = ptr == NULL ? -1 : *ptr;
+//#ifdef PACKFS_LOG
+        fprintf(stderr, "packfs: Closedir: %d\n", fd);
+//#endif
+
         int res = packfs_close(packfs_ctx, fd);
         if(res >= -1)
         {
