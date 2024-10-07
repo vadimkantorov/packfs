@@ -1112,70 +1112,30 @@ int fcntl(int fd, int action, ...)
     switch(action)
     {
         case F_GETFD:
-        case F_BARRIERFSYNC:
-        case F_CHKCLEAN:
-        case F_CLOSEM:
-        case F_FLUSH_DATA:
-        case F_FREEZE_FS:
-        case F_FULLFSYNC:
-        case F_GETCONFINED:
-        case F_GETDEFAULTPROTLEVEL:
-        case F_GETFD:
         case F_GETFL:
         case F_GETLEASE:
-        case F_GETNOSIGPIPE:
         case F_GETOWN:
         case F_GETPIPE_SZ:
-        case F_GETPROTECTIONCLASS:
-        case F_GETPROTECTIONLEVEL:
-        case F_GET_SEALS:
         case F_GETSIG:
-        case F_MAXFD:
-        case F_RECYCLE:
-        case F_SETFIFOENH:
-        case F_THAW_FS:
+        case F_GET_SEALS: // linux-specific
         {
             argtype = 0;
             break;
         }
-        
+        case F_ADD_SEALS: // linux-specific
         case F_DUPFD:
         case F_DUPFD_CLOEXEC:
-        case F_ADD_SEALS:
-        case F_BADFD:
-        case F_CHECK_OPENEVT:
-        case F_DUP2FD:
-        case F_DUP2FD_CLOEXEC:
-        case F_DUP2FD_CLOFORK:
-        case F_DUPFD:
-        case F_DUPFD_CLOEXEC:
-        case F_DUPFD_CLOFORK:
-        case F_GETXFL:
-        case F_GLOBAL_NOCACHE:
-        case F_MAKECOMPRESSED:
-        case F_MOVEDATAEXTENTS:
-        case F_NOCACHE:
-        case F_NODIRECT:
         case F_NOTIFY:
-        case F_OPLKACK:
-        case F_OPLKREG:
-        case F_RDAHEAD:
-        case F_SETBACKINGSTORE:
-        case F_SETCONFINED:
         case F_SETFD:
         case F_SETFL:
         case F_SETLEASE:
-        case F_SETNOSIGPIPE:
         case F_SETOWN:
         case F_SETPIPE_SZ:
-        case F_SETPROTECTIONCLASS:
         case F_SETSIG:
-        case F_SINGLE_WRITER:
         {
             intarg = va_arg(arg, int);
             break;
         }
-
         default:
         {
             ptrarg = va_arg(arg, void*);
