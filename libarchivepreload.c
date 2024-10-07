@@ -1141,8 +1141,8 @@ int packfs_dup(struct packfs_context* packfs_ctx, int oldfd, int newfd)
             
             if(packfs_ctx->packfs_fileisdir[k])
             {
-                packfs_ctx->packfs_dirent[k] = packfs_ctx->packfs_filedirent[K];
-                packfs_ctx->packfs_fileptr[k] = &packfs_ctx->packfs_filedirent[k]; 
+                packfs_ctx->packfs_dirent[k] = packfs_ctx->packfs_dirent[K];
+                packfs_ctx->packfs_fileptr[k] = &packfs_ctx->packfs_dirent[k]; 
             }
             return fd;
         }
