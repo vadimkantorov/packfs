@@ -369,6 +369,9 @@ struct dirent* packfs_opendir(struct packfs_context* packfs_ctx, const char* pat
 
     struct dirent* fileptr = NULL;
     
+    size_t d_ino, d_off;
+    int found = 0;
+    
     if(packfs_ctx->packfs_archive_entries_num > 0 && path_without_prefix != NULL)
     {
         for(size_t i = 0, packfs_archive_entries_names_offset = 0; i < packfs_ctx->packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx->packfs_archive_entries_names_lens[i] + 1), i++)
@@ -382,24 +385,28 @@ struct dirent* packfs_opendir(struct packfs_context* packfs_ctx, const char* pat
 #ifdef PACKFS_LOG
                 fprintf(stderr, "packfs: testing \"%s\" <> \"%s\" 1\n", path_without_prefix, entry_path);
 #endif
-                fileptr = malloc(sizeof(struct dirent)); // TODO: delete malloc, convert to a static allocation of array of dirent instances
-                *fileptr = (struct dirent){0};
-                fileptr->d_ino = (ino_t)i;
-                fileptr->d_off = (off_t)packfs_archive_entries_names_offset;
+                d_ino = i;
+                d_off = packfs_archive_entries_names_offset;
+                found = 1;
                 break;
             }
         }
     }
     
-    for(size_t k = 0; fileptr != NULL && k < packfs_filefd_max - packfs_filefd_min; k++)
+    for(size_t k = 0; found && k < packfs_filefd_max - packfs_filefd_min; k++)
     {
         if(packfs_ctx->packfs_filefd[k] == 0)
         {
+            struct dirent* fileptr = &packfs_ctx->packfs_dirent[k];
+            *fileptr = (struct dirent){0};
+            fileptr->d_ino = (ino_t)d_ino;
+            fileptr->d_off = (off_t)d_off;
+
             packfs_ctx->packfs_fileisdir[k] = 1;
             packfs_ctx->packfs_filefd[k] = packfs_filefd_min + k;
-            packfs_ctx->packfs_fileptr[k] = fileptr;
             packfs_ctx->packfs_filesize[k] = 0;
-            packfs_ctx->packfs_fileino[k] = (size_t)fileptr->d_ino;
+            packfs_ctx->packfs_fileino[k] = d_ino;
+            packfs_ctx->packfs_fileptr[k] = (void*)fileptr;
             return fileptr;
         }
     }
@@ -1096,6 +1103,72 @@ int fcntl(int fd, int action, ...)
 {
     int intarg = -1;
     void* ptrarg = NULL;
+    //va_list arg;
+    //va_start (arg, action);
+    //INTARG:
+    // F_DUPFD
+    // F_DUPFD_CLOEXEC
+    // F_ADD_SEALS:
+    // F_BADFD:
+    // F_CHECK_OPENEVT:
+    // F_DUP2FD:
+    // F_DUP2FD_CLOEXEC:
+    // F_DUP2FD_CLOFORK:
+    // F_DUPFD:
+    // F_DUPFD_CLOEXEC:
+    // F_DUPFD_CLOFORK:
+    // F_GETXFL:
+    // F_GLOBAL_NOCACHE:
+    // F_MAKECOMPRESSED:
+    // F_MOVEDATAEXTENTS:
+    // F_NOCACHE:
+    // F_NODIRECT:
+    // F_NOTIFY:
+    // F_OPLKACK:
+    // F_OPLKREG:
+    // F_RDAHEAD:
+    // F_SETBACKINGSTORE:
+    // F_SETCONFINED:
+    // F_SETFD:
+    // F_SETFL:
+    // F_SETLEASE:
+    // F_SETNOSIGPIPE:
+    // F_SETOWN:
+    // F_SETPIPE_SZ:
+    // F_SETPROTECTIONCLASS:
+    // F_SETSIG:
+    // F_SINGLE_WRITER:
+    //int target = va_arg(arg, int);
+
+    //NOARG:
+    // F_GETFD
+    // F_BARRIERFSYNC:
+    // F_CHKCLEAN:
+    // F_CLOSEM:
+    // F_FLUSH_DATA:
+    // F_FREEZE_FS:
+    // F_FULLFSYNC:
+    // F_GETCONFINED:
+    // F_GETDEFAULTPROTLEVEL:
+    // F_GETFD:
+    // F_GETFL:
+    // F_GETLEASE:
+    // F_GETNOSIGPIPE:
+    // F_GETOWN:
+    // F_GETPIPE_SZ:
+    // F_GETPROTECTIONCLASS:
+    // F_GETPROTECTIONLEVEL:
+    // F_GET_SEALS:
+    // F_GETSIG:
+    // F_MAXFD:
+    // F_RECYCLE:
+    // F_SETFIFOENH:
+    // F_THAW_FS:
+    
+    //PTRARG:
+    //void *p = va_arg (arg, void *);
+    
+    //va_end (arg);
 
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     
