@@ -332,21 +332,22 @@ struct packfs_context* packfs_ensure_context(const char* path)
     return &packfs_ctx;
 }
 
-struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, struct dirent* stream)
+struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, DIR* stream)
 {
+    struct dirent* dir_entry = stream;
     for(size_t i = 0, packfs_archive_entries_names_offset = 0; i < packfs_ctx->packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx->packfs_archive_entries_names_lens[i] + 1), i++)
     {
         const char* path = packfs_ctx->packfs_archive_entries_names + packfs_archive_entries_names_offset;
-        const char* dir_entry_name = packfs_ctx->packfs_archive_entries_names + (size_t)stream->d_off;
+        const char* dir_entry_name = packfs_ctx->packfs_archive_entries_names + (size_t)dir_entry->d_off;
 #ifdef PACKFS_LOG
         fprintf(stderr, "packfs: readdir testing \"%s\" <> \"%s\" %d\n", dir_entry_name, path, packfs_indir(dir_entry_name, path));
 #endif
         
-        if(i > (size_t)stream->d_ino && packfs_indir(dir_entry_name, path))
+        if(i > (size_t)dir_entry->d_ino && packfs_indir(dir_entry_name, path))
         {
-            stream->d_type = packfs_ctx->packfs_archive_entries_isdir[i] ? DT_DIR : DT_REG;
-            strcpy(stream->d_name, packfs_basename(path));
-            stream->d_ino = (ino_t)i;
+            dir_entry->d_type = packfs_ctx->packfs_archive_entries_isdir[i] ? DT_DIR : DT_REG;
+            strcpy(dir_entry->d_name, packfs_basename(path));
+            dir_entry->d_ino = (ino_t)i;
             return stream;
         }
     }
@@ -354,7 +355,7 @@ struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, struct dirent* 
     return NULL;
 }
 
-struct dirent* packfs_opendir(struct packfs_context* packfs_ctx, const char* path)
+DIR* packfs_opendir(struct packfs_context* packfs_ctx, const char* path)
 {
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: packfs_opendir: before: \"%s\"\n", path);
@@ -407,7 +408,7 @@ struct dirent* packfs_opendir(struct packfs_context* packfs_ctx, const char* pat
             packfs_ctx->packfs_filesize[k] = 0;
             packfs_ctx->packfs_fileino[k] = d_ino;
             packfs_ctx->packfs_fileptr[k] = (void*)fileptr;
-            return fileptr;
+            return (DIR*)(void*)fileptr;
         }
     }
 
@@ -731,7 +732,6 @@ int open(const char *path, int flags, ...)
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
-        //If neither O_CREAT nor O_TMPFILE is specified in flags, then mode is ignored (and can thus be specified as 0, or simply omitted)
         void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(packfs_ctx, path) : (void*)packfs_open(packfs_ctx, path);
         if(stream != NULL)
         {
