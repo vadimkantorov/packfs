@@ -1128,7 +1128,6 @@ int packfs_dup(struct packfs_context* packfs_ctx, int oldfd, int newfd)
             }
         }
     }
-    fprintf(stderr, "Dup2(%d, %d): K=%d\n", oldfd, newfd, K);
     for(size_t k = 0; K >= 0 && k < packfs_filefd_max - packfs_filefd_min; k++)
     {
         int fd = packfs_filefd_min + k;
@@ -1141,8 +1140,6 @@ int packfs_dup(struct packfs_context* packfs_ctx, int oldfd, int newfd)
             packfs_ctx->packfs_dirent[k]    = (struct dirent){0};
             packfs_ctx->packfs_fileptr[k]   = NULL; //TODO: how to dup fmemopen-produced state?
             
-            fprintf(stderr, "Dup2(%d, %d): fd=%d, isdir=%d\n", oldfd, newfd, fd, packfs_ctx->packfs_fileisdir[k]);
-
             if(packfs_ctx->packfs_fileisdir[k])
             {
                 packfs_ctx->packfs_dirent[k] = packfs_ctx->packfs_dirent[K];
@@ -1210,7 +1207,6 @@ int fcntl(int fd, int action, ...)
     if(!packfs_ctx->disabled && argtype == 1 && packfs_fd_in_range(fd))
     {
         int res = (action == F_DUPFD || action == F_DUPFD_CLOEXEC) ? packfs_dup(packfs_ctx, fd, intarg) : -1;
-        fprintf(stderr, "packfs: Fcntl(%d, %d, %d:%d/%p) == %d\n", fd, action, argtype, intarg, ptrarg, res);
         if(res >= -1)
         {
 #ifdef PACKFS_LOG
