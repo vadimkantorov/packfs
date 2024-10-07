@@ -1202,16 +1202,15 @@ int fcntl(int fd, int action, ...)
 
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     
-    if(!packfs_ctx->disabled)// && argtype == 1 && packfs_fd_in_range(intarg))
+    if(!packfs_ctx->disabled && argtype == 1 && packfs_fd_in_range(fd))
     {
-        //int res = (action == F_DUPFD || action == F_DUPFD_CLOEXEC) ? packfs_dup(packfs_ctx, fd, intarg) : -1;
-        int res = packfs_dup(packfs_ctx, fd, intarg);
-        fprintf(stderr, "packfs: Fcntl(%d, %d, %d:%d/%p) == %d\n", fd, action, argtype, intarg, ptrarg, res);
+        int res = (action == F_DUPFD || action == F_DUPFD_CLOEXEC) ? packfs_dup(packfs_ctx, fd, intarg) : -1;
+        //fprintf(stderr, "packfs: Fcntl(%d, %d, %d:%d/%p) == %d\n", fd, action, argtype, intarg, ptrarg, res);
         if(res >= -1)
         {
-//#ifdef PACKFS_LOG
-//            fprintf(stderr, "packfs: Fcntl(%d, %d, %d/%p) == %d\n", fd, action, intarg, ptrarg, res);
-//#endif
+#ifdef PACKFS_LOG
+            fprintf(stderr, "packfs: Fcntl(%d, %d, %d:%d/%p) == %d\n", fd, action, argtype, intarg, ptrarg, res);
+#endif
             return res;
         }
     }
