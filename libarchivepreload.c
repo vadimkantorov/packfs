@@ -402,12 +402,14 @@ DIR* packfs_opendir(struct packfs_context* packfs_ctx, const char* path)
             *fileptr = (struct dirent){0};
             fileptr->d_ino = (ino_t)d_ino;
             fileptr->d_off = (off_t)d_off;
+            int fd = packfs_filefd_min + k;
 
             packfs_ctx->packfs_fileisdir[k] = 1;
-            packfs_ctx->packfs_filefd[k] = packfs_filefd_min + k;
+            packfs_ctx->packfs_filefd[k] = fd;
             packfs_ctx->packfs_filesize[k] = 0;
             packfs_ctx->packfs_fileino[k] = d_ino;
             packfs_ctx->packfs_fileptr[k] = (void*)fileptr;
+            fprintf(stderr, "packfs: Opendir(\"%s\") -> %d\n", path, fd);
             return (DIR*)(void*)fileptr;
         }
     }
@@ -525,6 +527,12 @@ int packfs_close(struct packfs_context* packfs_ctx, int fd)
             {
 //#ifdef PACKFS_LOG
                 fprintf(stderr, "packfs: closed fakely dir: %d\n", fd);
+            
+                //packfs_ctx->packfs_fileisdir[k] = 0;
+                //packfs_ctx->packfs_filefd[k] = 0;
+                //packfs_ctx->packfs_filesize[k] = 0;
+                //packfs_ctx->packfs_fileptr[k] = NULL;
+                //packfs_ctx->packfs_fileino[k] = 0;
 //#endif
                 return 0;//-1;
             }
