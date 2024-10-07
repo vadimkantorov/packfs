@@ -1156,7 +1156,9 @@ int fcntl(int fd, int action, ...)
 {
     // https://savannah.gnu.org/bugs/?48169
     // https://github.com/coreutils/gnulib/blob/master/lib/fcntl.c
+    // https://github.com/coreutils/gnulib/blob/master/lib/cloexec.c
     // https://git.savannah.gnu.org/gitweb/?p=gnulib.git;a=blob;f=lib/fcntl.c
+    // https://git.savannah.gnu.org/gitweb/?p=gnulib.git;a=blob;f=lib/cloexec.c
     // https://man7.org/linux/man-pages/man2/fcntl.2.html
     int intarg = -1;
     void* ptrarg = NULL;
