@@ -1137,14 +1137,17 @@ int packfs_dup(struct packfs_context* packfs_ctx, int oldfd, int newfd)
             packfs_ctx->packfs_filefd[k]    = fd;
             packfs_ctx->packfs_filesize[k]  = packfs_ctx->packfs_filesize[K];
             packfs_ctx->packfs_fileino[k]   = packfs_ctx->packfs_fileino[K];
-            packfs_ctx->packfs_dirent[k]    = (struct dirent){0};
-            packfs_ctx->packfs_fileptr[k]   = NULL; //TODO: how to dup fmemopen-produced state?
             
-            if(packfs_ctx->packfs_fileisdir[k])
-            {
-                packfs_ctx->packfs_dirent[k] = packfs_ctx->packfs_dirent[K];
-                packfs_ctx->packfs_fileptr[k] = &packfs_ctx->packfs_dirent[k]; 
-            }
+            packfs_ctx->packfs_dirent[k]    = packfs_ctx->packfs_dirent[K];
+            packfs_ctx->packfs_fileptr[k]   = packfs_ctx->packfs_fileptr[K]
+            
+            //packfs_ctx->packfs_dirent[k]    = (struct dirent){0};
+            //packfs_ctx->packfs_fileptr[k]   = NULL; //TODO: how to dup fmemopen-produced state?
+            //if(packfs_ctx->packfs_fileisdir[k])
+            //{
+            //    packfs_ctx->packfs_dirent[k] = packfs_ctx->packfs_dirent[K];
+            //    packfs_ctx->packfs_fileptr[k] = &packfs_ctx->packfs_dirent[k]; 
+            //}
             return fd;
         }
     }
