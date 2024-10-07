@@ -29,7 +29,7 @@ enum
 struct packfs_context
 {
     int (*orig_open)(const char *path, int flags, ...);
-    int (*orig_openat)(int dirfd, const char *path, int flags);
+    int (*orig_openat)(int dirfd, const char *path, int flags, ...);
     int (*orig_close)(int fd);
     ssize_t (*orig_read)(int fd, void* buf, size_t count);
     int (*orig_access)(const char *path, int flags);
@@ -753,6 +753,15 @@ int open(const char *path, int flags, ...)
 
 int openat(int dirfd, const char *path, int flags, ...)
 {
+    mode_t mode = 0;
+    if((flags & O_CREAT) != 0 || (flags & O_TMPFILE) != 0)
+    {
+        va_list arg;
+        va_start(arg, flags);
+        mode = va_arg(arg, mode_t);
+        va_end(arg);
+    }
+    
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: openat: enter(%d, \"%s\", %d)\n", dirfd, path, flags);
 #endif
@@ -776,7 +785,7 @@ int openat(int dirfd, const char *path, int flags, ...)
         }
     }
     
-    int res = packfs_ctx->orig_openat(dirfd, path, flags);
+    int res = packfs_ctx->orig_openat(dirfd, path, flags, mode);
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: openat(%d, \"%s\", %d) == %d\n", dirfd, path, flags, res);
 #endif
