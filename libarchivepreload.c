@@ -1114,7 +1114,42 @@ int closedir(DIR* stream)
 
 int packfs_dup(struct packfs_context* packfs_ctx, int oldfd, int newfd)
 {
-    return oldfd;
+    int K = -1;
+    if(oldfd >= 0 && packfs_filefd_min <= oldfd && oldfd < packfs_filefd_max)
+    {
+        for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
+        {
+            if(packfs_ctx->packfs_filefd[k] == oldfd)
+            {
+                K = k;
+                break;
+            }
+        }
+    }
+    
+    for(size_t k = 0; K >= 0 && k < packfs_filefd_max - packfs_filefd_min; k++)
+    {
+        int fd = packfs_filefd_min + k;
+        if(packfs_ctx->packfs_filefd[k] == 0 && (newfd < packfs_filefd_min || newfd >= fd))
+        {
+            packfs_ctx->packfs_fileisdir[k] = packfs_ctx->packfs_fileisdir[K];
+            packfs_ctx->packfs_filefd[k]    = packfs_ctx->packfs_filefd[K];
+            packfs_ctx->packfs_fileptr[k]   = NULL; //TODO: how to dup fmemopen-produced state?
+            packfs_ctx->packfs_filesize[k]  = packfs_ctx->packfs_filesize[K];
+            packfs_ctx->packfs_fileino[k]   = packfs_ctx->packfs_fileino[K];
+            packfs_ctx->packfs_dirent[k]    = (struct dirent){0};
+            
+            if(packfs_ctx->packfs_fileisdir[k])
+            {
+                packfs_ctx->packfs_dirent[k] = packfs_ctx->packfs_filedirent[K];
+                packfs_ctx->packfs_fileptr[k] = &packfs_ctx->packfs_filedirent[k]; 
+            }
+            return fd;
+        }
+    }
+
+    return -1;
+    //return oldfd;
 }
 
 int fcntl(int fd, int action, ...)
@@ -1166,13 +1201,13 @@ int fcntl(int fd, int action, ...)
 
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     
-    if(!packfs_ctx->disabled)
+    if(!packfs_ctx->disabled && argtype == -1 && packfs_fd_in_range(intarg))
     {
         int res = (action == F_DUPFD || action == F_DUPFD_CLOEXEC) ? packfs_dup(packfs_ctx, fd, intarg) : -1;
         if(res >= -1)
         {
 #ifdef PACKFS_LOG
-            fprintf(stderr, "packfs: Fcntl(%d, %d, ...) == %d\n", fd, action, res);
+            fprintf(stderr, "packfs: Fcntl(%d, %d, %d/%p) == %d\n", fd, action, intarg, ptrarg, res);
 #endif
             return res;
         }
