@@ -1114,8 +1114,8 @@ int closedir(DIR* stream)
 
 int packfs_dup(struct packfs_context* packfs_ctx, int oldfd, int newfd)
 {
-    return oldfd;
-    /*
+    //return oldfd;
+    
     int K = -1;
     if(oldfd >= 0 && packfs_filefd_min <= oldfd && oldfd < packfs_filefd_max)
     {
@@ -1149,7 +1149,7 @@ int packfs_dup(struct packfs_context* packfs_ctx, int oldfd, int newfd)
         }
     }
     return -1;
-    */
+    
 }
 
 int fcntl(int fd, int action, ...)
