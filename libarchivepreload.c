@@ -1026,9 +1026,9 @@ DIR* opendir(const char *path)
         struct dirent* stream = packfs_opendir(packfs_ctx, path);
         if(stream != NULL)
         {
-#ifdef PACKFS_LOG
+//#ifdef PACKFS_LOG
             fprintf(stderr, "packfs: Opendir(\"%s\") == %p\n", path, (void*)stream);
-#endif
+//#endif
             return (DIR*)stream;
         }
     }
@@ -1219,9 +1219,9 @@ int fcntl(int fd, int action, ...)
         int res = (action == F_DUPFD || action == F_DUPFD_CLOEXEC) ? packfs_dup(packfs_ctx, fd, intarg) : -1;
         if(res >= -1)
         {
-#ifdef PACKFS_LOG
+//#ifdef PACKFS_LOG
             fprintf(stderr, "packfs: Fcntl(%d, %d, %d:%d/%p) == %d\n", fd, action, argtype, intarg, ptrarg, res);
-#endif
+//#endif
             return res;
         }
     }
