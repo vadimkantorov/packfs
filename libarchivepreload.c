@@ -1160,7 +1160,7 @@ int fcntl(int fd, int action, ...)
         }
     }
     
-    int res = argtype == 1 ? packfs_ctx->orig_fcntl(fd, action, intarg) : arg_type == -1 ? packfs_ctx->orig_fcntl(fd, action, ptrarg) : packfs_ctx->orig_fcntl(fd, action);
+    int res = argtype == 1 ? packfs_ctx->orig_fcntl(fd, action, intarg) : argtype == -1 ? packfs_ctx->orig_fcntl(fd, action, ptrarg) : packfs_ctx->orig_fcntl(fd, action);
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: fcntl(%d, %d, ...) == %d\n", fd, action, res);
 #endif
