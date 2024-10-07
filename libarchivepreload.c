@@ -1108,11 +1108,11 @@ int closedir(DIR* stream)
     {        
         int* ptr = packfs_find(packfs_ctx, -1, stream);
         int fd = ptr == NULL ? -1 : *ptr;
+
+        int res = packfs_close(packfs_ctx, fd);
 //#ifdef PACKFS_LOG
         fprintf(stderr, "packfs: Closedir: %d\n", fd);
 //#endif
-
-        int res = packfs_close(packfs_ctx, fd);
         if(res >= -1)
         {
 #ifdef PACKFS_LOG
