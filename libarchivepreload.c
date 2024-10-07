@@ -1154,6 +1154,7 @@ int packfs_dup(struct packfs_context* packfs_ctx, int oldfd, int newfd)
 
 int fcntl(int fd, int action, ...)
 {
+    // https://savannah.gnu.org/bugs/?48169
     // https://github.com/coreutils/gnulib/blob/master/lib/fcntl.c
     // https://git.savannah.gnu.org/gitweb/?p=gnulib.git;a=blob;f=lib/fcntl.c
     // https://man7.org/linux/man-pages/man2/fcntl.2.html
@@ -1203,12 +1204,13 @@ int fcntl(int fd, int action, ...)
     
     if(!packfs_ctx->disabled)// && argtype == 1 && packfs_fd_in_range(intarg))
     {
-        //int res = (action == F_DUPFD || action == F_DUPFD_CLOEXEC) ? packfs_dup(packfs_ctx, fd, intarg) : -1;
-        int res = packfs_dup(packfs_ctx, fd, intarg);
+        int res = (action == F_DUPFD || action == F_DUPFD_CLOEXEC) ? packfs_dup(packfs_ctx, fd, intarg) : -1;
+        //int res = packfs_dup(packfs_ctx, fd, intarg);
+        fprintf(stderr, "packfs: Fcntl(%d, %d, %d:%d/%p) == %d\n", fd, action, argtype, intarg, ptrarg, res);
         if(res >= -1)
         {
 //#ifdef PACKFS_LOG
-            fprintf(stderr, "packfs: Fcntl(%d, %d, %d/%p) == %d\n", fd, action, intarg, ptrarg, res);
+//            fprintf(stderr, "packfs: Fcntl(%d, %d, %d/%p) == %d\n", fd, action, intarg, ptrarg, res);
 //#endif
             return res;
         }
