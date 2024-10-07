@@ -802,18 +802,16 @@ int openat(int dirfd, const char *path, int flags, ...)
 
 int close(int fd)
 {
-#ifdef PACKFS_LOG
-    fprintf(stderr, "packfs: close enter: %d\n", (int)errno);
-#endif
-    
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     if(!packfs_ctx->disabled)
     {
         int res = packfs_close(packfs_ctx, fd);
+        fprintf(stderr, "packfs: CloseMAYBEdir: %d\n", fd);
+
         if(res >= -1)
         {
 #ifdef PACKFS_LOG
-            fprintf(stderr, "packfs: Close(%d) == %d / %d\n", fd, res, (int)errno);
+            fprintf(stderr, "packfs: Close(%d) == %d\n", fd, res);
 #endif
             return res;
         }
@@ -926,9 +924,6 @@ int stat(const char *restrict path, struct stat *restrict statbuf)
 
 int fstat(int fd, struct stat * statbuf)
 {
-#ifdef PACKFS_LOG
-    fprintf(stderr, "packfs: Fstat enter: %d / %d\n", fd, (int)errno);
-#endif
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     if(!packfs_ctx->disabled)
     {
@@ -944,7 +939,7 @@ int fstat(int fd, struct stat * statbuf)
         if(res >= -1)
         {
 #ifdef PACKFS_LOG
-            fprintf(stderr, "packfs: Fstat(%d, %p) == %d / %d\n", fd, (void*)statbuf, res, (int)errno);
+            fprintf(stderr, "packfs: Fstat(%d, %p) == %d\n", fd, (void*)statbuf, res);
 #endif
             return res;
         }
