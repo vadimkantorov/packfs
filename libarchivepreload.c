@@ -1023,13 +1023,16 @@ DIR* opendir(const char *path)
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
-        struct dirent* stream = packfs_opendir(packfs_ctx, path);
+        DIR* stream = packfs_opendir(packfs_ctx, path);
         if(stream != NULL)
         {
 //#ifdef PACKFS_LOG
-            fprintf(stderr, "packfs: Opendir(\"%s\") == %p\n", path, (void*)stream);
+            int* ptr = packfs_find(packfs_ctx, -1, stream);
+            int fd = ptr == NULL ? -1 : *ptr;
+
+            fprintf(stderr, "packfs: Opendir(\"%s\") == %p / %d\n", path, (void*)stream, fd);
 //#endif
-            return (DIR*)stream;
+            return stream;
         }
     }
     
