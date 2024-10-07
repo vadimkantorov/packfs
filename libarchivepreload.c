@@ -1103,6 +1103,7 @@ int fcntl(int fd, int action, ...)
 {
     // https://github.com/coreutils/gnulib/blob/master/lib/fcntl.c
     // https://git.savannah.gnu.org/gitweb/?p=gnulib.git;a=blob;f=lib/fcntl.c
+    // https://man7.org/linux/man-pages/man2/fcntl.2.html
     int intarg = -1;
     void* ptrarg = NULL;
     int argtype = 0;
@@ -1149,7 +1150,7 @@ int fcntl(int fd, int action, ...)
     
     if(!packfs_ctx->disabled)
     {
-        int res = packfs_dup(packfs_ctx, fd, -1);
+        int res = (action == F_DUPFD || action == F_DUPFD_CLOEXEC) ? packfs_dup(packfs_ctx, fd, intarg) : -1;
         if(res >= -1)
         {
 #ifdef PACKFS_LOG
@@ -1159,7 +1160,7 @@ int fcntl(int fd, int action, ...)
         }
     }
     
-    int res = packfs_ctx->orig_fcntl(fd, action);
+    int res = argtype == 1 ? packfs_ctx->orig_fcntl(fd, action, intarg) : arg_type == -1 ? packfs_ctx->orig_fcntl(fd, action, ptrarg) : packfs_ctx->orig_fcntl(fd, action);
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: fcntl(%d, %d, ...) == %d\n", fd, action, res);
 #endif
