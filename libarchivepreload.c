@@ -1201,9 +1201,10 @@ int fcntl(int fd, int action, ...)
 
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     
-    if(!packfs_ctx->disabled && argtype == 1 && packfs_fd_in_range(intarg))
+    if(!packfs_ctx->disabled)// && argtype == 1 && packfs_fd_in_range(intarg))
     {
-        int res = (action == F_DUPFD || action == F_DUPFD_CLOEXEC) ? packfs_dup(packfs_ctx, fd, intarg) : -1;
+        //int res = (action == F_DUPFD || action == F_DUPFD_CLOEXEC) ? packfs_dup(packfs_ctx, fd, intarg) : -1;
+        int res = packfs_dup(packfs_ctx, fd, intarg);
         if(res >= -1)
         {
 //#ifdef PACKFS_LOG
