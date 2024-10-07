@@ -28,7 +28,7 @@ enum
 
 struct packfs_context
 {
-    int (*orig_open)(const char *path, int flags);
+    int (*orig_open)(const char *path, int flags, ...);
     int (*orig_openat)(int dirfd, const char *path, int flags);
     int (*orig_close)(int fd);
     ssize_t (*orig_read)(int fd, void* buf, size_t count);
@@ -719,6 +719,15 @@ int fclose(FILE* stream)
 
 int open(const char *path, int flags, ...)
 {
+    mode_t mode = 0;
+    if((flags & O_CREAT) != 0 || (flags & O_TMPFILE) != 0)
+    {
+        va_list arg;
+        va_start(arg, flags);
+        mode = va_arg(arg, mode_t);
+        va_end(arg);
+    }
+    
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
@@ -734,8 +743,8 @@ int open(const char *path, int flags, ...)
             return res;
         }
     }
-    
-    int res = packfs_ctx->orig_open(path, flags);
+
+    int res = packfs_ctx->orig_open(path, flags, mode);
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: open(\"%s\", %d) == %d\n", path, flags, res);
 #endif
@@ -1107,7 +1116,6 @@ int fcntl(int fd, int action, ...)
     int intarg = -1;
     void* ptrarg = NULL;
     int argtype = 0;
-
     va_list arg;
     va_start(arg, action);
     switch(action)
@@ -1135,6 +1143,7 @@ int fcntl(int fd, int action, ...)
         case F_SETSIG:
         {
             intarg = va_arg(arg, int);
+            argtype = 1;
             break;
         }
         default:
