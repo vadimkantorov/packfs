@@ -161,22 +161,22 @@ size_t packfs_archive_prefix_extract(const char* path)
     return 0;
 }
 
-int packfs_is_fd_in_range(int fd)
+int packfs_fd_in_range(int fd)
 {
     return fd >= 0 && fd >= packfs_filefd_min && fd < packfs_filefd_max;
 }
 
-int packfs_is_path_in_range(const char* packfs_archive_prefix, const char* path)
+int packfs_path_in_range(const char* packfs_archive_prefix, const char* path)
 {
-    if(packfs_archive_prefix == NULL || packfs_archive_prefix[0] == '\0' || path == NULL || path[0] == '\0')
-        return 0;
-
     // 1 "/a/b"  "/a/b/c"
     // 0 "/a/b"  "/a/bb"
     // 1 "/a/b"  "/a/b"
     // 1 "/a/b"  "/a/b/"
     // 1 "/a/b/" "/a/b"
     // 0 "/a/bc" "/a/b"
+
+    if(packfs_archive_prefix == NULL || packfs_archive_prefix[0] == '\0' || path == NULL || path[0] == '\0')
+        return 0;
 
     size_t prefix_len = strlen(packfs_archive_prefix);
     size_t path_len = strlen(path);
@@ -1101,74 +1101,89 @@ int packfs_dup(struct packfs_context* packfs_ctx, int oldfd, int newfd)
 
 int fcntl(int fd, int action, ...)
 {
+    // https://github.com/coreutils/gnulib/blob/master/lib/fcntl.c
+    // https://git.savannah.gnu.org/gitweb/?p=gnulib.git;a=blob;f=lib/fcntl.c
     int intarg = -1;
     void* ptrarg = NULL;
-    //va_list arg;
-    //va_start (arg, action);
-    //INTARG:
-    // F_DUPFD
-    // F_DUPFD_CLOEXEC
-    // F_ADD_SEALS:
-    // F_BADFD:
-    // F_CHECK_OPENEVT:
-    // F_DUP2FD:
-    // F_DUP2FD_CLOEXEC:
-    // F_DUP2FD_CLOFORK:
-    // F_DUPFD:
-    // F_DUPFD_CLOEXEC:
-    // F_DUPFD_CLOFORK:
-    // F_GETXFL:
-    // F_GLOBAL_NOCACHE:
-    // F_MAKECOMPRESSED:
-    // F_MOVEDATAEXTENTS:
-    // F_NOCACHE:
-    // F_NODIRECT:
-    // F_NOTIFY:
-    // F_OPLKACK:
-    // F_OPLKREG:
-    // F_RDAHEAD:
-    // F_SETBACKINGSTORE:
-    // F_SETCONFINED:
-    // F_SETFD:
-    // F_SETFL:
-    // F_SETLEASE:
-    // F_SETNOSIGPIPE:
-    // F_SETOWN:
-    // F_SETPIPE_SZ:
-    // F_SETPROTECTIONCLASS:
-    // F_SETSIG:
-    // F_SINGLE_WRITER:
-    //int target = va_arg(arg, int);
+    int argtype = 0;
 
-    //NOARG:
-    // F_GETFD
-    // F_BARRIERFSYNC:
-    // F_CHKCLEAN:
-    // F_CLOSEM:
-    // F_FLUSH_DATA:
-    // F_FREEZE_FS:
-    // F_FULLFSYNC:
-    // F_GETCONFINED:
-    // F_GETDEFAULTPROTLEVEL:
-    // F_GETFD:
-    // F_GETFL:
-    // F_GETLEASE:
-    // F_GETNOSIGPIPE:
-    // F_GETOWN:
-    // F_GETPIPE_SZ:
-    // F_GETPROTECTIONCLASS:
-    // F_GETPROTECTIONLEVEL:
-    // F_GET_SEALS:
-    // F_GETSIG:
-    // F_MAXFD:
-    // F_RECYCLE:
-    // F_SETFIFOENH:
-    // F_THAW_FS:
-    
-    //PTRARG:
-    //void *p = va_arg (arg, void *);
-    
-    //va_end (arg);
+    va_list arg;
+    va_start(arg, action);
+    switch(action)
+    {
+        case F_GETFD:
+        case F_BARRIERFSYNC:
+        case F_CHKCLEAN:
+        case F_CLOSEM:
+        case F_FLUSH_DATA:
+        case F_FREEZE_FS:
+        case F_FULLFSYNC:
+        case F_GETCONFINED:
+        case F_GETDEFAULTPROTLEVEL:
+        case F_GETFD:
+        case F_GETFL:
+        case F_GETLEASE:
+        case F_GETNOSIGPIPE:
+        case F_GETOWN:
+        case F_GETPIPE_SZ:
+        case F_GETPROTECTIONCLASS:
+        case F_GETPROTECTIONLEVEL:
+        case F_GET_SEALS:
+        case F_GETSIG:
+        case F_MAXFD:
+        case F_RECYCLE:
+        case F_SETFIFOENH:
+        case F_THAW_FS:
+        {
+            argtype = 0;
+            break;
+        }
+        
+        case F_DUPFD:
+        case F_DUPFD_CLOEXEC:
+        case F_ADD_SEALS:
+        case F_BADFD:
+        case F_CHECK_OPENEVT:
+        case F_DUP2FD:
+        case F_DUP2FD_CLOEXEC:
+        case F_DUP2FD_CLOFORK:
+        case F_DUPFD:
+        case F_DUPFD_CLOEXEC:
+        case F_DUPFD_CLOFORK:
+        case F_GETXFL:
+        case F_GLOBAL_NOCACHE:
+        case F_MAKECOMPRESSED:
+        case F_MOVEDATAEXTENTS:
+        case F_NOCACHE:
+        case F_NODIRECT:
+        case F_NOTIFY:
+        case F_OPLKACK:
+        case F_OPLKREG:
+        case F_RDAHEAD:
+        case F_SETBACKINGSTORE:
+        case F_SETCONFINED:
+        case F_SETFD:
+        case F_SETFL:
+        case F_SETLEASE:
+        case F_SETNOSIGPIPE:
+        case F_SETOWN:
+        case F_SETPIPE_SZ:
+        case F_SETPROTECTIONCLASS:
+        case F_SETSIG:
+        case F_SINGLE_WRITER:
+        {
+            intarg = va_arg(arg, int);
+            break;
+        }
+
+        default:
+        {
+            ptrarg = va_arg(arg, void*);
+            argtype = -1;
+            break;
+        }
+    }
+    va_end(arg);
 
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     
