@@ -833,7 +833,7 @@ int openat(int dirfd, const char *path, int flags, ...)
 int close(int fd)
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
-    if(!packfs_ctx->disabled)
+    if(!packfs_ctx->disabled && packfs_fd_in_range(fd))
     {
         int res = packfs_close(packfs_ctx, fd);
         fprintf(stderr, "packfs: CloseMAYBEdir: %d\n", fd);
@@ -858,7 +858,7 @@ int close(int fd)
 ssize_t read(int fd, void* buf, size_t count)
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
-    if(!packfs_ctx->disabled)
+    if(!packfs_ctx->disabled && packfs_fd_in_range(fd))
     {
         ssize_t res = packfs_read(packfs_ctx, fd, buf, count);
         if(res >= 0)
@@ -880,7 +880,7 @@ ssize_t read(int fd, void* buf, size_t count)
 off_t lseek(int fd, off_t offset, int whence)
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
-    if(!packfs_ctx->disabled)
+    if(!packfs_ctx->disabled && packfs_fd_in_range(fd))
     {
         int res = packfs_seek(packfs_ctx, fd, (long)offset, whence);
         if(res >= 0)
@@ -955,7 +955,7 @@ int stat(const char *restrict path, struct stat *restrict statbuf)
 int fstat(int fd, struct stat * statbuf)
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
-    if(!packfs_ctx->disabled)
+    if(!packfs_ctx->disabled && packfs_fd_in_range(fd))
     {
         *statbuf = (struct stat){0};
         size_t size, isdir, d_ino;
@@ -1083,7 +1083,7 @@ DIR* fdopendir(int dirfd)
     fprintf(stderr, "packfs: Fdopendir enter: %d\n", dirfd);
 #endif
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
-    if(!packfs_ctx->disabled)
+    if(!packfs_ctx->disabled && packfs_fd_in_range(dirfd))
     {
         DIR* stream = packfs_find(packfs_ctx, dirfd, NULL);
         if(stream != NULL)
