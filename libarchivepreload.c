@@ -691,7 +691,7 @@ int packfs_dup(struct packfs_context* packfs_ctx, int oldfd, int newfd)
 FILE* fopen(const char *path, const char *mode)
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
-    if(!packfs_ctx->disabled)
+    if(!packfs_ctx->disabled && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path))
     {
         FILE* res = packfs_open(packfs_ctx, path);
         if(res != NULL)
@@ -768,7 +768,7 @@ int open(const char *path, int flags, ...)
     }
     
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
-    if(!packfs_ctx->disabled)
+    if(!packfs_ctx->disabled && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path))
     {
         void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(packfs_ctx, path) : (void*)packfs_open(packfs_ctx, path);
         if(stream != NULL)
@@ -903,7 +903,7 @@ off_t lseek(int fd, off_t offset, int whence)
 int access(const char *path, int flags) 
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
-    if(!packfs_ctx->disabled)
+    if(!packfs_ctx->disabled && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path))
     {
         int res = packfs_access(packfs_ctx, path);
         if(res >= -1)
@@ -925,7 +925,7 @@ int access(const char *path, int flags)
 int stat(const char *restrict path, struct stat *restrict statbuf)
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
-    if(!packfs_ctx->disabled)
+    if(!packfs_ctx->disabled && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path))
     {
         *statbuf = (struct stat){0};
         size_t size, isdir, d_ino;
@@ -1054,7 +1054,7 @@ int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, st
 DIR* opendir(const char *path)
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
-    if(!packfs_ctx->disabled)
+    if(!packfs_ctx->disabled && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path))
     {
         DIR* stream = packfs_opendir(packfs_ctx, path);
         if(stream != NULL)
