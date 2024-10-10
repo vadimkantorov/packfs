@@ -51,7 +51,8 @@ struct packfs_context
     int initialized, disabled;
     
     int packfs_filefd          [packfs_filefd_max - packfs_filefd_min];
-    int packfs_fileisdir       [packfs_filefd_max - packfs_filefd_min];
+    int packfs_filefdrefs      [packfs_filefd_max - packfs_filefd_min];
+    char packfs_fileisdir      [packfs_filefd_max - packfs_filefd_min];
     void* packfs_fileptr       [packfs_filefd_max - packfs_filefd_min];
     size_t packfs_filesize     [packfs_filefd_max - packfs_filefd_min];
     size_t packfs_fileino      [packfs_filefd_max - packfs_filefd_min];
@@ -405,6 +406,7 @@ DIR* packfs_opendir(struct packfs_context* packfs_ctx, const char* path)
             int fd = packfs_filefd_min + k;
 
             packfs_ctx->packfs_fileisdir[k] = 1;
+            packfs_ctx->packfs_filefdrefs[k] = 1;
             packfs_ctx->packfs_filefd[k] = fd;
             packfs_ctx->packfs_filesize[k] = 0;
             packfs_ctx->packfs_fileino[k] = d_ino;
@@ -499,6 +501,7 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
         if(packfs_ctx->packfs_filefd[k] == 0)
         {
             packfs_ctx->packfs_fileisdir[k] = 0;
+            packfs_ctx->packfs_filefdrefs[k] = 1;
             packfs_ctx->packfs_filefd[k] = packfs_filefd_min + k;
             packfs_ctx->packfs_fileptr[k] = fileptr;
             packfs_ctx->packfs_filesize[k] = filesize;
@@ -523,7 +526,11 @@ int packfs_close(struct packfs_context* packfs_ctx, int fd)
     {
         if(packfs_ctx->packfs_filefd[k] == fd)
         {
-            if(packfs_ctx->packfs_fileisdir[k])
+            packfs_ctx->packfs_filefdrefs[k]--;
+            if(packfs_ctx->packfs_filefdrefs[k] > 0)
+                return 0;
+
+            /*if(packfs_ctx->packfs_fileisdir[k])
             {
 //#ifdef PACKFS_LOG
                 //fprintf(stderr, "packfs: closed fakely dir: %d\n", fd);
@@ -536,9 +543,10 @@ int packfs_close(struct packfs_context* packfs_ctx, int fd)
                 packfs_ctx->packfs_fileino[k] = 0;
                 packfs_ctx->packfs_dirent[k]  = (struct dirent){0};
                 return 0;//-1;
-            }
+            }*/
 
             int res = (!packfs_ctx->packfs_fileisdir[k]) ? packfs_ctx->orig_fclose(packfs_ctx->packfs_fileptr[k]) : 0;
+            packfs_ctx->packfs_dirent[k]  = (struct dirent){0};
             packfs_ctx->packfs_fileisdir[k] = 0;
             packfs_ctx->packfs_filefd[k] = 0;
             packfs_ctx->packfs_filesize[k] = 0;
@@ -1147,20 +1155,23 @@ int packfs_dup(struct packfs_context* packfs_ctx, int oldfd, int newfd)
         int fd = packfs_filefd_min + k;
         if(packfs_ctx->packfs_filefd[k] == 0 && (newfd < packfs_filefd_min || newfd >= fd))
         {
+            packfs_ctx->packfs_filefdrefs[K]++;
+            
             packfs_ctx->packfs_fileisdir[k] = packfs_ctx->packfs_fileisdir[K];
             packfs_ctx->packfs_filefd[k]    = fd;
+            packfs_ctx->packfs_filefdrefs[k] = 1;
             packfs_ctx->packfs_filesize[k]  = packfs_ctx->packfs_filesize[K];
             packfs_ctx->packfs_fileino[k]   = packfs_ctx->packfs_fileino[K];
-            
-            //packfs_ctx->packfs_dirent[k]    = packfs_ctx->packfs_dirent[K];
-            //packfs_ctx->packfs_fileptr[k]   = packfs_ctx->packfs_fileptr[K];
+            packfs_ctx->packfs_dirent[k]    = packfs_ctx->packfs_dirent[K];
+            packfs_ctx->packfs_fileptr[k]   = packfs_ctx->packfs_fileptr[K];
+            /*
             packfs_ctx->packfs_dirent[k]    = (struct dirent){0};
             packfs_ctx->packfs_fileptr[k]   = NULL; //TODO: how to dup fmemopen-produced state?
             if(packfs_ctx->packfs_fileisdir[k])
             {
                 packfs_ctx->packfs_dirent[k] = packfs_ctx->packfs_dirent[K];
                 packfs_ctx->packfs_fileptr[k] = &packfs_ctx->packfs_dirent[k]; 
-            }
+            }*/
             return fd;
         }
     }
