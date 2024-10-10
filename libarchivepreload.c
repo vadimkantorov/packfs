@@ -650,6 +650,42 @@ int packfs_stat(struct packfs_context* packfs_ctx, const char* path, int fd, siz
     return -2;
 }
 
+int packfs_dup(struct packfs_context* packfs_ctx, int oldfd, int newfd)
+{
+    int K = -1;
+    if(oldfd >= 0 && packfs_filefd_min <= oldfd && oldfd < packfs_filefd_max)
+    {
+        for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
+        {
+            if(packfs_ctx->packfs_filefd[k] == oldfd)
+            {
+                K = k;
+                break;
+            }
+        }
+    }
+    for(size_t k = 0; K >= 0 && k < packfs_filefd_max - packfs_filefd_min; k++)
+    {
+        int fd = packfs_filefd_min + k;
+        if(packfs_ctx->packfs_filefd[k] == 0 && (newfd < packfs_filefd_min || newfd >= fd))
+        {
+            packfs_ctx->packfs_filefdrefs[K]++;
+            
+            packfs_ctx->packfs_fileisdir[k] = packfs_ctx->packfs_fileisdir[K];
+            packfs_ctx->packfs_filefd[k]    = fd;
+            packfs_ctx->packfs_filefdrefs[k] = 1;
+            packfs_ctx->packfs_filesize[k]  = packfs_ctx->packfs_filesize[K];
+            packfs_ctx->packfs_fileino[k]   = packfs_ctx->packfs_fileino[K];
+            packfs_ctx->packfs_dirent[k]    = packfs_ctx->packfs_dirent[K];
+            packfs_ctx->packfs_fileptr[k]   = packfs_ctx->packfs_fileptr[K];
+            return fd;
+        }
+    }
+    return -1;
+    
+}
+
+
 ///////////
 
 FILE* fopen(const char *path, const char *mode)
@@ -1117,41 +1153,6 @@ int closedir(DIR* stream)
 #endif
     
     return res;
-}
-
-int packfs_dup(struct packfs_context* packfs_ctx, int oldfd, int newfd)
-{
-    int K = -1;
-    if(oldfd >= 0 && packfs_filefd_min <= oldfd && oldfd < packfs_filefd_max)
-    {
-        for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
-        {
-            if(packfs_ctx->packfs_filefd[k] == oldfd)
-            {
-                K = k;
-                break;
-            }
-        }
-    }
-    for(size_t k = 0; K >= 0 && k < packfs_filefd_max - packfs_filefd_min; k++)
-    {
-        int fd = packfs_filefd_min + k;
-        if(packfs_ctx->packfs_filefd[k] == 0 && (newfd < packfs_filefd_min || newfd >= fd))
-        {
-            packfs_ctx->packfs_filefdrefs[K]++;
-            
-            packfs_ctx->packfs_fileisdir[k] = packfs_ctx->packfs_fileisdir[K];
-            packfs_ctx->packfs_filefd[k]    = fd;
-            packfs_ctx->packfs_filefdrefs[k] = 1;
-            packfs_ctx->packfs_filesize[k]  = packfs_ctx->packfs_filesize[K];
-            packfs_ctx->packfs_fileino[k]   = packfs_ctx->packfs_fileino[K];
-            packfs_ctx->packfs_dirent[k]    = packfs_ctx->packfs_dirent[K];
-            packfs_ctx->packfs_fileptr[k]   = packfs_ctx->packfs_fileptr[K];
-            return fd;
-        }
-    }
-    return -1;
-    
 }
 
 int fcntl(int fd, int action, ...)
