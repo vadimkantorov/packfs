@@ -32,7 +32,8 @@ LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
 - https://stackoverflow.com/questions/74890409/what-happens-in-c-function-readdir-from-dirent-h
 - https://stackoverflow.com/questions/24103009/is-it-possible-to-implement-readdir-in-ubuntu-12-10-kernel-3-5
 - https://unix.stackexchange.com/questions/625899/correctly-implementing-seeking-in-fuse-readdir-operation
-- https://github.com/facebook/sapling/blob/5cc682e8ff24ef182be2dbe07e484396539e80f4/eden/fs/inodes/TreeInode.cpp#L1798-L1833- https://github.com/facebook/sapling/blob/main/eden/fs/docs/InodeLifetime.md
+- https://github.com/facebook/sapling/blob/5cc682e8ff24ef182be2dbe07e484396539e80f4/eden/fs/inodes/TreeInode.cpp#L1798-L1833
+- https://github.com/facebook/sapling/blob/main/eden/fs/docs/InodeLifetime.md
 - https://lwn.net/Articles/544520/
 - https://lwn.net/Articles/544298/
 - https://github.com/TheAssassin/AppImageLauncher/issues/361
@@ -43,3 +44,9 @@ LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
 - https://github.com/fritzw/ld-preload-open
 - https://github.com/strace/strace/blob/8399328f628182cf236a1c39a074d601babdeaa4/src/fcntl.c#L102
 - https://git.savannah.gnu.org/gitweb/?p=gnulib.git;a=blob;f=lib/fcntl.c;h=7cd3a0f976d9f9c9fbb1b5cab5b57780a72cec58;hb=HEAD
+- https://savannah.gnu.org/bugs/?48169
+- https://github.com/coreutils/gnulib/blob/master/lib/fcntl.c
+- https://github.com/coreutils/gnulib/blob/master/lib/cloexec.c
+- https://git.savannah.gnu.org/gitweb/?p=gnulib.git;a=blob;f=lib/fcntl.c
+- https://git.savannah.gnu.org/gitweb/?p=gnulib.git;a=blob;f=lib/cloexec.c
+- https://man7.org/linux/man-pages/man2/fcntl.2.html

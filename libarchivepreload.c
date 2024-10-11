@@ -49,7 +49,6 @@ struct packfs_context
     int (*orig_fchdir)(int fd);
     
     int initialized, disabled;
-    
     int packfs_filefd          [packfs_filefd_max - packfs_filefd_min];
     int packfs_filefdrefs      [packfs_filefd_max - packfs_filefd_min];
     char packfs_fileisdir      [packfs_filefd_max - packfs_filefd_min];
@@ -57,7 +56,6 @@ struct packfs_context
     size_t packfs_filesize     [packfs_filefd_max - packfs_filefd_min];
     size_t packfs_fileino      [packfs_filefd_max - packfs_filefd_min];
     struct dirent packfs_dirent[packfs_filefd_max - packfs_filefd_min];
-    
     size_t packfs_archive_entries_num;
     char packfs_archive_prefix[packfs_entries_name_maxlen];
     void* packfs_archive_fileptr;
@@ -88,16 +86,6 @@ void packfs_sanitize_path(char* dest, const char* path)
     }
 
     return;
-}
-
-void packfs_join_path(char* dest, const char* archive_prefix, const char* dirpath, const char* path)
-{
-    if(strlen(dirpath) > 0)
-        sprintf(dest, "%s%c%s%c%s", archive_prefix, (char)packfs_pathsep, dirpath, (char)packfs_pathsep, path);
-    else if(0 == strcmp(archive_prefix, path))
-        strcpy(dest, path);
-    else
-        sprintf(dest, "%s%c%s", archive_prefix, (char)packfs_pathsep, path);
 }
 
 const char* packfs_basename(const char* path)
@@ -162,6 +150,14 @@ size_t packfs_archive_prefix_extract(const char* path)
     return 0;
 }
 
+int packfs_stream_in_context(struct packfs_context* packfs_ctx, void* stream)
+{
+    for(size_t k = 0; stream != NULL && k < packfs_filefd_max - packfs_filefd_min; k++)
+        if(packfs_ctx->packfs_filefd[k] != 0 && packfs_ctx->packfs_fileptr[k] == stream)
+            return 1;
+    return 0;
+}
+
 int packfs_fd_in_range(int fd)
 {
     return fd >= 0 && fd >= packfs_filefd_min && fd < packfs_filefd_max;
@@ -186,6 +182,21 @@ int packfs_path_in_range(const char* packfs_archive_prefix, const char* path)
     size_t prefix_len_m1 = prefix_endswith_slash ? (prefix_len - 1) : prefix_len;
 
     return prefix_ok && ((path_len == prefix_len_m1) || (path_len >= prefix_len && path[prefix_len_m1] == packfs_pathsep));
+}
+
+const char* packfs_resolve_relative_path(struct packfs_context* packfs_ctx, char* dest, int dirfd, const char* path)
+{
+    struct dirent* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
+    const char* dirpath = ptr != NULL ? (packfs_ctx->packfs_archive_entries_names + (size_t)ptr->d_off) : "";
+    
+    if(strlen(dirpath) > 0)
+        sprintf(dest, "%s%c%s%c%s", packfs_ctx->packfs_archive_prefix, (char)packfs_pathsep, dirpath, (char)packfs_pathsep, path);
+    else if(0 == strcmp(packfs_ctx->packfs_archive_prefix, path))
+        strcpy(dest, path);
+    else
+        sprintf(dest, "%s%c%s", packfs_ctx->packfs_archive_prefix, (char)packfs_pathsep, path);
+    
+    return dest;
 }
 
 int packfs_indir(const char* dir_path, const char* path)
@@ -734,7 +745,7 @@ int fileno(FILE *stream)
 int fclose(FILE* stream)
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
-    if(!packfs_ctx->disabled)
+    if(!packfs_ctx->disabled && packfs_stream_in_context(packfs_ctx, stream))
     {
         int* ptr = packfs_find(packfs_ctx, -1, stream);
         int fd = ptr == NULL ? -1 : *ptr;
@@ -799,17 +810,17 @@ int openat(int dirfd, const char *path, int flags, ...)
         mode = va_arg(arg, mode_t);
         va_end(arg);
     }
-    
+
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: openat: enter(%d, \"%s\", %d)\n", dirfd, path, flags);
 #endif
     
+    char buf[2 * packfs_entries_name_maxlen] = "";
+    
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
-        struct dirent* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
-        const char* dir_entry_name = ptr != NULL ? (packfs_ctx->packfs_archive_entries_names + (size_t)ptr->d_off) : "";
-        char buf[2 * packfs_entries_name_maxlen] = ""; packfs_join_path(buf, packfs_ctx->packfs_archive_prefix, dir_entry_name, path); path = buf;
+        path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
         
         void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(packfs_ctx, path) : (void*)packfs_open(packfs_ctx, path);
         if(stream != NULL)
@@ -987,13 +998,13 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: Fstatat enter: %d / \"%s\"\n", dirfd, path);
 #endif
+    
+    char buf[2 * packfs_entries_name_maxlen] = "";  
+    
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
-        struct dirent* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
-        const char* dir_entry_name = ptr != NULL ? (packfs_ctx->packfs_archive_entries_names + (size_t)ptr->d_off) : "";
-        char buf[2 * packfs_entries_name_maxlen] = ""; packfs_join_path(buf, packfs_ctx->packfs_archive_prefix, dir_entry_name, path); path = buf;
-
+        path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
 #ifdef PACKFS_LOG
         fprintf(stderr, "packfs: Fstatat: %d / \"%s\"\n", dirfd, path);
 #endif
@@ -1026,9 +1037,13 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
 
 int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statbuf)
 {
+    char buf[2 * packfs_entries_name_maxlen] = "";
+    
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
+        path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
+
         size_t size, isdir, d_ino;
         int res = packfs_stat(packfs_ctx, path, -1, &isdir, &size, &d_ino);
         if(res == 0)
@@ -1108,7 +1123,7 @@ struct dirent* readdir(DIR* stream)
     fprintf(stderr, "packfs: Readdir enter: %p\n", (void*)stream);
 #endif
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
-    if(!packfs_ctx->disabled)
+    if(!packfs_ctx->disabled && packfs_stream_in_context(packfs_ctx, stream))
     {
         int* ptr = packfs_find(packfs_ctx, -1, stream);
 //#ifdef PACKFS_LOG
@@ -1129,7 +1144,7 @@ int closedir(DIR* stream)
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     
-    if(!packfs_ctx->disabled)
+    if(!packfs_ctx->disabled && packfs_stream_in_context(packfs_ctx, stream))
     {        
         int* ptr = packfs_find(packfs_ctx, -1, stream);
         int fd = ptr == NULL ? -1 : *ptr;
@@ -1157,12 +1172,6 @@ int closedir(DIR* stream)
 
 int fcntl(int fd, int action, ...)
 {
-    // https://savannah.gnu.org/bugs/?48169
-    // https://github.com/coreutils/gnulib/blob/master/lib/fcntl.c
-    // https://github.com/coreutils/gnulib/blob/master/lib/cloexec.c
-    // https://git.savannah.gnu.org/gitweb/?p=gnulib.git;a=blob;f=lib/fcntl.c
-    // https://git.savannah.gnu.org/gitweb/?p=gnulib.git;a=blob;f=lib/cloexec.c
-    // https://man7.org/linux/man-pages/man2/fcntl.2.html
     int intarg = -1;
     void* ptrarg = NULL;
     int argtype = 0;
