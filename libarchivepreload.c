@@ -64,6 +64,31 @@ struct packfs_context
     int packfs_archive_entries_isdir[packfs_archive_entries_nummax];
 };
 
+void* packfs_find(struct packfs_context* packfs_ctx, int fd, void* ptr)
+{
+    if(ptr != NULL)
+    {
+        for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
+        {
+            if(packfs_ctx->packfs_fileptr[k] == ptr)
+                return &packfs_ctx->packfs_filefd[k];
+        }
+        return NULL;
+    }
+    else
+    {
+        if(fd < packfs_filefd_min || fd >= packfs_filefd_max)
+            return NULL;
+        
+        for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
+        {
+            if(packfs_ctx->packfs_filefd[k] == fd)
+                return packfs_ctx->packfs_fileptr[k];
+        }
+    }
+    return NULL;
+}
+
 void packfs_sanitize_path(char* dest, const char* path)
 {
     if(path == NULL)
@@ -555,31 +580,6 @@ int packfs_close(struct packfs_context* packfs_ctx, int fd)
         }
     }
     return -1;
-}
-
-void* packfs_find(struct packfs_context* packfs_ctx, int fd, void* ptr)
-{
-    if(ptr != NULL)
-    {
-        for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
-        {
-            if(packfs_ctx->packfs_fileptr[k] == ptr)
-                return &packfs_ctx->packfs_filefd[k];
-        }
-        return NULL;
-    }
-    else
-    {
-        if(fd < packfs_filefd_min || fd >= packfs_filefd_max)
-            return NULL;
-        
-        for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
-        {
-            if(packfs_ctx->packfs_filefd[k] == fd)
-                return packfs_ctx->packfs_fileptr[k];
-        }
-    }
-    return NULL;
 }
 
 ssize_t packfs_read(struct packfs_context* packfs_ctx, int fd, void* buf, size_t count)
