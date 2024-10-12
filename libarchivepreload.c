@@ -284,7 +284,6 @@ struct packfs_context* packfs_ensure_context(const char* path)
         const char* packfs_archive_filename = NULL;
         if(path != NULL)
         {
-            //const char* path_sanitized = packfs_sanitize_path(path);
             char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
             size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized);
 #ifdef PACKFS_LOG
@@ -399,15 +398,7 @@ struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, DIR* stream)
 
 DIR* packfs_opendir(struct packfs_context* packfs_ctx, const char* path)
 {
-#ifdef PACKFS_LOG
-    fprintf(stderr, "packfs: packfs_opendir: before: \"%s\"\n", path);
-#endif
-    //const char* path_sanitized = packfs_sanitize_path(path);
     char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
-#ifdef PACKFS_LOG
-    fprintf(stderr, "packfs: packfs_opendir:  after: \"%s\"\n", path_sanitized);
-#endif
-
     const char* path_without_prefix = packfs_lstrip_prefix(path_sanitized, packfs_ctx->packfs_archive_prefix);
 
     struct dirent* fileptr = NULL;
@@ -462,7 +453,6 @@ DIR* packfs_opendir(struct packfs_context* packfs_ctx, const char* path)
 
 FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
 {
-    //const char* path_sanitized = packfs_sanitize_path(path);
     char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
     const char* path_without_prefix = packfs_lstrip_prefix(path_sanitized, packfs_ctx->packfs_archive_prefix);
 
@@ -605,7 +595,6 @@ int packfs_seek(struct packfs_context* packfs_ctx, int fd, long offset, int when
 
 int packfs_access(struct packfs_context* packfs_ctx, const char* path)
 {
-    //const char* path_sanitized = packfs_sanitize_path(path);
     char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
     const char* path_without_prefix = packfs_lstrip_prefix(path_sanitized, packfs_ctx->packfs_archive_prefix);
 
@@ -625,7 +614,6 @@ int packfs_access(struct packfs_context* packfs_ctx, const char* path)
 
 int packfs_stat(struct packfs_context* packfs_ctx, const char* path, int fd, size_t* isdir, size_t* size, size_t* d_ino)
 {
-    //const char* path_sanitized = packfs_sanitize_path(path);
     char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
     const char* path_without_prefix = packfs_lstrip_prefix(path_sanitized, packfs_ctx->packfs_archive_prefix);
     
@@ -825,9 +813,7 @@ int openat(int dirfd, const char *path, int flags, ...)
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(packfs_ctx->enabled)
     {
-        fprintf(stderr, "packfs: openat: before: \"%s\"\n", path);
         path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
-        fprintf(stderr, "packfs: openat: after: \"%s\"\n", path);
         
         void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(packfs_ctx, path) : (void*)packfs_open(packfs_ctx, path);
         if(stream != NULL)
@@ -1011,9 +997,7 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(packfs_ctx->enabled)
     {
-        fprintf(stderr, "packfs: fstatat: before: %d / \"%s\"\n", dirfd, path);
         path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
-        fprintf(stderr, "packfs: fstatat: after: %d / \"%s\"\n", dirfd, path);
 #ifdef PACKFS_LOG
         fprintf(stderr, "packfs: Fstatat: %d / \"%s\"\n", dirfd, path);
 #endif
@@ -1051,9 +1035,7 @@ int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, st
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(packfs_ctx->enabled)
     {
-        fprintf(stderr, "packfs: statx: before: \"%s\"\n", path);
         path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
-        fprintf(stderr, "packfs: statx: after: \"%s\"\n", path);
 
         size_t size = 0, isdir = 0, d_ino = 0;
         int res = packfs_stat(packfs_ctx, path, -1, &isdir, &size, &d_ino);
