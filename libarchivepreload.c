@@ -214,13 +214,17 @@ const char* packfs_resolve_relative_path(struct packfs_context* packfs_ctx, char
     struct dirent* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
     const char* dirpath = ptr != NULL ? (packfs_ctx->packfs_archive_entries_names + (size_t)ptr->d_off) : "";
     fprintf(stderr, "packfs: packfs_resolve_relative_path: %d / %p / \"%s\"\n", dirfd, (void*)ptr, dirpath);
+
+    if(ptr != NULL)
+    {
+        if(strlen(dirpath) > 0)
+            sprintf(dest, "%s%c%s%c%s", packfs_ctx->packfs_archive_prefix, (char)packfs_pathsep, dirpath, (char)packfs_pathsep, path);
+        else
+            sprintf(dest, "%s%c%s", packfs_ctx->packfs_archive_prefix, (char)packfs_pathsep, path);
+    }
     
-    if(strlen(dirpath) > 0)
-        sprintf(dest, "%s%c%s%c%s", packfs_ctx->packfs_archive_prefix, (char)packfs_pathsep, dirpath, (char)packfs_pathsep, path);
     else// if(0 == strcmp(packfs_ctx->packfs_archive_prefix, path))
         strcpy(dest, path);
-    //else
-    //    sprintf(dest, "%s%c%s", packfs_ctx->packfs_archive_prefix, (char)packfs_pathsep, path);
     
     return dest;
 }
