@@ -1042,7 +1042,7 @@ int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, st
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
-        path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
+        //path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
 
         size_t size, isdir, d_ino;
         int res = packfs_stat(packfs_ctx, path, -1, &isdir, &size, &d_ino);
