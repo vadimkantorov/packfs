@@ -46,7 +46,6 @@ struct packfs_context
     struct dirent* (*orig_readdir)(DIR *dirp);
     int (*orig_closedir)(DIR *dirp);
     int (*orig_fcntl)(int fd, int action, ...);
-    int (*orig_fchdir)(int fd);
     
     int initialized, enabled;
     int packfs_filefd          [packfs_filefd_max - packfs_filefd_min];
@@ -266,7 +265,6 @@ struct packfs_context* packfs_ensure_context(const char* path)
         packfs_ctx.orig_fileno    = dlsym(RTLD_NEXT, "fileno");
         packfs_ctx.orig_fclose    = dlsym(RTLD_NEXT, "fclose");
         packfs_ctx.orig_fcntl     = dlsym(RTLD_NEXT, "fcntl");
-        packfs_ctx.orig_fchdir    = dlsym(RTLD_NEXT, "fchdir");
         
         strcpy(packfs_ctx.packfs_archive_prefix, "");
         packfs_ctx.packfs_archive_entries_num = 0;
@@ -808,7 +806,7 @@ int openat(int dirfd, const char *path, int flags, ...)
     fprintf(stderr, "packfs: openat: enter(%d, \"%s\", %d)\n", dirfd, path, flags);
 #endif
     
-    char buf[2 * packfs_entries_name_maxlen] = "";
+    char buf[packfs_entries_name_maxlen];
     
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(packfs_ctx->enabled)
@@ -992,7 +990,7 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
     fprintf(stderr, "packfs: Fstatat enter: %d / \"%s\"\n", dirfd, path);
 #endif
     
-    char buf[2 * packfs_entries_name_maxlen] = "";  
+    char buf[packfs_entries_name_maxlen];
     
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(packfs_ctx->enabled)
@@ -1030,7 +1028,7 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
 
 int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statbuf)
 {
-    char buf[2 * packfs_entries_name_maxlen] = "";
+    char buf[packfs_entries_name_maxlen];
     
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(packfs_ctx->enabled)
@@ -1209,9 +1207,9 @@ int fcntl(int fd, int action, ...)
 
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     
-    if(packfs_ctx->enabled && argtype == 1 && packfs_fd_in_range(fd))
+    if(packfs_ctx->enabled && packfs_fd_in_range(fd))
     {
-        int res = (action == F_DUPFD || action == F_DUPFD_CLOEXEC) ? packfs_dup(packfs_ctx, fd, intarg) : -1;
+        int res = (argtype == 1 && (action == F_DUPFD || action == F_DUPFD_CLOEXEC)) ? packfs_dup(packfs_ctx, fd, intarg) : -1;
         if(res >= -1)
         {
 //#ifdef PACKFS_LOG
@@ -1224,17 +1222,6 @@ int fcntl(int fd, int action, ...)
     int res = argtype == 1 ? packfs_ctx->orig_fcntl(fd, action, intarg) : argtype == -1 ? packfs_ctx->orig_fcntl(fd, action, ptrarg) : packfs_ctx->orig_fcntl(fd, action);
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: fcntl(%d, %d, ...) == %d\n", fd, action, res);
-#endif
-    return res;
-}
-
-int fchdir(int fd)
-{
-    struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
-
-    int res = packfs_ctx->orig_fchdir(fd);
-#ifdef PACKFS_LOG
-    fprintf(stderr, "packfs: fchdir(%d) == %d\n", fd, res);
 #endif
     return res;
 }
