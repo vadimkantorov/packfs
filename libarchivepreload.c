@@ -216,10 +216,10 @@ const char* packfs_resolve_relative_path(struct packfs_context* packfs_ctx, char
     
     if(strlen(dirpath) > 0)
         sprintf(dest, "%s%c%s%c%s", packfs_ctx->packfs_archive_prefix, (char)packfs_pathsep, dirpath, (char)packfs_pathsep, path);
-    else if(0 == strcmp(packfs_ctx->packfs_archive_prefix, path))
+    else// if(0 == strcmp(packfs_ctx->packfs_archive_prefix, path))
         strcpy(dest, path);
-    else
-        sprintf(dest, "%s%c%s", packfs_ctx->packfs_archive_prefix, (char)packfs_pathsep, path);
+    //else
+    //    sprintf(dest, "%s%c%s", packfs_ctx->packfs_archive_prefix, (char)packfs_pathsep, path);
     
     return dest;
 }
@@ -820,7 +820,9 @@ int openat(int dirfd, const char *path, int flags, ...)
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
+        fprintf(stderr, "packfs: openat: before: \"%s\"\n", path);
         path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
+        fprintf(stderr, "packfs: openat: after: \"%s\"\n", path);
         
         void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(packfs_ctx, path) : (void*)packfs_open(packfs_ctx, path);
         if(stream != NULL)
@@ -1004,7 +1006,9 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
+        fprintf(stderr, "packfs: fstatat: before: \"%s\"\n", path);
         path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
+        fprintf(stderr, "packfs: fstatat: after: \"%s\"\n", path);
 #ifdef PACKFS_LOG
         fprintf(stderr, "packfs: Fstatat: %d / \"%s\"\n", dirfd, path);
 #endif
@@ -1042,7 +1046,9 @@ int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, st
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
-        //path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
+        fprintf(stderr, "packfs: statx: before: \"%s\"\n", path);
+        path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
+        fprintf(stderr, "packfs: statx: after: \"%s\"\n", path);
 
         size_t size, isdir, d_ino;
         int res = packfs_stat(packfs_ctx, path, -1, &isdir, &size, &d_ino);
