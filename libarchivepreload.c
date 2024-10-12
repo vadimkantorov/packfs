@@ -212,6 +212,7 @@ int packfs_path_in_range(const char* packfs_archive_prefix, const char* path)
 const char* packfs_resolve_relative_path(struct packfs_context* packfs_ctx, char* dest, int dirfd, const char* path)
 {
     struct dirent* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
+    fprintf(stderr, "packfs: packfs_resolve_relative_path: %d / %p\n", dirfd, (void*)ptr);
     const char* dirpath = ptr != NULL ? (packfs_ctx->packfs_archive_entries_names + (size_t)ptr->d_off) : "";
     
     if(strlen(dirpath) > 0)
@@ -1006,15 +1007,15 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     if(!packfs_ctx->disabled)
     {
-        fprintf(stderr, "packfs: fstatat: before: \"%s\"\n", path);
+        fprintf(stderr, "packfs: fstatat: before: %d / \"%s\"\n", dirfd, path);
         path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
-        fprintf(stderr, "packfs: fstatat: after: \"%s\"\n", path);
+        fprintf(stderr, "packfs: fstatat: after: %d / \"%s\"\n", dirfd, path);
 #ifdef PACKFS_LOG
         fprintf(stderr, "packfs: Fstatat: %d / \"%s\"\n", dirfd, path);
 #endif
 
         *statbuf = (struct stat){0};
-        size_t size, isdir, d_ino;
+        size_t size = 0, isdir = 0, d_ino = 0;
         int res = packfs_stat(packfs_ctx, path, -1, &isdir, &size, &d_ino);
         if(res == 0)
         {
