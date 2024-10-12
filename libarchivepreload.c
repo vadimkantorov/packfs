@@ -212,8 +212,8 @@ int packfs_path_in_range(const char* packfs_archive_prefix, const char* path)
 const char* packfs_resolve_relative_path(struct packfs_context* packfs_ctx, char* dest, int dirfd, const char* path)
 {
     struct dirent* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
-    fprintf(stderr, "packfs: packfs_resolve_relative_path: %d / %p\n", dirfd, (void*)ptr);
     const char* dirpath = ptr != NULL ? (packfs_ctx->packfs_archive_entries_names + (size_t)ptr->d_off) : "";
+    fprintf(stderr, "packfs: packfs_resolve_relative_path: %d / %p / \"%s\"\n", dirfd, (void*)ptr, dirpath);
     
     if(strlen(dirpath) > 0)
         sprintf(dest, "%s%c%s%c%s", packfs_ctx->packfs_archive_prefix, (char)packfs_pathsep, dirpath, (char)packfs_pathsep, path);
