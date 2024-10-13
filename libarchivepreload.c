@@ -189,13 +189,6 @@ int packfs_fd_in_range(int fd)
 
 int packfs_path_in_range(const char* packfs_archive_prefix, const char* path)
 {
-    // 1 "/a/b"  "/a/b/c"
-    // 0 "/a/b"  "/a/bb"
-    // 1 "/a/b"  "/a/b"
-    // 1 "/a/b"  "/a/b/"
-    // 1 "/a/b/" "/a/b"
-    // 0 "/a/bc" "/a/b"
-
     if(packfs_archive_prefix == NULL || packfs_archive_prefix[0] == '\0' || path == NULL || path[0] == '\0')
         return 0;
 
@@ -210,8 +203,9 @@ int packfs_path_in_range(const char* packfs_archive_prefix, const char* path)
 
 const char* packfs_resolve_relative_path(struct packfs_context* packfs_ctx, char* dest, int dirfd, const char* path)
 {
-    struct dirent* ptr = dirfd != AT_FDCWD ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
-    const char* dirpath = ptr != NULL ? (packfs_ctx->packfs_archive_entries_names + (size_t)ptr->d_off) : "";
+    int packfs_enabled = packfs_ctx->initialized && packfs_ctx->enabled;
+    struct dirent* ptr = (dirfd != AT_FDCWD && packfs_enabled) ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
+    const char* dirpath = (packfs_enabled && ptr != NULL) ? (packfs_ctx->packfs_archive_entries_names + (size_t)ptr->d_off) : "";
     fprintf(stderr, "packfs: packfs_resolve_relative_path: %d / %p / \"%s\"\n", dirfd, (void*)ptr, dirpath);
 
     if(ptr != NULL)
@@ -221,8 +215,7 @@ const char* packfs_resolve_relative_path(struct packfs_context* packfs_ctx, char
         else
             sprintf(dest, "%s%c%s", packfs_ctx->packfs_archive_prefix, (char)packfs_pathsep, path);
     }
-    
-    else// if(0 == strcmp(packfs_ctx->packfs_archive_prefix, path))
+    else
         strcpy(dest, path);
     
     return dest;
@@ -809,9 +802,11 @@ int openat(int dirfd, const char *path, int flags, ...)
     char buf[packfs_entries_name_maxlen];
     
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
-    if(packfs_ctx->enabled)
+    path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
+    if(packfs_ctx->enabled && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path))
+    //if(packfs_ctx->enabled)
     {
-        path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
+        //path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
         
         void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(packfs_ctx, path) : (void*)packfs_open(packfs_ctx, path);
         if(stream != NULL)
@@ -993,9 +988,11 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
     char buf[packfs_entries_name_maxlen];
     
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
-    if(packfs_ctx->enabled)
+    path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
+    if(packfs_ctx->enabled && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path))
+     //if(packfs_ctx->enabled)
     {
-        path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
+        //path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
 #ifdef PACKFS_LOG
         fprintf(stderr, "packfs: Fstatat: %d / \"%s\"\n", dirfd, path);
 #endif
@@ -1031,9 +1028,11 @@ int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, st
     char buf[packfs_entries_name_maxlen];
     
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
-    if(packfs_ctx->enabled)
+    path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
+    if(packfs_ctx->enabled && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path))
+    //if(packfs_ctx->enabled)
     {
-        path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
+        //path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
 
         size_t size = 0, isdir = 0, d_ino = 0;
         int res = packfs_stat(packfs_ctx, path, -1, &isdir, &size, &d_ino);
