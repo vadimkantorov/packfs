@@ -804,10 +804,7 @@ int openat(int dirfd, const char *path, int flags, ...)
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
     if(packfs_ctx->enabled && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path))
-    //if(packfs_ctx->enabled)
     {
-        //path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
-        
         void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(packfs_ctx, path) : (void*)packfs_open(packfs_ctx, path);
         if(stream != NULL)
         {
@@ -990,9 +987,7 @@ int fstatat(int dirfd, const char* path, struct stat * statbuf, int flags)
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
     if(packfs_ctx->enabled && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path))
-     //if(packfs_ctx->enabled)
     {
-        //path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
 #ifdef PACKFS_LOG
         fprintf(stderr, "packfs: Fstatat: %d / \"%s\"\n", dirfd, path);
 #endif
@@ -1030,10 +1025,7 @@ int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, st
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
     if(packfs_ctx->enabled && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path))
-    //if(packfs_ctx->enabled)
     {
-        //path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
-
         size_t size = 0, isdir = 0, d_ino = 0;
         int res = packfs_stat(packfs_ctx, path, -1, &isdir, &size, &d_ino);
         if(res == 0)
@@ -1164,7 +1156,7 @@ int fcntl(int fd, int action, ...)
 {
     int intarg = -1;
     void* ptrarg = NULL;
-    int argtype = 0;
+    char argtype = ' ';
     va_list arg;
     va_start(arg, action);
     switch(action)
@@ -1177,7 +1169,7 @@ int fcntl(int fd, int action, ...)
         case F_GETSIG:
         case F_GET_SEALS: // linux-specific
         {
-            argtype = 0;
+            argtype = ' ';
             break;
         }
         case F_ADD_SEALS: // linux-specific
@@ -1192,13 +1184,13 @@ int fcntl(int fd, int action, ...)
         case F_SETSIG:
         {
             intarg = va_arg(arg, int);
-            argtype = 1;
+            argtype = '0';
             break;
         }
         default:
         {
             ptrarg = va_arg(arg, void*);
-            argtype = -1;
+            argtype = '*';
             break;
         }
     }
@@ -1208,17 +1200,17 @@ int fcntl(int fd, int action, ...)
     
     if(packfs_ctx->enabled && packfs_fd_in_range(fd))
     {
-        int res = (argtype == 1 && (action == F_DUPFD || action == F_DUPFD_CLOEXEC)) ? packfs_dup(packfs_ctx, fd, intarg) : -1;
+        int res = (argtype == '0' && (action == F_DUPFD || action == F_DUPFD_CLOEXEC)) ? packfs_dup(packfs_ctx, fd, intarg) : -1;
         if(res >= -1)
         {
 //#ifdef PACKFS_LOG
-            fprintf(stderr, "packfs: Fcntl(%d, %d, %d:%d/%p) == %d\n", fd, action, argtype, intarg, ptrarg, res);
+            fprintf(stderr, "packfs: Fcntl(%d, %d, %c:%d/%p) == %d\n", fd, action, argtype, intarg, ptrarg, res);
 //#endif
             return res;
         }
     }
     
-    int res = argtype == 1 ? packfs_ctx->orig_fcntl(fd, action, intarg) : argtype == -1 ? packfs_ctx->orig_fcntl(fd, action, ptrarg) : packfs_ctx->orig_fcntl(fd, action);
+    int res = argtype == '0' ? packfs_ctx->orig_fcntl(fd, action, intarg) : argtype == '*' ? packfs_ctx->orig_fcntl(fd, action, ptrarg) : packfs_ctx->orig_fcntl(fd, action);
 #ifdef PACKFS_LOG
     fprintf(stderr, "packfs: fcntl(%d, %d, ...) == %d\n", fd, action, res);
 #endif
