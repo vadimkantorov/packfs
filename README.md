@@ -1,5 +1,7 @@
 # libarchivepreload
 Demo of abusing https://github.com/libarchive/libarchive to make `LD_PRELOAD`-based overrides of file-related functions. The `LD_PRELOAD`-based approach is useful when one doesn't have FUSE kernel module installed or does not have root permissions do use https://github.com/google/fuse-archive/ and it's wasteful to decompress a given archive.
+**Limitations:** This demo does not optimize for iterative entry reads or iterative seeks, https://github.com/google/fuse-archive/ makes an attempt in that direction; also see https://github.com/libarchive/libarchive/issues/2306 for future support of fast seeks in ZIP / TAR / CPIO in libarchive
+
 
 ```shell
 cc -shared -fPIC libarchivepreload.c -o libarchivepreload.so -ldl libarchive/.libs/libarchive.a zlib/libz.a -Ilibarchive -Ilibarchive/libarchive #-DPACKFS_LOG 
@@ -13,8 +15,25 @@ LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchi
 LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
 ```
 
-# Limitations
-- this demo does not optimize for iterative entry reads or iterative seeks, https://github.com/google/fuse-archive/ makes an attempt in that direction; also see https://github.com/libarchive/libarchive/issues/2306 for future support of fast seeks in ZIP / TAR / CPIO in libarchive
+# Overridden libc / posix functions
+- [`open`](https://man7.org/linux/man-pages/man2/open.2.html)
+- [`openat`](https://man7.org/linux/man-pages/man2/openat.2.html)
+- [`close`](https://man7.org/linux/man-pages/man2/close.2.html)
+- [`read`](https://man7.org/linux/man-pages/man2/read.2.html)
+- [`access`](https://man7.org/linux/man-pages/man2/access.2.html)
+- [`lseek`](https://man7.org/linux/man-pages/man2/lseek.2.html)
+- [`stat`](https://man7.org/linux/man-pages/man2/stat.2.html)
+- [`fstat`](https://man7.org/linux/man-pages/man2/fstat.2.html)
+- [`fstatat`](https://man7.org/linux/man-pages/man2/fstatat.2.html)
+- [`statx`](https://man7.org/linux/man-pages/man2/statx.2.html)
+- [`fopen`](https://en.cppreference.com/w/c/io/fopen)
+- [`fclose`](https://en.cppreference.com/w/c/io/fclose)
+- [`fileno`](https://man7.org/linux/man-pages/man3/fileno.3.html)
+- [`fcntl`](https://man7.org/linux/man-pages/man2/fcntl.2.html) - only `F_DUPFD` and `F_DUPFD_CLOEXEC` is emulated
+- [`opendir`](https://man7.org/linux/man-pages/man3/opendir.3.html)
+- [`fdopendir`](https://man7.org/linux/man-pages/man3/fdopendir.3p.html)
+- [`readdir`](https://man7.org/linux/man-pages/man3/readdir.3.html)
+- [`closedir`](https://man7.org/linux/man-pages/man3/closedir.3.html)
 
 # References
 - https://mropert.github.io/2018/02/02/pic_pie_sanitizers/
