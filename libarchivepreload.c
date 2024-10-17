@@ -29,18 +29,6 @@ enum
 
 typedef int (*packfs_archive_read_support_format) (void *);
 
-void packfs_archive_read_new(struct archive* a)
-{
-    int packfs_archive_read_support_formats = 3;
-    packfs_archive_read_support_format archive_read_support_formats[] = {
-        archive_read_support_format_tar,
-        archive_read_support_format_iso9660,
-        archive_read_support_format_zip
-    };
-    for(int i = 0; i < packfs_archive_read_support_formats; i++)
-        archive_read_support_formats[i](a);
-}
-
 struct packfs_context
 {
     int (*orig_open)(const char *path, int flags, ...);
@@ -76,7 +64,26 @@ struct packfs_context
     size_t packfs_archive_entries_names_lens[packfs_archive_entries_nummax], packfs_archive_sizes[packfs_archive_entries_nummax];
     char packfs_archive_entries_names[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
     int packfs_archive_entries_isdir[packfs_archive_entries_nummax];
+    
+    int num_archive_read_support_formats;
+    packfs_archive_read_support_format archive_read_support_formats[];
 };
+
+void packfs_archive_read_new(struct archive* a, struct packfs_context* packfs_ctx)
+{
+    /*
+    int packfs_archive_read_support_formats = 3;
+    packfs_archive_read_support_format archive_read_support_formats[] = {
+        archive_read_support_format_tar,
+        archive_read_support_format_iso9660,
+        archive_read_support_format_zip
+    };
+    for(int i = 0; i < packfs_archive_read_support_formats; i++)
+        archive_read_support_formats[i](a);
+    */
+    for(int i = 0; i < packfs_ctx->num_archive_read_support_formats; i++)
+        packfs_ctx->archive_read_support_formats[i](a);
+}
 
 void* packfs_find(struct packfs_context* packfs_ctx, int fd, void* ptr)
 {
@@ -233,7 +240,7 @@ int packfs_indir(const char* dir_path, const char* path)
 
 struct packfs_context* packfs_ensure_context(const char* path)
 {
-    static struct packfs_context packfs_ctx = {.packfs_archive_prefix = "", .packfs_archive_entries_num = 0, .packfs_archive_fileptr = NULL, .packfs_archive_suffix = ".tar:.iso:.zip"};
+    static struct packfs_context packfs_ctx = {.packfs_archive_prefix = "", .packfs_archive_entries_num = 0, .packfs_archive_fileptr = NULL, .packfs_archive_suffix = ".tar:.iso:.zip", .num_archive_read_support_formats = 3, .archive_read_support_formats = {archive_read_support_format_tar, archive_read_support_format_iso9660, archive_read_support_format_zip}};
 
     if(packfs_ctx.initialized != 1)
     {
