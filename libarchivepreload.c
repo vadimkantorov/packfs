@@ -230,7 +230,16 @@ int packfs_indir(const char* dir_path, const char* path)
 
 struct packfs_context* packfs_ensure_context(const char* path)
 {
-    static struct packfs_context packfs_ctx = {.packfs_archive_prefix = "", .packfs_archive_entries_num = 0, .packfs_archive_fileptr = NULL, .packfs_archive_suffix = ".tar:.iso:.zip", .num_archive_read_support_formats = 3, .archive_read_support_formats = {archive_read_support_format_tar, archive_read_support_format_iso9660, archive_read_support_format_zip}};
+    // init as zero and empty strings
+    static struct packfs_context packfs_ctx = {
+        .num_archive_read_support_formats = 3, 
+        .packfs_archive_suffix = ".tar:.iso:.zip", 
+        .archive_read_support_formats = {
+            archive_read_support_format_tar, 
+            archive_read_support_format_iso9660, 
+            archive_read_support_format_zip
+        }
+    };
 
     if(packfs_ctx.initialized != 1)
     {
