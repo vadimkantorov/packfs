@@ -27,6 +27,20 @@ enum
     packfs_extsep = ':'
 };
 
+typedef int (*packfs_archive_read_support_format) (void *);
+
+void packfs_archive_read_new(struct archive* a)
+{
+    int packfs_archive_read_support_formats = 3;
+    packfs_archive_read_support_format archive_read_support_formats[] = {
+        archive_read_support_format_tar,
+        archive_read_support_format_iso9660,
+        archive_read_support_format_zip
+    };
+    for(int i = 0; i < packfs_archive_read_support_formats; i++)
+        archive_read_support_formats[i](a);
+}
+
 struct packfs_context
 {
     int (*orig_open)(const char *path, int flags, ...);
@@ -141,31 +155,15 @@ const char* packfs_lstrip_prefix(const char* path, const char* prefix)
     return NULL;
 }
 
-struct archive* packfs_archive_read_new()
-{
-    struct archive *a = archive_read_new();
-    archive_read_support_format_tar(a);
-    archive_read_support_format_iso9660(a);
-    archive_read_support_format_zip(a);
-    return a;
-}
-
 size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
 {
-    //const char* packfs_archive_suffixes[] = {".tar", ".iso", ".zip"};
-    
     if(path == NULL || suffixes == NULL || suffixes[0] == '\0')
         return 0;
-
     for(const char* res = strchr(path, packfs_pathsep), *prevres = path; prevres != NULL; prevres = res, res = (res != NULL ? strchr(res + 1, packfs_pathsep) : NULL))
     {
         size_t prefix_len = res == NULL ? strlen(path) : (res - path);
-        
-        //for(size_t i = 0; i < sizeof(packfs_archive_suffixes) / sizeof(packfs_archive_suffixes[0]); i++)
         for(const char* begin = suffixes, *end = strchr(suffixes, packfs_extsep), *prevend  = suffixes; prevend != NULL; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_extsep) : NULL)
         {
-            //size_t suffix_len = strlen(packfs_archive_suffixes[i]);
-            //const char* begin = packfs_archive_suffixes[i];
             size_t suffix_len = end == NULL ? strlen(begin) : (end - begin);
             if(suffix_len > 0 && prefix_len >= suffix_len && 0 == strncmp(begin, path + prefix_len - suffix_len, suffix_len))
                 return prefix_len;
@@ -283,7 +281,8 @@ struct packfs_context* packfs_ensure_context(const char* path)
 
         packfs_ctx.enabled = packfs_archive_filename != NULL && strlen(packfs_archive_filename) > 0;
         
-        struct archive* a = packfs_archive_read_new();
+        struct archive *a = archive_read_new();
+        packfs_archive_read_new(a);
         struct archive_entry *entry;
 
         do
@@ -435,7 +434,8 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
                 fileptr = fmemopen(NULL, filesize, "rb+");
                 fileino = i;
     
-                struct archive* a = packfs_archive_read_new();
+                struct archive *a = archive_read_new();
+                packfs_archive_read_new(a);
                 struct archive_entry *entry;
                 do
                 {
