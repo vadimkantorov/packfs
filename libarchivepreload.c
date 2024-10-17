@@ -268,7 +268,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         if(path != NULL)
         {
             char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
-            size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized, packfx_ctx.packfs_archive_suffix);
+            size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized, packfs_ctx.packfs_archive_suffix);
             if(path_prefix_len > 0)
             {
                 strcpy(packfs_ctx.packfs_archive_prefix, path_sanitized);
@@ -345,7 +345,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
 
 struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, DIR* stream)
 {
-    struct dirent* dir_entry = stream;
+    struct dirent* dir_entry = (struct dirent*)stream;
     for(size_t i = 0, packfs_archive_entries_names_offset = 0; i < packfs_ctx->packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx->packfs_archive_entries_names_lens[i] + 1), i++)
     {
         const char* path = packfs_ctx->packfs_archive_entries_names + packfs_archive_entries_names_offset;
@@ -356,7 +356,7 @@ struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, DIR* stream)
             dir_entry->d_type = packfs_ctx->packfs_archive_entries_isdir[i] ? DT_DIR : DT_REG;
             strcpy(dir_entry->d_name, packfs_basename(path));
             dir_entry->d_ino = (ino_t)i;
-            return stream;
+            return dir_entry;
         }
     }
     
