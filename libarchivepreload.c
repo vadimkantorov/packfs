@@ -152,7 +152,7 @@ struct archive* packfs_archive_read_new()
 
 size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
 {
-    const char* packfs_archive_suffixes[] = {".tar", ".iso", ".zip"};
+    //const char* packfs_archive_suffixes[] = {".tar", ".iso", ".zip"};
     
     if(path == NULL || suffixes == NULL || suffixes[0] == '\0')
         return 0;
@@ -161,10 +161,12 @@ size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
     {
         size_t prefix_len = res == NULL ? strlen(path) : (res - path);
         
-        for(size_t i = 0; i < sizeof(packfs_archive_suffixes) / sizeof(packfs_archive_suffixes[0]); i++)
+        //for(size_t i = 0; i < sizeof(packfs_archive_suffixes) / sizeof(packfs_archive_suffixes[0]); i++)
+        for(const char* begin = suffixes, *end = strchr(suffixes, packfs_extsep), *prevend  = suffixes; prevend != NULL; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_extsep) : NULL)
         {
-            size_t suffix_len = strlen(packfs_archive_suffixes[i]);
-            const char* begin = packfs_archive_suffixes[i];
+            //size_t suffix_len = strlen(packfs_archive_suffixes[i]);
+            //const char* begin = packfs_archive_suffixes[i];
+            size_t suffix_len = end == NULL ? strlen(begin) : (end - begin);
             if(suffix_len > 0 && prefix_len >= suffix_len && 0 == strncmp(begin, path + prefix_len - suffix_len, suffix_len))
                 return prefix_len;
         }
