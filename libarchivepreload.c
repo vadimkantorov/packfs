@@ -164,7 +164,8 @@ size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
         for(size_t i = 0; i < sizeof(packfs_archive_suffixes) / sizeof(packfs_archive_suffixes[0]); i++)
         {
             size_t suffix_len = strlen(packfs_archive_suffixes[i]);
-            if(prefix_len >= suffix_len && 0 == strncmp(packfs_archive_suffixes[i], path + prefix_len - suffix_len, suffix_len))
+            const char* begin = packfs_archive_suffixes[i];
+            if(suffix_len > 0 && prefix_len >= suffix_len && 0 == strncmp(begin, path + prefix_len - suffix_len, suffix_len))
                 return prefix_len;
         }
 
