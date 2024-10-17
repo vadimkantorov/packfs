@@ -57,7 +57,7 @@ struct packfs_context
     size_t packfs_fileino      [packfs_filefd_max - packfs_filefd_min];
     struct dirent packfs_dirent[packfs_filefd_max - packfs_filefd_min];
     size_t packfs_archive_entries_num;
-    char packfs_archive_prefix[packfs_entries_name_maxlen];
+    char packfs_archive_prefix[packfs_entries_name_maxlen], packfs_archive_suffix[packfs_entries_name_maxlen];
     void* packfs_archive_fileptr;
     size_t packfs_archive_entries_names_lens[packfs_archive_entries_nummax], packfs_archive_sizes[packfs_archive_entries_nummax];
     char packfs_archive_entries_names[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
@@ -236,7 +236,7 @@ int packfs_indir(const char* dir_path, const char* path)
 
 struct packfs_context* packfs_ensure_context(const char* path)
 {
-    static struct packfs_context packfs_ctx = {0};
+    static struct packfs_context packfs_ctx = {.packfs_archive_suffix = ".tar:.iso:.zip"};
 
     if(packfs_ctx.initialized != 1)
     {
