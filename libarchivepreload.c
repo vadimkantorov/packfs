@@ -170,7 +170,6 @@ size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
 
         if(res == NULL)
             break;
-        //res++;
     }
     return 0;
 }
