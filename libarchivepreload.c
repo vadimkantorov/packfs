@@ -150,23 +150,27 @@ struct archive* packfs_archive_read_new()
     return a;
 }
 
-size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
+size_t packfs_archive_prefix_extract(const char* path)
 {
-    if(path == NULL || suffixes == NULL || suffixes[0] == '\0')
+    const char* packfs_archive_suffixes[] = {".tar", ".iso", ".zip"};
+    
+    if(path == NULL)
         return 0;
 
-    for(const char* res = strchr(path, packfs_pathsep), *prevres = path; prevres != NULL; prevres = res, res = strchr(res + 1, packfs_pathsep))
+    for(const char* res = strchr(path, packfs_pathsep); ; res = strchr(res, packfs_pathsep))
     {
         size_t prefix_len = res == NULL ? strlen(path) : (res - path);
         
-        const char* packfs_archive_suffixes[] = {".tar", ".iso", ".zip"};
         for(size_t i = 0; i < sizeof(packfs_archive_suffixes) / sizeof(packfs_archive_suffixes[0]); i++)
         {
             size_t suffix_len = strlen(packfs_archive_suffixes[i]);
-            const char* begin = packfs_archive_suffixes[i];
-            if(suffix_len > 0 && prefix_len >= suffix_len && 0 == strncmp(begin, path + prefix_len - suffix_len, suffix_len))
+            if(prefix_len >= suffix_len && 0 == strncmp(packfs_archive_suffixes[i], path + prefix_len - suffix_len, suffix_len))
                 return prefix_len;
         }
+
+        if(res == NULL)
+            break;
+        res++;
     }
     return 0;
 }
@@ -269,7 +273,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         if(path != NULL)
         {
             char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
-            size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized, packfs_ctx.packfs_archive_suffix);
+            size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized);
             if(path_prefix_len > 0)
             {
                 strcpy(packfs_ctx.packfs_archive_prefix, path_sanitized);
