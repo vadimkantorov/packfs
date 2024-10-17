@@ -157,7 +157,7 @@ size_t packfs_archive_prefix_extract(const char* path)
     if(path == NULL)
         return 0;
 
-    for(const char* res = strchr(path, packfs_pathsep); ; res = strchr(res, packfs_pathsep))
+    for(const char* res = strchr(path, packfs_pathsep), *prevres = path; prevres != NULL ; prevres = res, res = strchr(res + 1, packfs_pathsep))
     {
         size_t prefix_len = res == NULL ? strlen(path) : (res - path);
         
@@ -167,10 +167,6 @@ size_t packfs_archive_prefix_extract(const char* path)
             if(prefix_len >= suffix_len && 0 == strncmp(packfs_archive_suffixes[i], path + prefix_len - suffix_len, suffix_len))
                 return prefix_len;
         }
-
-        if(res == NULL)
-            break;
-        res++;
     }
     return 0;
 }
