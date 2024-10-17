@@ -233,7 +233,7 @@ int packfs_indir(const char* dir_path, const char* path)
 
 struct packfs_context* packfs_ensure_context(const char* path)
 {
-    static struct packfs_context packfs_ctx = {.packfs_archive_suffix = ".tar:.iso:.zip"};
+    static struct packfs_context packfs_ctx = {.packfs_archive_prefix = "", .packfs_archive_entries_num = 0, .packfs_archive_fileptr = NULL, .packfs_archive_suffix = ".tar:.iso:.zip"};
 
     if(packfs_ctx.initialized != 1)
     {
@@ -255,10 +255,6 @@ struct packfs_context* packfs_ensure_context(const char* path)
         packfs_ctx.orig_fileno    = dlsym(RTLD_NEXT, "fileno");
         packfs_ctx.orig_fclose    = dlsym(RTLD_NEXT, "fclose");
         packfs_ctx.orig_fcntl     = dlsym(RTLD_NEXT, "fcntl");
-        
-        strcpy(packfs_ctx.packfs_archive_prefix, "");
-        packfs_ctx.packfs_archive_entries_num = 0;
-        packfs_ctx.packfs_archive_fileptr = NULL;
         
         packfs_ctx.initialized = 1;
         packfs_ctx.enabled = 0;
