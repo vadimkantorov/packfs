@@ -285,7 +285,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         packfs_ctx.enabled = packfs_archive_filename != NULL && strlen(packfs_archive_filename) > 0;
         
         struct archive *a = archive_read_new();
-        packfs_archive_read_new(a);
+        packfs_archive_read_new(packfs_ctx, a);
         struct archive_entry *entry;
 
         do
@@ -438,7 +438,7 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
                 fileino = i;
     
                 struct archive *a = archive_read_new();
-                packfs_archive_read_new(a);
+                packfs_archive_read_new(packfs_ctx, a);
                 struct archive_entry *entry;
                 do
                 {
