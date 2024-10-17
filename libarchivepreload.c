@@ -23,8 +23,7 @@ enum
     packfs_filefd_max = 1000001000, 
     packfs_entries_name_maxlen = 128, 
     packfs_archive_entries_nummax = 1024,  
-    packfs_pathsep = '/',
-    packfs_extsep = ':'
+    packfs_pathsep = '/'
 };
 
 struct packfs_context
@@ -57,7 +56,7 @@ struct packfs_context
     size_t packfs_fileino      [packfs_filefd_max - packfs_filefd_min];
     struct dirent packfs_dirent[packfs_filefd_max - packfs_filefd_min];
     size_t packfs_archive_entries_num;
-    char packfs_archive_prefix[packfs_entries_name_maxlen], packfs_archive_suffix[packfs_entries_name_maxlen];
+    char packfs_archive_prefix[packfs_entries_name_maxlen];
     void* packfs_archive_fileptr;
     size_t packfs_archive_entries_names_lens[packfs_archive_entries_nummax], packfs_archive_sizes[packfs_archive_entries_nummax];
     char packfs_archive_entries_names[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
@@ -150,22 +149,27 @@ struct archive* packfs_archive_read_new()
     return a;
 }
 
-size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
+size_t packfs_archive_prefix_extract(const char* path)
 {
-    if(path == NULL || suffixes == NULL || suffixes[0] == '\0')
+    const char* packfs_archive_suffixes[] = {".tar", ".iso", ".zip"};
+    
+    if(path == NULL)
         return 0;
 
-    for(const char* res = strchr(path, packfs_pathsep), *prevres = path; prevres != NULL; prevres = res, res = strchr(res + 1, packfs_pathsep))
+    for(const char* res = strchr(path, packfs_pathsep); ; res = strchr(res, packfs_pathsep))
     {
         size_t prefix_len = res == NULL ? strlen(path) : (res - path);
         
-        for(const char* begin = suffixes, *end = strchr(suffixes, packfs_extsep), *prevend  = suffixes; prevend != NULL; prevend = end, begin = (end + 1), end = strchr(end + 1, packfs_extsep))
+        for(size_t i = 0; i < sizeof(packfs_archive_suffixes) / sizeof(packfs_archive_suffixes[0]); i++)
         {
-            size_t suffix_len = end == NULL ? strlen(begin) : (end - begin);
-
-            if(suffix_len > 0 && prefix_len >= suffix_len && 0 == strncmp(begin, path + prefix_len - suffix_len, suffix_len))
+            size_t suffix_len = strlen(packfs_archive_suffixes[i]);
+            if(prefix_len >= suffix_len && 0 == strncmp(packfs_archive_suffixes[i], path + prefix_len - suffix_len, suffix_len))
                 return prefix_len;
         }
+
+        if(res == NULL)
+            break;
+        res++;
     }
     return 0;
 }
@@ -231,7 +235,7 @@ int packfs_indir(const char* dir_path, const char* path)
 
 struct packfs_context* packfs_ensure_context(const char* path)
 {
-    static struct packfs_context packfs_ctx = {.packfs_archive_suffix = ".tar:.iso:.zip"};
+    static struct packfs_context packfs_ctx = {0};
 
     if(packfs_ctx.initialized != 1)
     {
@@ -268,7 +272,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         if(path != NULL)
         {
             char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
-            size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized, packfs_ctx.packfs_archive_suffix);
+            size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized);
             if(path_prefix_len > 0)
             {
                 strcpy(packfs_ctx.packfs_archive_prefix, path_sanitized);
@@ -345,7 +349,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
 
 struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, DIR* stream)
 {
-    struct dirent* dir_entry = (struct dirent*)stream;
+    struct dirent* dir_entry = stream;
     for(size_t i = 0, packfs_archive_entries_names_offset = 0; i < packfs_ctx->packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx->packfs_archive_entries_names_lens[i] + 1), i++)
     {
         const char* path = packfs_ctx->packfs_archive_entries_names + packfs_archive_entries_names_offset;
@@ -356,7 +360,7 @@ struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, DIR* stream)
             dir_entry->d_type = packfs_ctx->packfs_archive_entries_isdir[i] ? DT_DIR : DT_REG;
             strcpy(dir_entry->d_name, packfs_basename(path));
             dir_entry->d_ino = (ino_t)i;
-            return dir_entry;
+            return stream;
         }
     }
     
