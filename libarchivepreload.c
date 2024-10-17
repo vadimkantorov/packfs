@@ -157,7 +157,7 @@ size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
     if(path == NULL || suffixes == NULL || suffixes[0] == '\0')
         return 0;
 
-    for(const char* res = strchr(path, packfs_pathsep), *prevres = path; prevres != NULL; res = strchr(res + 1, packfs_pathsep))
+    for(const char* res = strchr(path, packfs_pathsep), *prevres = path; prevres != NULL; prevres = res, res = (res != NULL ? strchr(res + 1, packfs_pathsep) : NULL))
     {
         size_t prefix_len = res == NULL ? strlen(path) : (res - path);
         
@@ -168,9 +168,6 @@ size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
             if(suffix_len > 0 && prefix_len >= suffix_len && 0 == strncmp(begin, path + prefix_len - suffix_len, suffix_len))
                 return prefix_len;
         }
-
-        if(res == NULL)
-            break;
     }
     return 0;
 }
