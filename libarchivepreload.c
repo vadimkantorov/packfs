@@ -69,18 +69,8 @@ struct packfs_context
     packfs_archive_read_support_format archive_read_support_formats[];
 };
 
-void packfs_archive_read_new(struct archive* a, struct packfs_context* packfs_ctx)
+void packfs_archive_read_new(struct packfs_context* packfs_ctx, struct archive* a)
 {
-    /*
-    int packfs_archive_read_support_formats = 3;
-    packfs_archive_read_support_format archive_read_support_formats[] = {
-        archive_read_support_format_tar,
-        archive_read_support_format_iso9660,
-        archive_read_support_format_zip
-    };
-    for(int i = 0; i < packfs_archive_read_support_formats; i++)
-        archive_read_support_formats[i](a);
-    */
     for(int i = 0; i < packfs_ctx->num_archive_read_support_formats; i++)
         packfs_ctx->archive_read_support_formats[i](a);
 }
