@@ -23,7 +23,8 @@ enum
     packfs_filefd_max = 1000001000, 
     packfs_entries_name_maxlen = 128, 
     packfs_archive_entries_nummax = 1024,  
-    packfs_pathsep = '/'
+    packfs_pathsep = '/',
+    packfs_extsep = ':'
 };
 
 struct packfs_context
@@ -349,7 +350,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
 
 struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, DIR* stream)
 {
-    struct dirent* dir_entry = stream;
+    struct dirent* dir_entry = (struct dirent*)stream;
     for(size_t i = 0, packfs_archive_entries_names_offset = 0; i < packfs_ctx->packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx->packfs_archive_entries_names_lens[i] + 1), i++)
     {
         const char* path = packfs_ctx->packfs_archive_entries_names + packfs_archive_entries_names_offset;
@@ -360,7 +361,7 @@ struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, DIR* stream)
             dir_entry->d_type = packfs_ctx->packfs_archive_entries_isdir[i] ? DT_DIR : DT_REG;
             strcpy(dir_entry->d_name, packfs_basename(path));
             dir_entry->d_ino = (ino_t)i;
-            return stream;
+            return dir_entry;
         }
     }
     
