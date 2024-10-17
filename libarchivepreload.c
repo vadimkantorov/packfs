@@ -27,7 +27,7 @@ enum
     packfs_extsep = ':'
 };
 
-typedef int (*packfs_archive_read_support_format) (void *);
+typedef int (*packfs_archive_read_support_format) (struct archive* *);
 
 struct packfs_context
 {
@@ -275,7 +275,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         packfs_ctx.enabled = packfs_archive_filename != NULL && strlen(packfs_archive_filename) > 0;
         
         struct archive *a = archive_read_new();
-        packfs_archive_read_new(packfs_ctx, a);
+        packfs_archive_read_new(&packfs_ctx, a);
         struct archive_entry *entry;
 
         do
