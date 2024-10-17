@@ -159,7 +159,7 @@ size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
     {
         size_t prefix_len = res == NULL ? strlen(path) : (res - path);
         
-        for(const char* begin = suffixes, *end = strchr(suffixes, sep), *prevend  = suffixes; prevend != NULL; prevend = end, begin = (end + 1), end = strchr(end + 1, sep))
+        for(const char* begin = suffixes, *end = strchr(suffixes, packfs_extsep), *prevend  = suffixes; prevend != NULL; prevend = end, begin = (end + 1), end = strchr(end + 1, packfs_extsep))
         {
             size_t suffix_len = end == NULL ? strlen(begin) : (end - begin);
 
