@@ -11,7 +11,7 @@ jobs:
           submodules: recursive
       
       - name: Install prerequisites for xz autogen
-        run: sudo apt-get install autopoint
+        run: sudo apt-get install autopoint po4a
       
       - name: Build
         run: make
