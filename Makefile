@@ -8,4 +8,4 @@ zlib/libz.a:
 	cd zlib && CFLAGS=-fPIC sh ./configure --static && $(MAKE) && nm $@
 
 xz/src/liblzma/.libs/liblzma.a:
-	cd xz && CFLAGS=-fPIC sh ./configure --disable-shared && $(MAKE) && nm $@
+	cd xz && sh ./autogen.sh && CFLAGS=-fPIC sh ./configure --disable-shared && $(MAKE) && nm $@

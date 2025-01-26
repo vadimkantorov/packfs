@@ -7,13 +7,16 @@ Demo of abusing https://github.com/libarchive/libarchive to make `LD_PRELOAD`-ba
 ```shell
 cc -shared -fPIC libarchivepreload.c -o libarchivepreload.so -ldl libarchive/.libs/libarchive.a zlib/libz.a -Ilibarchive -Ilibarchive/libarchive
 
-zip -r libarchivepreload.zip libarchivepreload.c .git
+zip -r   libarchivepreload.zip    libarchivepreload.c .git
+tar -cJf libarchivepreload.tar.xz libarchivepreload.c .git
 
 LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/
 LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
 LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
 LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
 LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
+          
+LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.tar.xz/
 ```
 
 # Overridden libc / posix functions
