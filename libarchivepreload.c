@@ -66,9 +66,10 @@ struct packfs_context
 
 void packfs_archive_read_new(struct archive* a)
 {
-    archive_read_support_format_tar(a);
     archive_read_support_format_iso9660(a);
     archive_read_support_format_zip(a);
+    archive_read_support_format_tar(a);
+    archive_read_support_filter_gzip(a);
     archive_read_support_filter_xz(a);
 }
 
