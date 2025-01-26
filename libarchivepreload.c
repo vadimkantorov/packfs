@@ -229,7 +229,7 @@ int packfs_indir(const char* dir_path, const char* path)
 struct packfs_context* packfs_ensure_context(const char* path)
 {
     // init as zero and empty strings
-    static struct packfs_context packfs_ctx = {.packfs_archive_suffix = ".iso:.zip:.tar:.tar.xz"};
+    static struct packfs_context packfs_ctx = {.packfs_archive_suffix = ".iso:.zip:.tar:.tar.xz:.tar.gz"};
 
     if(packfs_ctx.packfs_initialized != 1)
     {
