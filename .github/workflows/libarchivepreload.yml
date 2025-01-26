@@ -10,6 +10,9 @@ jobs:
         with:
           submodules: recursive
       
+      - name: Install prerequisites for xz autogen
+        run: sudo apt-get install autopoint
+      
       - name: Build
         run: make
       
