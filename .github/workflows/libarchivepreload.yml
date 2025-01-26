@@ -15,7 +15,8 @@ jobs:
       
       - name: Test
         run: |
-          zip -r libarchivepreload.zip libarchivepreload.c .git
+          zip -r   libarchivepreload.zip    libarchivepreload.c .git
+          tar -cJf libarchivepreload.tar.xz libarchivepreload.c .git
           
           #sudo apt install ltrace && ltrace /usr/bin/find .git
           
@@ -24,6 +25,8 @@ jobs:
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/stat libarchivepreload.zip/libarchivepreload.c
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
+          
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.tar.xz
        
       - name: Artifacts
         uses: actions/upload-artifact@v4
