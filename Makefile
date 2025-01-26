@@ -5,7 +5,7 @@ libarchive/.libs/libarchive.a:
 	cd libarchive && sh ./build/autogen.sh && sh configure --without-bz2lib --without-libb2 --without-iconv --without-lz4  --without-zstd --without-cng  --without-xml2 --without-expat --without-openssl && $(MAKE)
 
 zlib/libz.a:
-	cd zlib && CFLAGS=-fPIC sh ./configure --static && $(MAKE) && nm $@
+	cd zlib && CFLAGS=-fPIC sh ./configure --static && $(MAKE)
 
 xz/src/liblzma/.libs/liblzma.a:
-	cd xz && sh ./autogen.sh && CFLAGS=-fPIC sh ./configure --disable-shared && $(MAKE) && nm $@
+	cd xz && sh ./autogen.sh && CFLAGS=-fPIC sh ./configure --disable-shared && $(MAKE)
