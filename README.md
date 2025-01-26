@@ -5,7 +5,7 @@ Demo of abusing https://github.com/libarchive/libarchive to make `LD_PRELOAD`-ba
 
 
 ```shell
-cc -shared -fPIC libarchivepreload.c -o libarchivepreload.so -ldl libarchive/.libs/libarchive.a zlib/libz.a -Ilibarchive -Ilibarchive/libarchive
+cc -shared -fPIC libarchivepreload.c -o libarchivepreload.so -ldl libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a -Ilibarchive -Ilibarchive/libarchive
 
 zip -r   libarchivepreload.zip    libarchivepreload.c .git
 tar -cJf libarchivepreload.tar.xz libarchivepreload.c .git
