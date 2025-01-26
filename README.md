@@ -17,6 +17,10 @@ LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchi
 LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
           
 LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.tar.xz/
+LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.tar.xz
+LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.tar.xz/libarchivepreload.c
+LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.tar.xz/libarchivepreload.c
+LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.tar.xz
 ```
 
 # Overridden libc / posix functions
