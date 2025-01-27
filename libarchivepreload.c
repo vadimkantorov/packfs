@@ -159,8 +159,8 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
         packfs_ctx->packfs_archive_entries_names_total += packfs_ctx->packfs_archive_entries_names_lens[packfs_ctx->packfs_archive_entries_num] + 1;
         
         strncpy(packfs_ctx->packfs_archive_entries_prefix + packfs_ctx->packfs_archive_entries_prefix_total, prefix, prefix_len);
-        packfs_ctx->packfs_archive_entries_prefix_lens[packfs_archive_entries_num] = prefix_len;
-        packfs_ctx->packfs_archive_entries_prefix_total += packfs_ctx->packfs_archive_entries_prefix_lens[packfs_archive_entries_num] + 1;
+        packfs_ctx->packfs_archive_entries_prefix_lens[packfs_ctx->packfs_archive_entries_num] = prefix_len;
+        packfs_ctx->packfs_archive_entries_prefix_total += packfs_ctx->packfs_archive_entries_prefix_lens[packfs_ctx->packfs_archive_entries_num] + 1;
         
         packfs_ctx->packfs_archive_entries_num++;
         
@@ -186,8 +186,8 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
             packfs_ctx->packfs_archive_entries_names_total += packfs_ctx->packfs_archive_entries_names_lens[packfs_ctx->packfs_archive_entries_num] + 1;
         
             strncpy(packfs_ctx->packfs_archive_entries_prefix + packfs_ctx->packfs_archive_entries_prefix_total, prefix, prefix_len);
-            packfs_ctx->packfs_archive_entries_prefix_lens[packfs_archive_entries_num] = prefix_len;
-            packfs_ctx->packfs_archive_entries_prefix_total += packfs_ctx->packfs_archive_entries_prefix_lens[packfs_archive_entries_num] + 1;
+            packfs_ctx->packfs_archive_entries_prefix_lens[packfs_ctx->packfs_archive_entries_num] = prefix_len;
+            packfs_ctx->packfs_archive_entries_prefix_total += packfs_ctx->packfs_archive_entries_prefix_lens[packfs_ctx->packfs_archive_entries_num] + 1;
 
             packfs_ctx->packfs_archive_entries_num++;
                 
