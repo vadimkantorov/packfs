@@ -267,7 +267,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 strncpy(path_sanitized, begin, len);
                 packfs_scan_archive(&packfs_ctx, path_sanitized, packfs_prefix != NULL ? packfs_prefix : "");
                 packfs_ctx.packfs_enabled = 1;
-                strcpy(packfs_ctx->packfs_archive_prefix, path_sanitized);
+                strcpy(packfs_ctx.packfs_archive_prefix, path_sanitized);
             }
         }
         else if(path != NULL)
@@ -279,7 +279,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 path_sanitized[path_prefix_len] = '\0';
                 packfs_scan_archive(&packfs_ctx, path_sanitized, "");
                 packfs_ctx.packfs_enabled = 1;
-                strcpy(packfs_ctx->packfs_archive_prefix, path_sanitized);
+                strcpy(packfs_ctx.packfs_archive_prefix, path_sanitized);
             }
         }
     }
