@@ -349,6 +349,64 @@ void* packfs_opendir(struct packfs_context* packfs_ctx, const char* path)
     return NULL;
 }
 
+void packfs_extract_archive_entry(struct packfs_context* packfs_ctx, const char* packfs_archive_prefix, const char* entry_path, FILE* fileptr)
+{
+    struct archive *a = archive_read_new();
+    packfs_archive_read_new(a);
+    struct archive_entry *entry;
+    FILE* packfs_archive_fileptr = packfs_ctx->orig_fopen(packfs_archive_prefix, "rb");//packfs_ctx->packfs_archive_fileptr;
+    do
+    {
+        //fseek(packfs_archive_fileptr, 0, SEEK_SET);
+        if(packfs_archive_fileptr == NULL) break;
+        if(archive_read_open_FILE(a, packfs_archive_fileptr) != ARCHIVE_OK)
+            break;
+        
+        while (1)
+        {
+            int r = archive_read_next_header(a, &entry);
+            if (r == ARCHIVE_EOF)
+                break;
+            if (r != ARCHIVE_OK)
+                break; //fprintf(stderr, "%s\n", archive_error_string(a));
+
+            if(0 == strcmp(entry_path, archive_entry_pathname(entry)))
+            {
+                enum { MAX_WRITE = 1024 * 1024};
+                const void *buff;
+                size_t size;
+                off_t offset;
+
+                while ((r = archive_read_data_block(a, &buff, &size, &offset)) == ARCHIVE_OK)
+                {
+                    // assert(offset <= output_offset), do not support sparse files just yet, https://github.com/libarchive/libarchive/issues/2299
+                    const char* p = buff;
+                    while (size > 0)
+                    {
+                        ssize_t bytes_written = fwrite(p, 1, size, fileptr);
+                        p += bytes_written;
+                        size -= bytes_written;
+                    }
+                }
+                break;
+            }
+            else
+            {
+                r = archive_read_data_skip(a);
+                if (r == ARCHIVE_EOF)
+                    break;
+                if (r != ARCHIVE_OK)
+                    break; //fprintf(stderr, "%s\n", archive_error_string(a));
+            }
+        }
+    }
+    while(0);
+    archive_read_close(a);
+    archive_read_free(a);
+    if(packfs_archive_fileptr != NULL) packfs_ctx->orig_fclose(packfs_archive_fileptr);
+    
+}
+
 FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
 {
     char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
@@ -365,64 +423,10 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
             const char* entry_path = packfs_ctx->packfs_archive_entries_names + packfs_archive_entries_names_offset;
             if(0 == strcmp(entry_path, path_without_prefix))
             {
+                fileino = i;
                 filesize = packfs_ctx->packfs_archive_entries_sizes[i];
                 fileptr = fmemopen(NULL, filesize, "rb+");
-                fileino = i;
-    
-                struct archive *a = archive_read_new();
-                packfs_archive_read_new(a);
-                struct archive_entry *entry;
-                FILE* packfs_archive_fileptr = packfs_ctx->orig_fopen(packfs_ctx->packfs_archive_prefix, "rb");//packfs_ctx->packfs_archive_fileptr;
-                do
-                {
-                    //fseek(packfs_archive_fileptr, 0, SEEK_SET);
-                    if(packfs_archive_fileptr == NULL) break;
-                    if(archive_read_open_FILE(a, packfs_archive_fileptr) != ARCHIVE_OK)
-                        break;
-                    
-                    while (1)
-                    {
-                        int r = archive_read_next_header(a, &entry);
-                        if (r == ARCHIVE_EOF)
-                            break;
-                        if (r != ARCHIVE_OK)
-                            break; //fprintf(stderr, "%s\n", archive_error_string(a));
-
-                        if(0 == strcmp(entry_path, archive_entry_pathname(entry)))
-                        {
-                            enum { MAX_WRITE = 1024 * 1024};
-                            const void *buff;
-                            size_t size;
-                            off_t offset;
-
-                            while ((r = archive_read_data_block(a, &buff, &size, &offset)) == ARCHIVE_OK)
-                            {
-                                // assert(offset <= output_offset), do not support sparse files just yet, https://github.com/libarchive/libarchive/issues/2299
-                                const char* p = buff;
-                                while (size > 0)
-                                {
-                                    ssize_t bytes_written = fwrite(p, 1, size, fileptr);
-                                    p += bytes_written;
-                                    size -= bytes_written;
-                                }
-                            }
-                            break;
-                        }
-                        else
-                        {
-                            r = archive_read_data_skip(a);
-                            if (r == ARCHIVE_EOF)
-                                break;
-                            if (r != ARCHIVE_OK)
-                                break; //fprintf(stderr, "%s\n", archive_error_string(a));
-                        }
-                    }
-                }
-                while(0);
-                archive_read_close(a);
-                archive_read_free(a);
-                if(packfs_archive_fileptr != NULL) packfs_ctx->orig_fclose(packfs_archive_fileptr);
-
+                packfs_extract_archive_entry(packfs_ctx, packfs_ctx->packfs_archive_prefix, entry_path, fileptr);
                 fseek(fileptr, 0, SEEK_SET);
                 break;
             }

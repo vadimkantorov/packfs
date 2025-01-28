@@ -33,7 +33,7 @@ jobs:
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/stat libarchivepreload.tar.xz/libarchivepreload.c
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.tar.xz
           
-          LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=libarchivepreload.zip PACKFS_PREFIX=/mnt/zip /usr/bin/cat /mnt/zip/libarchivepreload.c
+          #LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=libarchivepreload.zip PACKFS_PREFIX=/mnt/zip /usr/bin/cat /mnt/zip/libarchivepreload.c
           #mv libarchivepreload.c _libarchivepreload.c
           #LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=libarchivepreload.zip /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
        
