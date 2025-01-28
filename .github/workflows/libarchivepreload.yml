@@ -11,7 +11,7 @@ jobs:
           submodules: recursive
       
       - name: Install prerequisites for xz autogen
-        run: sudo apt-get install autopoint po4a
+        run: sudo apt-get install autopoint po4a gdb
       
       - name: Build
         run: make
@@ -24,7 +24,7 @@ jobs:
           
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
-          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
+          LD_PRELOAD=$PWD/libarchivepreload.so gdb -ex run -ex bt -ex q --args /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/stat libarchivepreload.zip/libarchivepreload.c
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.tar.xz
