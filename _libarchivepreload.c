@@ -70,9 +70,12 @@ struct packfs_context
     char packfs_archive_entries_prefix[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
     size_t packfs_archive_entries_prefix_lens[packfs_archive_entries_nummax];
     size_t packfs_archive_entries_prefix_total;
+    
+    char packfs_archive_entries_archive[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
+    size_t packfs_archive_entries_archive_lens[packfs_archive_entries_nummax];
+    size_t packfs_archive_entries_archive_total;
 
     char packfs_archive_prefix[packfs_entries_name_maxlen];
-    char packfs_archive_suffix[packfs_entries_name_maxlen];
     void* packfs_archive_fileptr;
 };
 
@@ -205,7 +208,9 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
 
 struct packfs_context* packfs_ensure_context(const char* path)
 {
-    static struct packfs_context packfs_ctx = {.packfs_archive_suffix = ".iso:.zip:.tar:.tar.xz:.tar.gz"};
+    char packfs_archive_suffix[] = ".iso:.zip:.tar:.tar.xz:.tar.gz";
+
+    static struct packfs_context packfs_ctx;
 
     if(packfs_ctx.packfs_initialized != 1)
     {
@@ -238,7 +243,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         if(path != NULL)
         {
             char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
-            size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized, packfs_ctx.packfs_archive_suffix);
+            size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized, packfs_archive_suffix);
             if(path_prefix_len > 0)
             {
                 strcpy(packfs_ctx.packfs_archive_prefix, path_sanitized);
