@@ -135,7 +135,7 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
 {
     size_t prefix_len = prefix != NULL ? strlen(prefix) : 0;
     if(prefix_len > 0 && prefix[prefix_len - 1] == packfs_sep) prefix_len--;
-    size_t packfs_archive_filename_len = strlen(packfs_archive_filename);
+    size_t packfs_archive_filename_len = packfs_archive_filename_len != NULL ? strlen(packfs_archive_filename) : 0;
 
     struct archive *a = archive_read_new();
     packfs_archive_read_new(a);
