@@ -1,4 +1,4 @@
-libarchivepreload.so: libarchivepreload.c libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a
+libarchivepreload.so: _libarchivepreload.c libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a
 	$(CC) -shared -fPIC -o $@ $^ -ldl -Ilibarchive -Ilibarchive/libarchive && nm $@
 
 libarchive/.libs/libarchive.a:
