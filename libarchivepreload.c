@@ -78,14 +78,6 @@ struct packfs_context
     char packfs_archive_prefix[packfs_entries_name_maxlen];
 };
 
-int packfs_stream_in_context(struct packfs_context* packfs_ctx, void* stream)
-{
-    for(size_t k = 0; stream != NULL && k < packfs_filefd_max - packfs_filefd_min; k++)
-        if(packfs_ctx->packfs_filefd[k] != 0 && packfs_ctx->packfs_fileptr[k] == stream)
-            return 1;
-    return 0;
-}
-
 void* packfs_find(struct packfs_context* packfs_ctx, int fd, void* ptr)
 {
     if(ptr != NULL)
@@ -618,7 +610,7 @@ int fileno(FILE *stream)
 int fclose(FILE* stream)
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
-    if(packfs_ctx->packfs_enabled && packfs_stream_in_context(packfs_ctx, stream))
+    if(packfs_ctx->packfs_enabled && packfs_find(packfs_ctx, -1, stream) != NULL)
     {
         int* ptr = packfs_find(packfs_ctx, -1, stream);
         int fd = ptr == NULL ? -1 : *ptr;
@@ -857,7 +849,7 @@ DIR* fdopendir(int dirfd)
 struct dirent* readdir(DIR* stream)
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
-    if(packfs_ctx->packfs_enabled && packfs_stream_in_context(packfs_ctx, stream))
+    if(packfs_ctx->packfs_enabled && packfs_find(packfs_ctx, -1, stream) != NULL)
     {
         int* ptr = packfs_find(packfs_ctx, -1, stream);
         if(ptr != NULL)
@@ -871,7 +863,7 @@ int closedir(DIR* stream)
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(NULL);
     
-    if(packfs_ctx->packfs_enabled && packfs_stream_in_context(packfs_ctx, stream))
+    if(packfs_ctx->packfs_enabled && packfs_find(packfs_ctx, -1, stream) != NULL)
     {        
         int* ptr = packfs_find(packfs_ctx, -1, stream);
         int fd = ptr == NULL ? -1 : *ptr;
