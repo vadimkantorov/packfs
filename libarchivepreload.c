@@ -384,7 +384,8 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
                 FILE* packfs_archive_fileptr = packfs_ctx->orig_fopen(packfs_ctx->packfs_archive_prefix, "rb");//packfs_ctx->packfs_archive_fileptr;
                 do
                 {
-                    fseek(packfs_archive_fileptr, 0, SEEK_SET);
+                    //fseek(packfs_archive_fileptr, 0, SEEK_SET);
+                    if(packfs_archive_fileptr == NULL) break;
                     if(archive_read_open_FILE(a, packfs_archive_fileptr) != ARCHIVE_OK)
                         break;
                     
@@ -429,6 +430,7 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
                 while(0);
                 archive_read_close(a);
                 archive_read_free(a);
+                if(packfs_archive_fileptr != NULL) packfs_ctx->orig_fclose(packfs_archive_fileptr);
 
                 fseek(fileptr, 0, SEEK_SET);
                 break;
