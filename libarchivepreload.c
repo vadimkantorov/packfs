@@ -76,6 +76,7 @@ struct packfs_context
     size_t packfs_archive_entries_archive_total;
 
     char packfs_archive_prefix[packfs_entries_name_maxlen];
+    void* packfs_archive_fileptr;
 };
 
 int packfs_stream_in_context(struct packfs_context* packfs_ctx, void* stream)
@@ -135,7 +136,7 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
     size_t prefix_len = prefix != NULL ? strlen(prefix) : 0;
     if(prefix_len > 0 && prefix[prefix_len - 1] == packfs_sep) prefix_len--;
     size_t packfs_archive_filename_len = strlen(packfs_archive_filename);
-    FILE* packfs_archive_fileptr = NULL;
+
     struct archive *a = archive_read_new();
     packfs_archive_read_new(a);
     struct archive_entry *entry;
@@ -144,11 +145,12 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
         if( packfs_archive_filename == NULL || 0 == strlen(packfs_archive_filename))
             break;
 
-        packfs_archive_fileptr = fopen(packfs_archive_filename, "rb");
-        if(packfs_archive_fileptr == NULL)
+        packfs_ctx->packfs_archive_fileptr = fopen(packfs_archive_filename, "rb");
+
+        if(packfs_ctx->packfs_archive_fileptr == NULL)
             break;
         
-        if(archive_read_open_FILE(a, packfs_archive_fileptr) != ARCHIVE_OK)
+        if(archive_read_open_FILE(a, packfs_ctx->packfs_archive_fileptr) != ARCHIVE_OK)
             break;
         
         //if(archive_read_open1(a) != ARCHIVE_OK)
@@ -219,8 +221,6 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
     while(0);
     archive_read_close(a);
     archive_read_free(a);
-    if(packfs_archive_fileptr != NULL)
-        fclose(packfs_archive_fileptr);
 }
 
 struct packfs_context* packfs_ensure_context(const char* path)
@@ -381,14 +381,10 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
                 struct archive *a = archive_read_new();
                 packfs_archive_read_new(a);
                 struct archive_entry *entry;
-                FILE* packfs_archive_fileptr = NULL;
                 do
                 {
-                    packfs_archive_fileptr = fopen(packfs_ctx->packfs_archive_prefix, "rb");
-                    if(packfs_archive_fileptr == NULL)
-                        break;
-
-                    if(archive_read_open_FILE(a, packfs_archive_fileptr) != ARCHIVE_OK)
+                    fseek(packfs_ctx->packfs_archive_fileptr, 0, SEEK_SET);
+                    if(archive_read_open_FILE(a, packfs_ctx->packfs_archive_fileptr) != ARCHIVE_OK)
                         break;
                     
                     while (1)
@@ -432,9 +428,6 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
                 while(0);
                 archive_read_close(a);
                 archive_read_free(a);
-                
-                if(packfs_archive_fileptr != NULL)
-                    fclose(packfs_archive_fileptr);
 
                 fseek(fileptr, 0, SEEK_SET);
                 break;
