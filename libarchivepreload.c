@@ -381,10 +381,11 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
                 struct archive *a = archive_read_new();
                 packfs_archive_read_new(a);
                 struct archive_entry *entry;
+                FILE* packfs_archive_fileptr = packfs_ctx->packfs_archive_fileptr;
                 do
                 {
-                    fseek(packfs_ctx->packfs_archive_fileptr, 0, SEEK_SET);
-                    if(archive_read_open_FILE(a, packfs_ctx->packfs_archive_fileptr) != ARCHIVE_OK)
+                    fseek(packfs_archive_fileptr, 0, SEEK_SET);
+                    if(archive_read_open_FILE(a, packfs_archive_fileptr) != ARCHIVE_OK)
                         break;
                     
                     while (1)
