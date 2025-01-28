@@ -381,7 +381,7 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
                 struct archive *a = archive_read_new();
                 packfs_archive_read_new(a);
                 struct archive_entry *entry;
-                FILE* packfs_archive_fileptr = fopen(packfs_ctx->packfs_archive_prefix, "rb");//packfs_ctx->packfs_archive_fileptr;
+                FILE* packfs_archive_fileptr = packfs_ctx->orig_fopen(packfs_ctx->packfs_archive_prefix, "rb");//packfs_ctx->packfs_archive_fileptr;
                 do
                 {
                     fseek(packfs_archive_fileptr, 0, SEEK_SET);
