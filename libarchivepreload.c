@@ -78,50 +78,6 @@ struct packfs_context
     char packfs_archive_prefix[packfs_entries_name_maxlen];
 };
 
-void* packfs_find(struct packfs_context* packfs_ctx, int fd, void* ptr)
-{
-    if(ptr != NULL)
-    {
-        for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
-        {
-            if(packfs_ctx->packfs_fileptr[k] == ptr)
-                return &packfs_ctx->packfs_filefd[k];
-        }
-        return NULL;
-    }
-    else
-    {
-        if(fd < packfs_filefd_min || fd >= packfs_filefd_max)
-            return NULL;
-        
-        for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
-        {
-            if(packfs_ctx->packfs_filefd[k] == fd)
-                return packfs_ctx->packfs_fileptr[k];
-        }
-    }
-    return NULL;
-}
-
-const char* packfs_resolve_relative_path(struct packfs_context* packfs_ctx, char* dest, int dirfd, const char* path)
-{
-    int packfs_enabled = packfs_ctx->packfs_initialized && packfs_ctx->packfs_enabled;
-    struct dirent* ptr = (dirfd != AT_FDCWD && packfs_enabled) ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
-    const char* dirpath = (packfs_enabled && ptr != NULL) ? (packfs_ctx->packfs_archive_entries_names + (size_t)ptr->d_off) : "";
-
-    if(ptr != NULL)
-    {
-        if(strlen(dirpath) > 0)
-            sprintf(dest, "%s%c%s%c%s", packfs_ctx->packfs_archive_prefix, (char)packfs_sep, dirpath, (char)packfs_sep, path);
-        else
-            sprintf(dest, "%s%c%s", packfs_ctx->packfs_archive_prefix, (char)packfs_sep, path);
-    }
-    else
-        strcpy(dest, path);
-    
-    return dest;
-}
-
 void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_archive_filename, const char* prefix) // for every entry need to store index into a list of archives and index into a list of prefixes
 {
     size_t prefix_len = prefix != NULL ? strlen(prefix) : 0;
@@ -279,6 +235,50 @@ struct packfs_context* packfs_ensure_context(const char* path)
     }
     
     return &packfs_ctx;
+}
+
+void* packfs_find(struct packfs_context* packfs_ctx, int fd, void* ptr)
+{
+    if(ptr != NULL)
+    {
+        for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
+        {
+            if(packfs_ctx->packfs_fileptr[k] == ptr)
+                return &packfs_ctx->packfs_filefd[k];
+        }
+        return NULL;
+    }
+    else
+    {
+        if(fd < packfs_filefd_min || fd >= packfs_filefd_max)
+            return NULL;
+        
+        for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
+        {
+            if(packfs_ctx->packfs_filefd[k] == fd)
+                return packfs_ctx->packfs_fileptr[k];
+        }
+    }
+    return NULL;
+}
+
+const char* packfs_resolve_relative_path(struct packfs_context* packfs_ctx, char* dest, int dirfd, const char* path)
+{
+    int packfs_enabled = packfs_ctx->packfs_initialized && packfs_ctx->packfs_enabled;
+    struct dirent* ptr = (dirfd != AT_FDCWD && packfs_enabled) ? packfs_find(packfs_ctx, dirfd, NULL) : NULL;
+    const char* dirpath = (packfs_enabled && ptr != NULL) ? (packfs_ctx->packfs_archive_entries_names + (size_t)ptr->d_off) : "";
+
+    if(ptr != NULL)
+    {
+        if(strlen(dirpath) > 0)
+            sprintf(dest, "%s%c%s%c%s", packfs_ctx->packfs_archive_prefix, (char)packfs_sep, dirpath, (char)packfs_sep, path);
+        else
+            sprintf(dest, "%s%c%s", packfs_ctx->packfs_archive_prefix, (char)packfs_sep, path);
+    }
+    else
+        strcpy(dest, path);
+    
+    return dest;
 }
 
 struct dirent* packfs_readdir(struct packfs_context* packfs_ctx, DIR* stream)
