@@ -302,9 +302,8 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 path_sanitized[path_prefix_len] = '\0';
                 strcpy(packfs_ctx.packfs_archive_prefix, path_sanitized);
                 
-                const char* packfs_archive_filename = packfs_ctx.packfs_archive_prefix;
-                packfs_ctx.packfs_enabled = packfs_archive_filename != NULL && strlen(packfs_archive_filename) > 0;
-                if(packfs_ctx.packfs_enabled) packfs_scan_archive(&packfs_ctx, packfs_archive_filename, "");
+                packfs_ctx.packfs_enabled = packfs_ctx.packfs_archive_prefix != NULL && strlen(packfs_ctx.packfs_archive_prefix) > 0;
+                if(packfs_ctx.packfs_enabled) packfs_scan_archive(&packfs_ctx, packfs_ctx.packfs_archive_prefix, "");
             }
         }
     }
