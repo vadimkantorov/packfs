@@ -254,6 +254,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         packfs_ctx.packfs_enabled = 0;
     }
 
+    /*
     if(packfs_ctx.packfs_initialized == 1 && packfs_ctx.packfs_enabled == 0)
     {
         char path_sanitized[packfs_entries_name_maxlen]; 
@@ -284,6 +285,24 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 packfs_scan_archive(&packfs_ctx, path_sanitized, "");
             }
         }
+    }*/
+    if(packfs_ctx.packfs_initialized == 1 && packfs_ctx.packfs_enabled == 0)
+    {
+        const char* packfs_archive_filename = NULL;
+        if(path != NULL)
+        {
+            char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
+            size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized, packfs_archive_suffix);
+            if(path_prefix_len > 0)
+            {
+                strcpy(packfs_ctx.packfs_archive_prefix, path_sanitized);
+                packfs_ctx.packfs_archive_prefix[path_prefix_len] = '\0';
+                packfs_archive_filename = packfs_ctx.packfs_archive_prefix;
+            }
+        }
+
+        packfs_ctx.packfs_enabled = packfs_archive_filename != NULL && strlen(packfs_archive_filename) > 0;
+        if(packfs_ctx.packfs_enabled) packfs_scan_archive(&packfs_ctx, packfs_archive_filename, "");
     }
     
     return &packfs_ctx;
