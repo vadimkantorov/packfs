@@ -270,8 +270,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 strcpy(packfs_ctx->packfs_archive_prefix, path_sanitized);
             }
         }
-        
-        if(path != NULL)
+        else if(path != NULL)
         {
             packfs_sanitize_path(path_sanitized, path);
             size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized, packfs_archive_suffix);
