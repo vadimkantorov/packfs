@@ -34,6 +34,9 @@ jobs:
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.tar.xz/libarchivepreload.c
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/stat libarchivepreload.tar.xz/libarchivepreload.c
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.tar.xz
+          
+          LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=libarchivepreload.tar.xz /usr/bin/cat libarchivepreload.tar.xz/libarchivepreload.c
+          LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=libarchivepreload.tar.xz /usr/bin/cat libarchivepreload.c
        
       - name: Artifacts
         uses: actions/upload-artifact@v4

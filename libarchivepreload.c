@@ -70,9 +70,12 @@ struct packfs_context
     char packfs_archive_entries_prefix[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
     size_t packfs_archive_entries_prefix_lens[packfs_archive_entries_nummax];
     size_t packfs_archive_entries_prefix_total;
+    
+    char packfs_archive_entries_archive[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
+    size_t packfs_archive_entries_archive_lens[packfs_archive_entries_nummax];
+    size_t packfs_archive_entries_archive_total;
 
     char packfs_archive_prefix[packfs_entries_name_maxlen];
-    char packfs_archive_suffix[packfs_entries_name_maxlen];
     void* packfs_archive_fileptr;
 };
 
@@ -132,6 +135,7 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
 {
     size_t prefix_len = prefix != NULL ? strlen(prefix) : 0;
     if(prefix_len > 0 && prefix[prefix_len - 1] == packfs_sep) prefix_len--;
+    size_t packfs_archive_filename_len = strlen(packfs_archive_filename);
 
     struct archive *a = archive_read_new();
     packfs_archive_read_new(a);
@@ -154,14 +158,22 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
         
         packfs_ctx->packfs_archive_entries_isdir[packfs_ctx->packfs_archive_entries_num] = 1;
 
+        
         strcpy(packfs_ctx->packfs_archive_entries_names + packfs_ctx->packfs_archive_entries_names_total, "");
         packfs_ctx->packfs_archive_entries_names_lens[packfs_ctx->packfs_archive_entries_num] = 0;
         packfs_ctx->packfs_archive_entries_names_total += packfs_ctx->packfs_archive_entries_names_lens[packfs_ctx->packfs_archive_entries_num] + 1;
+        
         
         strncpy(packfs_ctx->packfs_archive_entries_prefix + packfs_ctx->packfs_archive_entries_prefix_total, prefix, prefix_len);
         packfs_ctx->packfs_archive_entries_prefix_lens[packfs_ctx->packfs_archive_entries_num] = prefix_len;
         packfs_ctx->packfs_archive_entries_prefix_total += packfs_ctx->packfs_archive_entries_prefix_lens[packfs_ctx->packfs_archive_entries_num] + 1;
         
+        
+        strncpy(packfs_ctx->packfs_archive_entries_archive + packfs_ctx->packfs_archive_entries_archive_total, packfs_archive_filename, packfs_archive_filename_len);
+        packfs_ctx->packfs_archive_entries_archive_lens[packfs_ctx->packfs_archive_entries_num] = packfs_archive_filename_len;
+        packfs_ctx->packfs_archive_entries_archive_total += packfs_ctx->packfs_archive_entries_archive_lens[packfs_ctx->packfs_archive_entries_num] + 1;
+        
+
         packfs_ctx->packfs_archive_entries_num++;
         
         while(1)
@@ -181,14 +193,22 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
             packfs_ctx->packfs_archive_entries_isdir[packfs_ctx->packfs_archive_entries_num] = filetype == AE_IFDIR;
             packfs_ctx->packfs_archive_entries_sizes[packfs_ctx->packfs_archive_entries_num] = entry_byte_size;
             
+            
             strncpy(packfs_ctx->packfs_archive_entries_names + packfs_ctx->packfs_archive_entries_names_total, entryname, entryname_len);
             packfs_ctx->packfs_archive_entries_names_lens[packfs_ctx->packfs_archive_entries_num] = entryname_len;
             packfs_ctx->packfs_archive_entries_names_total += packfs_ctx->packfs_archive_entries_names_lens[packfs_ctx->packfs_archive_entries_num] + 1;
         
+            
             strncpy(packfs_ctx->packfs_archive_entries_prefix + packfs_ctx->packfs_archive_entries_prefix_total, prefix, prefix_len);
             packfs_ctx->packfs_archive_entries_prefix_lens[packfs_ctx->packfs_archive_entries_num] = prefix_len;
             packfs_ctx->packfs_archive_entries_prefix_total += packfs_ctx->packfs_archive_entries_prefix_lens[packfs_ctx->packfs_archive_entries_num] + 1;
+        
+            
+            strncpy(packfs_ctx->packfs_archive_entries_archive + packfs_ctx->packfs_archive_entries_archive_total, packfs_archive_filename, packfs_archive_filename_len);
+            packfs_ctx->packfs_archive_entries_archive_lens[packfs_ctx->packfs_archive_entries_num] = packfs_archive_filename_len;
+            packfs_ctx->packfs_archive_entries_archive_total += packfs_ctx->packfs_archive_entries_archive_lens[packfs_ctx->packfs_archive_entries_num] + 1;
 
+            
             packfs_ctx->packfs_archive_entries_num++;
                 
             r = archive_read_data_skip(a);
@@ -205,7 +225,9 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
 
 struct packfs_context* packfs_ensure_context(const char* path)
 {
-    static struct packfs_context packfs_ctx = {.packfs_archive_suffix = ".iso:.zip:.tar:.tar.xz:.tar.gz"};
+    char packfs_archive_suffix[] = ".iso:.zip:.tar:.tar.xz:.tar.gz";
+    
+    static struct packfs_context packfs_ctx;
 
     if(packfs_ctx.packfs_initialized != 1)
     {
@@ -234,22 +256,33 @@ struct packfs_context* packfs_ensure_context(const char* path)
 
     if(packfs_ctx.packfs_initialized == 1 && packfs_ctx.packfs_enabled == 0)
     {
-        const char* packfs_archive_filename = NULL;
-        if(path != NULL)
+        char path_sanitized[packfs_entries_name_maxlen]; 
+
+        const char *packfs_archives = getenv("PACKFS_ARCHIVES"), *packfs_prefix = getenv("PACKFS_PREFIX");
+        if(packfs_archives != NULL && packfs_archives[0] != '\0')
         {
-            char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
-            size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized, packfs_ctx.packfs_archive_suffix);
-            if(path_prefix_len > 0)
+            for(const char* begin = packfs_archives, *end = strchr(packfs_archives, packfs_pathsep), *prevend  = packfs_archives; prevend != NULL && *begin != '\0'; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_pathsep) : NULL)
             {
-                strcpy(packfs_ctx.packfs_archive_prefix, path_sanitized);
-                packfs_ctx.packfs_archive_prefix[path_prefix_len] = '\0';
-                packfs_archive_filename = packfs_ctx.packfs_archive_prefix;
+                size_t len = end == NULL ? strlen(begin) : (end - begin);
+                strncpy(path_sanitized, begin, len);
+                packfs_scan_archive(&packfs_ctx, path_sanitized, packfs_prefix != NULL ? packfs_prefix : "");
+                packfs_ctx.packfs_enabled = 1;
+                strcpy(packfs_ctx->packfs_archive_prefix, path_sanitized);
             }
         }
-
-        packfs_ctx.packfs_enabled = packfs_archive_filename != NULL && strlen(packfs_archive_filename) > 0;
         
-        packfs_scan_archive(&packfs_ctx, packfs_archive_filename, "");
+        if(path != NULL)
+        {
+            packfs_sanitize_path(path_sanitized, path);
+            size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized, packfs_archive_suffix);
+            if(path_prefix_len > 0)
+            {
+                path_sanitized[path_prefix_len] = '\0';
+                packfs_scan_archive(&packfs_ctx, path_sanitized, "");
+                packfs_ctx.packfs_enabled = 1;
+                strcpy(packfs_ctx->packfs_archive_prefix, path_sanitized);
+            }
+        }
     }
     
     return &packfs_ctx;
@@ -463,6 +496,7 @@ int packfs_access(struct packfs_context* packfs_ctx, const char* path)
 {
     char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
     const char* path_without_prefix = packfs_lstrip_prefix(path_sanitized, packfs_ctx->packfs_archive_prefix);
+
     if(path_without_prefix != NULL)
     {
         for(size_t i = 0, packfs_archive_entries_names_offset = 0, prefix_strlen = strlen(packfs_ctx->packfs_archive_prefix); i < packfs_ctx->packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx->packfs_archive_entries_names_lens[i] + 1), i++)

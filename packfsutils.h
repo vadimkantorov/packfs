@@ -6,7 +6,8 @@ enum
     packfs_filefd_max = 1000001000, 
     packfs_entries_name_maxlen = 128, 
     packfs_archive_entries_nummax = 1024,
-    packfs_sep = '/'
+    packfs_sep = '/',
+    packfs_pathsep = ':'
 };
 
 void packfs_sanitize_path(char* path_sanitized, const char* path)
@@ -88,7 +89,8 @@ const char* packfs_lstrip_prefix(const char* path, const char* prefix)
         return path_without_prefix;
     }
     
-    return NULL;
+    //return NULL;
+    return path;
 }
 
 size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
@@ -98,7 +100,7 @@ size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
     for(const char* res = strchr(path, packfs_sep), *prevres = path; prevres != NULL; prevres = res, res = (res != NULL ? strchr(res + 1, packfs_sep) : NULL))
     {
         size_t prefix_len = res == NULL ? strlen(path) : (res - path);
-        for(const char* begin = suffixes, *end = strchr(suffixes, ':'), *prevend  = suffixes; prevend != NULL; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, ':') : NULL)
+        for(const char* begin = suffixes, *end = strchr(suffixes, packfs_pathsep), *prevend  = suffixes; prevend != NULL; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_pathsep) : NULL)
         {
             size_t suffix_len = end == NULL ? strlen(begin) : (end - begin);
             if(suffix_len > 0 && prefix_len >= suffix_len && 0 == strncmp(begin, path + prefix_len - suffix_len, suffix_len))
