@@ -260,8 +260,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         }
 
         packfs_ctx.packfs_enabled = packfs_archive_filename != NULL && strlen(packfs_archive_filename) > 0;
-        
-        packfs_scan_archive(&packfs_ctx, packfs_archive_filename, "");
+        if(packfs_ctx.packfs_enabled) packfs_scan_archive(&packfs_ctx, packfs_archive_filename, "");
     }
     
     return &packfs_ctx;
