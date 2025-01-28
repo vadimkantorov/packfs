@@ -260,7 +260,14 @@ struct packfs_context* packfs_ensure_context(const char* path)
         char path_sanitized[packfs_entries_name_maxlen]; 
 
         const char *packfs_archives = getenv("PACKFS_ARCHIVES"), *packfs_prefix = getenv("PACKFS_PREFIX");
-        if(packfs_archives != NULL && packfs_archives[0] != '\0')
+    }*/
+    if(packfs_ctx.packfs_initialized == 1 && packfs_ctx.packfs_enabled == 0)
+    {
+        char path_sanitized[packfs_entries_name_maxlen]; 
+        
+        const char *packfs_archives = getenv("PACKFS_ARCHIVES"), *packfs_prefix = getenv("PACKFS_PREFIX");
+        
+        /*if(packfs_archives != NULL && packfs_archives[0] != '\0')
         {
             for(const char* begin = packfs_archives, *end = strchr(packfs_archives, packfs_pathsep), *prevend  = packfs_archives; prevend != NULL && *begin != '\0'; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_pathsep) : NULL)
             {
@@ -284,14 +291,11 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 
                 packfs_scan_archive(&packfs_ctx, path_sanitized, "");
             }
-        }
-    }*/
-    if(packfs_ctx.packfs_initialized == 1 && packfs_ctx.packfs_enabled == 0)
-    {
+        }*/
         const char* packfs_archive_filename = NULL;
         if(path != NULL)
         {
-            char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
+            packfs_sanitize_path(path_sanitized, path);
             size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized, packfs_archive_suffix);
             if(path_prefix_len > 0)
             {
