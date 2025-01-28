@@ -89,8 +89,8 @@ const char* packfs_lstrip_prefix(const char* path, const char* prefix)
         return path_without_prefix;
     }
     
-    //return NULL;
-    return path;
+    return NULL;
+    //return path;
 }
 
 size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
