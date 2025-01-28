@@ -158,9 +158,11 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
         
         packfs_ctx->packfs_archive_entries_isdir[packfs_ctx->packfs_archive_entries_num] = 1;
 
+        
         strcpy(packfs_ctx->packfs_archive_entries_names + packfs_ctx->packfs_archive_entries_names_total, "");
         packfs_ctx->packfs_archive_entries_names_lens[packfs_ctx->packfs_archive_entries_num] = 0;
         packfs_ctx->packfs_archive_entries_names_total += packfs_ctx->packfs_archive_entries_names_lens[packfs_ctx->packfs_archive_entries_num] + 1;
+        
         
         strncpy(packfs_ctx->packfs_archive_entries_prefix + packfs_ctx->packfs_archive_entries_prefix_total, prefix, prefix_len);
         packfs_ctx->packfs_archive_entries_prefix_lens[packfs_ctx->packfs_archive_entries_num] = prefix_len;
@@ -185,10 +187,12 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
             packfs_ctx->packfs_archive_entries_isdir[packfs_ctx->packfs_archive_entries_num] = filetype == AE_IFDIR;
             packfs_ctx->packfs_archive_entries_sizes[packfs_ctx->packfs_archive_entries_num] = entry_byte_size;
             
+            
             strncpy(packfs_ctx->packfs_archive_entries_names + packfs_ctx->packfs_archive_entries_names_total, entryname, entryname_len);
             packfs_ctx->packfs_archive_entries_names_lens[packfs_ctx->packfs_archive_entries_num] = entryname_len;
             packfs_ctx->packfs_archive_entries_names_total += packfs_ctx->packfs_archive_entries_names_lens[packfs_ctx->packfs_archive_entries_num] + 1;
         
+            
             strncpy(packfs_ctx->packfs_archive_entries_prefix + packfs_ctx->packfs_archive_entries_prefix_total, prefix, prefix_len);
             packfs_ctx->packfs_archive_entries_prefix_lens[packfs_ctx->packfs_archive_entries_num] = prefix_len;
             packfs_ctx->packfs_archive_entries_prefix_total += packfs_ctx->packfs_archive_entries_prefix_lens[packfs_ctx->packfs_archive_entries_num] + 1;
@@ -469,6 +473,7 @@ int packfs_access(struct packfs_context* packfs_ctx, const char* path)
 {
     char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
     const char* path_without_prefix = packfs_lstrip_prefix(path_sanitized, packfs_ctx->packfs_archive_prefix);
+
     if(path_without_prefix != NULL)
     {
         for(size_t i = 0, packfs_archive_entries_names_offset = 0, prefix_strlen = strlen(packfs_ctx->packfs_archive_prefix); i < packfs_ctx->packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx->packfs_archive_entries_names_lens[i] + 1), i++)
