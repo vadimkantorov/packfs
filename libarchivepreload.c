@@ -76,7 +76,6 @@ struct packfs_context
     size_t packfs_archive_entries_archive_total;
 
     char packfs_archive_prefix[packfs_entries_name_maxlen];
-    //void* packfs_archive_fileptr;
 };
 
 int packfs_stream_in_context(struct packfs_context* packfs_ctx, void* stream)
