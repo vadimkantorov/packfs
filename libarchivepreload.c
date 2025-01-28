@@ -289,7 +289,6 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 strcpy(packfs_ctx.packfs_archive_prefix, path_sanitized);
                 
                 packfs_ctx.packfs_enabled = 1;
-                
                 packfs_scan_archive(&packfs_ctx, path_sanitized, "");
             }
         }*/
@@ -302,8 +301,10 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 path_sanitized[path_prefix_len] = '\0';
                 strcpy(packfs_ctx.packfs_archive_prefix, path_sanitized);
                 
-                packfs_ctx.packfs_enabled = packfs_ctx.packfs_archive_prefix != NULL && strlen(packfs_ctx.packfs_archive_prefix) > 0;
-                if(packfs_ctx.packfs_enabled) packfs_scan_archive(&packfs_ctx, packfs_ctx.packfs_archive_prefix, "");
+                packfs_ctx.packfs_enabled = 1;
+                packfs_scan_archive(&packfs_ctx, path_sanitized, "");
+                //packfs_ctx.packfs_enabled = packfs_ctx.packfs_archive_prefix != NULL && strlen(packfs_ctx.packfs_archive_prefix) > 0;
+                //if(packfs_ctx.packfs_enabled) packfs_scan_archive(&packfs_ctx, packfs_ctx.packfs_archive_prefix, "");
             }
         }
     }
