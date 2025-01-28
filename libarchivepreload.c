@@ -381,9 +381,10 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
                 struct archive *a = archive_read_new();
                 packfs_archive_read_new(a);
                 struct archive_entry *entry;
+                FILE* packfs_archive_fileptr = NULL;
                 do
                 {
-                    FILE* packfs_archive_fileptr = fopen(packfs_ctx->packfs_archive_prefix, "rb");
+                    packfs_archive_fileptr = fopen(packfs_ctx->packfs_archive_prefix, "rb");
                     if(packfs_archive_fileptr == NULL)
                         break;
 
