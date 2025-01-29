@@ -43,16 +43,23 @@ const char* packfs_basename(const char* path)
     return basename;
 }
 
-int packfs_path_in_range(const char* prefix, const char* path)
+int packfs_path_in_range(const char* prefixes, const char* path)
 {
-    if(prefix == NULL || prefix[0] == '\0' || path == NULL || path[0] == '\0')
+    if(prefixes == NULL || prefixes[0] == '\0' || path == NULL || path[0] == '\0')
         return 0;
-    size_t prefix_len = strlen(prefix);
     size_t path_len = strlen(path);
-    int prefix_endswith_slash = prefix[prefix_len - 1] == packfs_sep;
-    int prefix_ok = 0 == strncmp(prefix, path, prefix_len - (prefix_endswith_slash ? 1 : 0));
-    size_t prefix_len_m1 = prefix_endswith_slash ? (prefix_len - 1) : prefix_len;
-    return prefix_ok && ((path_len == prefix_len_m1) || (path_len >= prefix_len && path[prefix_len_m1] == packfs_sep));
+    
+    for(const char* begin = prefixes, *end = strchr(prefixes, packfs_pathsep), *prevend  = prefixes; prevend != NULL; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_pathsep) : NULL)
+    {
+        size_t prefix_len = end == NULL ? strlen(begin) : (end - begin);
+        
+        int prefix_endswith_slash = begin[prefix_len - 1] == packfs_sep;
+        int prefix_ok = 0 == strncmp(begin, path, prefix_len - (prefix_endswith_slash ? 1 : 0));
+        size_t prefix_len_m1 = prefix_endswith_slash ? (prefix_len - 1) : prefix_len;
+        if(prefix_ok && ((path_len == prefix_len_m1) || (path_len >= prefix_len && path[prefix_len_m1] == packfs_sep)))
+            return 1;
+    }
+    return 0;
 }
 
 int packfs_fd_in_range(int fd)
