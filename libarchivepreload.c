@@ -435,16 +435,17 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
     
     if(packfs_ctx->packfs_archive_entries_num > 0 && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path_sanitized))
     {
-        for(size_t i = 0, packfs_archive_entries_names_offset = 0, packfs_archive_entries_prefix_offset = 0; i < packfs_ctx->packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx->packfs_archive_entries_names_lens[i] + 1), packfs_archive_entries_prefix_offset += (packfs_ctx->packfs_archive_entries_prefix_lens[i] + 1), i++)
+        for(size_t i = 0, packfs_archive_entries_names_offset = 0, packfs_archive_entries_prefix_offset = 0, packfs_archive_entries_archive_offset = 0; i < packfs_ctx->packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx->packfs_archive_entries_names_lens[i] + 1), packfs_archive_entries_prefix_offset += (packfs_ctx->packfs_archive_entries_prefix_lens[i] + 1), packfs_archive_entries_archive_offset += (packfs_ctx->packfs_archive_entries_archive_lens[i] + 1), i++)
         {
-            const char* prefix     = packfs_ctx->packfs_archive_entries_prefix + packfs_archive_entries_prefix_offset;
+            const char* prefix    = packfs_ctx->packfs_archive_entries_prefix + packfs_archive_entries_prefix_offset;
             const char* entrypath = packfs_ctx->packfs_archive_entries_names  + packfs_archive_entries_names_offset;
+            const char* archive   = packfs_ctx->packfs_archive_entries_archive+ packfs_archive_entries_archive_offset;
             if(!packfs_ctx->packfs_archive_entries_isdir[i] && packfs_match(path, prefix, entrypath))
             {
                 fileino = i;
                 filesize = packfs_ctx->packfs_archive_entries_sizes[i];
                 fileptr = fmemopen(NULL, filesize, "rb+");
-                packfs_extract_archive_entry(packfs_ctx, packfs_ctx->packfs_archive_prefix, entrypath, fileptr);
+                packfs_extract_archive_entry(packfs_ctx, archive, entrypath, fileptr);
                 fseek(fileptr, 0, SEEK_SET);
                 break;
             }
