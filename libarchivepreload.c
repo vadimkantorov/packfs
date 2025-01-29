@@ -141,7 +141,7 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
                 
             int filetype = archive_entry_filetype(entry);
             size_t entry_byte_size = (size_t)archive_entry_size(entry);
-            const char* entryname = archive_entrypathname(entry);
+            const char* entryname = archive_entry_pathname(entry);
             size_t entryname_len = strlen(entryname);
             if(entryname_len > 0 && entryname[entryname_len - 1] == packfs_sep) entryname_len--;
             
@@ -200,7 +200,7 @@ void packfs_extract_archive_entry(struct packfs_context* packfs_ctx, const char*
             if (r != ARCHIVE_OK)
                 break; //fprintf(stderr, "%s\n", archive_error_string(a));
 
-            if(0 == strcmp(entrypath, archive_entrypathname(entry)))
+            if(0 == strcmp(entrypath, archive_entry_pathname(entry)))
             {
                 enum { MAX_WRITE = 1024 * 1024};
                 const void *buff;
