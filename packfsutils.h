@@ -2,10 +2,6 @@
 
 enum
 {
-    packfs_filefd_min = 1000000000, 
-    packfs_filefd_max = 1000001000, 
-    packfs_entries_name_maxlen = 128, 
-    packfs_archive_entries_nummax = 1024,
     packfs_sep = '/',
     packfs_pathsep = ':'
 };
@@ -60,11 +56,6 @@ int packfs_path_in_range(const char* prefixes, const char* path)
             return 1;
     }
     return 0;
-}
-
-int packfs_fd_in_range(int fd)
-{
-    return fd >= 0 && fd >= packfs_filefd_min && fd < packfs_filefd_max;
 }
 
 int packfs_indir(const char* dir_path, const char* path)
