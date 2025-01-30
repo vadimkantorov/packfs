@@ -22,7 +22,7 @@
 enum
 {
     packfs_filefd_min = 1000000000, 
-    packfs_filefd_max = 1000001000, 
+    packfs_filefd_max = 1000002000, 
     packfs_entries_name_maxlen = 128, 
     packfs_archive_entries_nummax = 2048,
 };
