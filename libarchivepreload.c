@@ -117,6 +117,7 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
     packfs_archive_read_new(a);
     struct archive_entry *entry;
     FILE* packfs_archive_fileptr = NULL;
+    fprintf(stderr, "scan1 '%s' '%s'\n", packfs_archive_filename, prefix);
     do
     {
         if( packfs_archive_filename == NULL || 0 == strlen(packfs_archive_filename))
@@ -164,6 +165,8 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
             const char* entryname = archive_entry_pathname(entry);
             size_t entryname_len = strlen(entryname);
             if(entryname_len > 0 && entryname[entryname_len - 1] == packfs_sep) entryname_len--;
+    
+            fprintf(stderr, "scan2 '%s'\n", entryname);
             
             packfs_ctx->packfs_archive_entries_isdir[packfs_ctx->packfs_archive_entries_num] = filetype == AE_IFDIR;
             packfs_ctx->packfs_archive_entries_sizes[packfs_ctx->packfs_archive_entries_num] = entry_byte_size;
