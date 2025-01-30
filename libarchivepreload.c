@@ -99,6 +99,7 @@ struct packfs_context
 void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_archive_filename, const char* prefix) // for every entry need to store index into a list of archives and index into a list of prefixes
 {
     //FIXME: adds prefix even if input archive cannot be opened
+    //FIXME: do not scan the same archive second time
     if(packfs_ctx->packfs_archive_prefix[0] == '\0')
     {
         strcpy(packfs_ctx->packfs_archive_prefix, prefix);
