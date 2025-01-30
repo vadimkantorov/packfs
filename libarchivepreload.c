@@ -464,7 +464,7 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
             fprintf(stderr, "packfs_open2: '%s' '%s' '%s' %d\n", path, prefix, entrypath, packfs_match(path, prefix, entrypath));
             if(!packfs_ctx->packfs_archive_entries_isdir[i] && packfs_match(path, prefix, entrypath))
             {
-                fprintf(stderr, "packfs_open3: '%s'\n", entrypath);
+                //fprintf(stderr, "packfs_open3: '%s'\n", entrypath);
                 fileino = i;
                 filesize = packfs_ctx->packfs_archive_entries_sizes[i];
                 fileptr = fmemopen(NULL, filesize, "rb+");
