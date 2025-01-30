@@ -507,8 +507,10 @@ void* packfs_opendir(struct packfs_context* packfs_ctx, const char* path)
         {
             const char* prefix     = packfs_ctx->packfs_archive_entries_prefix + packfs_archive_entries_prefix_offset;
             const char* entrypath = packfs_ctx->packfs_archive_entries_names  + packfs_archive_entries_names_offset;
+            fprintf(stderr, "opendir4: '%s' '%s'\n", prefix, entrypath);
             if(packfs_ctx->packfs_archive_entries_isdir[i] && packfs_match(path, prefix, entrypath))
             {
+                fprintf(stderr, "opendir5: '%s' '%s' '%s'\n", path, prefix, entrypath);
                 d_ino = i;
                 d_off = packfs_archive_entries_names_offset;
                 found = 1;
