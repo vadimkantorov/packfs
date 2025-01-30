@@ -22,9 +22,9 @@
 enum
 {
     packfs_filefd_min = 1000000000, 
-    packfs_filefd_max = 1000002000, 
+    packfs_filefd_max = 1000008192, 
     packfs_entries_name_maxlen = 128, 
-    packfs_archive_entries_nummax = 2048,
+    packfs_archive_entries_nummax = 8192,
 };
 
 int packfs_fd_in_range(int fd)
@@ -694,7 +694,10 @@ int openat(int dirfd, const char *path, int flags, ...)
     }
 
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
+    fprintf(stderr, "openat1: %d '%s'\n", dirfd, path);
     char buf[packfs_entries_name_maxlen]; path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
+    fprintf(stderr, "openat2: %d '%s'\n", dirfd, path);
+    
     if(packfs_ctx->packfs_enabled && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path))
     {
         void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(packfs_ctx, path) : (void*)packfs_open(packfs_ctx, path);
