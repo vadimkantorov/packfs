@@ -26,16 +26,16 @@ void packfs_sanitize_path(char* path_sanitized, const char* path)
     if(path_sanitized_len >= 3 && path_sanitized[path_sanitized_len - 1] == '.' && path_sanitized[path_sanitized_len - 2] == '.'  && path_sanitized[path_sanitized_len - 3] == packfs_sep)
     {
         path_sanitized[path_sanitized_len - 3] = '\0';
-        char* last_slash = strrchr(path_sanitized, packfs_sep);
-        if(last_slash != NULL)
-            *last_slash = '\0';
+        char* trailing_slash = strrchr(path_sanitized, packfs_sep);
+        if(trailing_slash != NULL)
+            *trailing_slash = '\0';
     }
 }
 
 const char* packfs_basename(const char* path)
 {
-    const char* last_slash = strrchr(path, packfs_sep);
-    const char* basename = last_slash ? (last_slash + 1) : path;
+    const char* trailing_slash = strrchr(path, packfs_sep);
+    const char* basename = trailing_slash ? (trailing_slash + 1) : path;
     return basename;
 }
 
@@ -49,9 +49,9 @@ int packfs_path_in_range(const char* prefixes, const char* path)
     {
         size_t prefix_len = end == NULL ? strlen(begin) : (end - begin);
         
-        int prefix_endswith_slash = begin[prefix_len - 1] == packfs_sep;
-        int prefix_ok = 0 == strncmp(begin, path, prefix_len - (prefix_endswith_slash ? 1 : 0));
-        size_t prefix_len_m1 = prefix_endswith_slash ? (prefix_len - 1) : prefix_len;
+        int prefix_trailing_slash = begin[prefix_len - 1] == packfs_sep;
+        int prefix_ok = 0 == strncmp(begin, path, prefix_len - (prefix_trailing_slash ? 1 : 0));
+        size_t prefix_len_m1 = prefix_trailing_slash ? (prefix_len - 1) : prefix_len;
         if(prefix_ok && ((path_len == prefix_len_m1) || (path_len >= prefix_len && path[prefix_len_m1] == packfs_sep)))
             return 1;
     }
@@ -61,10 +61,10 @@ int packfs_path_in_range(const char* prefixes, const char* path)
 int packfs_indir(const char* dir_path, const char* path)
 {
     size_t dir_path_len = strlen(dir_path);
-    const char* last_slash = strrchr(path, packfs_sep);
-    if(dir_path_len == 0 && last_slash == NULL)
+    const char* trailing_slash = strrchr(path, packfs_sep);
+    if(dir_path_len == 0 && trailing_slash == NULL)
         return 1;
-    if(0 == strncmp(dir_path, path, dir_path_len) && last_slash == (path + dir_path_len))
+    if(0 == strncmp(dir_path, path, dir_path_len) && trailing_slash == (path + dir_path_len))
         return 1;
     return 0;
 }
