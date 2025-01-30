@@ -98,6 +98,7 @@ struct packfs_context
 
 void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_archive_filename, const char* prefix) // for every entry need to store index into a list of archives and index into a list of prefixes
 {
+    //FIXME: adds prefix even if input archive cannot be opened
     if(packfs_ctx->packfs_archive_prefix[0] == '\0')
     {
         strcpy(packfs_ctx->packfs_archive_prefix, prefix);
@@ -301,10 +302,12 @@ struct packfs_context* packfs_ensure_context(const char* path)
             {
                 size_t len = end == NULL ? strlen(begin) : (end - begin);
                 strncpy(path_sanitized, begin, len);
+                path_sanitized[len] = '\0';
                 
                 packfs_ctx.packfs_enabled = 1;
+                fprintf(stderr, "ensure1: '%s' '%s'\n", path_sanitized, packfs_prefix != NULL ? packfs_prefix : "");
                 packfs_scan_archive(&packfs_ctx, path_sanitized, packfs_prefix != NULL ? packfs_prefix : "");
-                fprintf(stderr, "ensure: '%s'\n", packfs_ctx.packfs_archive_prefix);
+                fprintf(stderr, "ensure2: '%s'\n", packfs_ctx.packfs_archive_prefix);
             }
         }
         else if(path != NULL)
