@@ -397,7 +397,7 @@ int packfs_access(struct packfs_context* packfs_ctx, const char* path)
         {
             const char* prefix     = packfs_ctx->packfs_archive_entries_prefix + packfs_archive_entries_prefix_offset;
             const char* entrypath = packfs_ctx->packfs_archive_entries_names  + packfs_archive_entries_names_offset;
-            if(!packfs_ctx->packfs_archive_entries_isdir[i] && packfs_match(path, prefix, entrypath))
+            if(!packfs_ctx->packfs_archive_entries_isdir[i] && packfs_match(path_sanitized, prefix, entrypath))
                 return 0;
         }
         return -1;
@@ -415,7 +415,7 @@ int packfs_stat(struct packfs_context* packfs_ctx, const char* path, int fd, siz
         {
             const char* prefix     = packfs_ctx->packfs_archive_entries_prefix + packfs_archive_entries_prefix_offset;
             const char* entrypath = packfs_ctx->packfs_archive_entries_names  + packfs_archive_entries_names_offset;
-            if(packfs_match(path, prefix, entrypath))
+            if(packfs_match(path_sanitized, prefix, entrypath))
             {
                 *size = packfs_ctx->packfs_archive_entries_sizes[i];
                 *isdir = packfs_ctx->packfs_archive_entries_isdir[i];
@@ -460,7 +460,7 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
             const char* entrypath = packfs_ctx->packfs_archive_entries_names  + packfs_archive_entries_names_offset;
             const char* archive   = packfs_ctx->packfs_archive_entries_archive+ packfs_archive_entries_archive_offset;
             
-            if(!packfs_ctx->packfs_archive_entries_isdir[i] && packfs_match(path, prefix, entrypath))
+            if(!packfs_ctx->packfs_archive_entries_isdir[i] && packfs_match(path_sanitized, prefix, entrypath))
             {
                 fileino = i;
                 filesize = packfs_ctx->packfs_archive_entries_sizes[i];
@@ -508,7 +508,7 @@ void* packfs_opendir(struct packfs_context* packfs_ctx, const char* path)
             const char* prefix     = packfs_ctx->packfs_archive_entries_prefix + packfs_archive_entries_prefix_offset;
             const char* entrypath = packfs_ctx->packfs_archive_entries_names  + packfs_archive_entries_names_offset;
             fprintf(stderr, "opendir4: '%s' '%s'\n", prefix, entrypath);
-            if(packfs_ctx->packfs_archive_entries_isdir[i] && packfs_match(path, prefix, entrypath))
+            if(packfs_ctx->packfs_archive_entries_isdir[i] && packfs_match(path_sanitized, prefix, entrypath))
             {
                 fprintf(stderr, "opendir5: '%s' '%s' '%s'\n", path, prefix, entrypath);
                 d_ino = i;
