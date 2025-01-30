@@ -290,6 +290,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         char path_sanitized[packfs_entries_name_maxlen]; 
         
         const char *packfs_archives = getenv("PACKFS_ARCHIVES"), *packfs_prefix = getenv("PACKFS_PREFIX");
+        const char* packfs_archives_suffixes = packfs_archive_read_new(NULL);
         
         if(packfs_archives != NULL && packfs_archives[0] != '\0')
         {
@@ -306,7 +307,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
         else if(path != NULL)
         {
             packfs_sanitize_path(path_sanitized, path);
-            size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized, packfs_archive_read_new(NULL));
+            size_t path_prefix_len = packfs_archive_prefix_extract(path_sanitized, packfs_archives_suffixes);
             if(path_prefix_len > 0)
             {
                 path_sanitized[path_prefix_len] = '\0';
