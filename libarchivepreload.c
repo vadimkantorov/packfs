@@ -830,6 +830,7 @@ int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, st
 {
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
     char buf[packfs_entries_name_maxlen]; path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
+
     if(packfs_ctx->packfs_enabled && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path))
     {
         size_t size = 0, isdir = 0, d_ino = 0;
