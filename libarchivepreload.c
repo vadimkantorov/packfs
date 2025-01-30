@@ -118,7 +118,6 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
     packfs_archive_read_new(a);
     struct archive_entry *entry;
     FILE* packfs_archive_fileptr = NULL;
-    fprintf(stderr, "scan1 '%s' '%s'\n", packfs_archive_filename, prefix);
     do
     {
         if( packfs_archive_filename == NULL || 0 == strlen(packfs_archive_filename))
@@ -167,8 +166,6 @@ void packfs_scan_archive(struct packfs_context* packfs_ctx, const char* packfs_a
             size_t entryname_len = strlen(entryname);
             if(entryname_len > 0 && entryname[entryname_len - 1] == packfs_sep) entryname_len--;
     
-            fprintf(stderr, "scan2 '%s'\n", entryname);
-            
             packfs_ctx->packfs_archive_entries_isdir[packfs_ctx->packfs_archive_entries_num] = filetype == AE_IFDIR;
             packfs_ctx->packfs_archive_entries_sizes[packfs_ctx->packfs_archive_entries_num] = entry_byte_size;
             
@@ -305,9 +302,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 path_sanitized[len] = '\0';
                 
                 packfs_ctx.packfs_enabled = 1;
-                fprintf(stderr, "ensure1: '%s' '%s'\n", path_sanitized, packfs_prefix != NULL ? packfs_prefix : "");
                 packfs_scan_archive(&packfs_ctx, path_sanitized, packfs_prefix != NULL ? packfs_prefix : "");
-                fprintf(stderr, "ensure2: '%s'\n", packfs_ctx.packfs_archive_prefix);
             }
         }
         else if(path != NULL)
@@ -466,9 +461,10 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
             const char* entrypath = packfs_ctx->packfs_archive_entries_names  + packfs_archive_entries_names_offset;
             const char* archive   = packfs_ctx->packfs_archive_entries_archive+ packfs_archive_entries_archive_offset;
             
-            fprintf(stderr, "packfs_open2: '%s' '%s' '%s'\n", path, prefix, entrypath);
+            fprintf(stderr, "packfs_open2: '%s' '%s' '%s' %d\n", path, prefix, entrypath, packfs_match(path, prefix, entrypath));
             if(!packfs_ctx->packfs_archive_entries_isdir[i] && packfs_match(path, prefix, entrypath))
             {
+                fprintf(stderr, "packfs_open3: '%s'\n", entrypath);
                 fileino = i;
                 filesize = packfs_ctx->packfs_archive_entries_sizes[i];
                 fileptr = fmemopen(NULL, filesize, "rb+");
