@@ -301,7 +301,7 @@ struct packfs_context* packfs_ensure_context(const char* path)
                 
                 packfs_ctx.packfs_enabled = 1;
                 packfs_scan_archive(&packfs_ctx, path_sanitized, packfs_prefix != NULL ? packfs_prefix : "");
-                fprintf(stderr, "ensure: '%s'\n", packfs_ctx->packfs_archive_prefix);
+                fprintf(stderr, "ensure: '%s'\n", packfs_ctx.packfs_archive_prefix);
             }
         }
         else if(path != NULL)
