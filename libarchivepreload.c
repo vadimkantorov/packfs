@@ -291,7 +291,8 @@ struct packfs_context* packfs_ensure_context(const char* path)
     {
         char path_sanitized[packfs_entries_name_maxlen]; 
         
-        const char *packfs_archives = getenv("PACKFS_ARCHIVES"), *packfs_prefix = getenv("PACKFS_PREFIX");
+        const char *packfs_archives = getenv("PACKFS_ARCHIVES");
+        const char *packfs_prefix = "/packfs"; //getenv("PACKFS_PREFIX");
         const char* packfs_archives_suffixes = packfs_archive_read_new(NULL);
         
         if(packfs_archives != NULL && packfs_archives[0] != '\0')
