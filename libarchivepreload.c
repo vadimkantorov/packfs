@@ -491,9 +491,7 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
 
 void* packfs_opendir(struct packfs_context* packfs_ctx, const char* path)
 {
-    fprintf(stderr, "opendir1: '%s'\n", path);
     char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
-    fprintf(stderr, "opendir2: '%s'\n", path_sanitized);
 
     struct dirent* fileptr = NULL;
     
@@ -502,15 +500,12 @@ void* packfs_opendir(struct packfs_context* packfs_ctx, const char* path)
     
     if(packfs_ctx->packfs_archive_entries_num > 0 && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path_sanitized))
     {
-        fprintf(stderr, "opendir3: '%s' '%s'\n", packfs_ctx->packfs_archive_prefix, path_sanitized);
         for(size_t i = 0, packfs_archive_entries_names_offset = 0, packfs_archive_entries_prefix_offset = 0; i < packfs_ctx->packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx->packfs_archive_entries_names_lens[i] + 1), packfs_archive_entries_prefix_offset += (packfs_ctx->packfs_archive_entries_prefix_lens[i] + 1), i++)
         {
             const char* prefix     = packfs_ctx->packfs_archive_entries_prefix + packfs_archive_entries_prefix_offset;
             const char* entrypath = packfs_ctx->packfs_archive_entries_names  + packfs_archive_entries_names_offset;
-            fprintf(stderr, "opendir4: '%s' '%s'\n", prefix, entrypath);
             if(packfs_ctx->packfs_archive_entries_isdir[i] && packfs_match(path_sanitized, prefix, entrypath))
             {
-                fprintf(stderr, "opendir5: '%s' '%s' '%s'\n", path, prefix, entrypath);
                 d_ino = i;
                 d_off = packfs_archive_entries_names_offset;
                 found = 1;
@@ -699,13 +694,10 @@ int openat(int dirfd, const char *path, int flags, ...)
     }
 
     struct packfs_context* packfs_ctx = packfs_ensure_context(path);
-    fprintf(stderr, "openat1: %d '%s'\n", dirfd, path);
     char buf[packfs_entries_name_maxlen]; path = packfs_resolve_relative_path(packfs_ctx, buf, dirfd, path);
-    fprintf(stderr, "openat2: %d '%s'\n", dirfd, path);
     
     if(packfs_ctx->packfs_enabled && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path))
     {
-        fprintf(stderr, "openat3: %d '%s' '%s'\n", dirfd, packfs_ctx->packfs_archive_prefix, path);
         void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(packfs_ctx, path) : (void*)packfs_open(packfs_ctx, path);
         if(stream != NULL)
         {
