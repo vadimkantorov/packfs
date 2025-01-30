@@ -23,14 +23,14 @@ jobs:
           tar -cJf libarchivepreload.tar.xz libarchivepreload.c .git
           
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/stat libarchivepreload.zip/libarchivepreload.c
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/stat libarchivepreload.zip/libarchivepreload.c
           ##LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
-          ##LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.tar.xz
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.tar.xz/libarchivepreload.c
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.tar.xz/libarchivepreload.c
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/stat libarchivepreload.tar.xz/libarchivepreload.c
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.tar.xz
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.tar.xz/libarchivepreload.c
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.tar.xz/libarchivepreload.c
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/stat libarchivepreload.tar.xz/libarchivepreload.c
           ##LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.tar.xz
           
           #LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=libarchivepreload.zip PACKFS_PREFIX=/mnt/zip /usr/bin/cat /mnt/zip/libarchivepreload.c
