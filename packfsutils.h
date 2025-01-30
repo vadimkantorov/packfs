@@ -123,10 +123,10 @@ int packfs_match(const char* path, const char* prefix, const char* entrypath)
 
     if(prefix_len > 0)
     {
-        if(0 != strncmp(path, prefix, prefix_len))
+        if(0 != strncmp(path, prefix, prefix_len - prefix_trailing_slash))
             return 0;
 
-        if(path_len - (path_trailing_slash ? 1 : 0) == prefix_len - (prefix_trailing_slash ? 1 : 0))
+        if(path_len - path_trailing_slash == prefix_len - prefix_trailing_slash)
             return 1;
 
         if( path[prefix_len - (prefix_trailing_slash ? 1 : 0)] != packfs_sep || 0 != strcmp(path + prefix_len + (prefix_trailing_slash ? 0 : 1), entrypath))
