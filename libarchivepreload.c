@@ -451,7 +451,7 @@ FILE* packfs_open(struct packfs_context* packfs_ctx, const char* path)
     size_t filesize = 0;
     size_t fileino = 0;
     
-    fprintf(stderr, "packfs_open1: '%s' '%s' %d %d\n", packfs_ctx->packfs_archive_prefix, path_sanitized, packfs_archive_entries_num, packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path_sanitized));
+    fprintf(stderr, "packfs_open1: '%s' '%s' %d %d\n", packfs_ctx->packfs_archive_prefix, path_sanitized, packfs_ctx->packfs_archive_entries_num, packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path_sanitized));
     if(packfs_ctx->packfs_archive_entries_num > 0 && packfs_path_in_range(packfs_ctx->packfs_archive_prefix, path_sanitized))
     {
         for(size_t i = 0, packfs_archive_entries_names_offset = 0, packfs_archive_entries_prefix_offset = 0, packfs_archive_entries_archive_offset = 0; i < packfs_ctx->packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_ctx->packfs_archive_entries_names_lens[i] + 1), packfs_archive_entries_prefix_offset += (packfs_ctx->packfs_archive_entries_prefix_lens[i] + 1), packfs_archive_entries_archive_offset += (packfs_ctx->packfs_archive_entries_archive_lens[i] + 1), i++)
