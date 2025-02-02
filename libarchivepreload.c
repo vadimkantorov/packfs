@@ -462,6 +462,7 @@ FILE* packfs_open(const char* path)
             printf("open: '%s' '%s' '%s'\n", path_sanitized, prefix, entrypath);
             if(!packfs_archive_entries_isdir[i] && packfs_match(path_sanitized, prefix, entrypath))
             {
+                printf("openok: '%s' '%s' '%s'\n", path_sanitized, prefix, entrypath);
                 fileino = i;
                 filesize = packfs_archive_entries_sizes[i];
                 fileptr = fmemopen(NULL, filesize, "rb+");
@@ -507,6 +508,7 @@ void* packfs_opendir(const char* path)
             printf("opendir: '%s' '%s' '%s'\n", path_sanitized, prefix, entrypath);
             if(packfs_archive_entries_isdir[i] && packfs_match(path_sanitized, prefix, entrypath))
             {
+                printf("opendirok: '%s' '%s' '%s'\n", path_sanitized, prefix, entrypath);
                 d_ino = i;
                 d_off = packfs_archive_entries_names_offset;
                 found = 1;
