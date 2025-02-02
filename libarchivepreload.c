@@ -12,8 +12,6 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 
-#include <dlfcn.h>
-
 #include <archive.h>
 #include <archive_entry.h>
 
@@ -21,8 +19,6 @@
 
 #define PACKFS_CONCAT_(X, Y) X ## Y
 #define PACKFS_CONCAT(X, Y) PACKFS_CONCAT_(X, Y)
-
-#define PACKFS_DYNAMIC_LINKING
 
 #ifdef  PACKFS_DYNAMIC_LINKING
 #define PACKFS_EXTERN(x) (*x)
@@ -272,6 +268,8 @@ void packfs_init(const char* path)
 { 
     if(packfs_initialized != 1)
     {
+#ifdef PACKFS_DYNAMIC_LINKING
+        #include <dlfcn.h>
         __real_open      = dlsym(RTLD_NEXT, "open");
         __real_openat    = dlsym(RTLD_NEXT, "openat");
         __real_read      = dlsym(RTLD_NEXT, "read");
@@ -290,6 +288,7 @@ void packfs_init(const char* path)
         __real_fileno    = dlsym(RTLD_NEXT, "fileno");
         __real_fclose    = dlsym(RTLD_NEXT, "fclose");
         __real_fcntl     = dlsym(RTLD_NEXT, "fcntl");
+#endif
         
         packfs_initialized = 1;
         packfs_enabled = 0;
