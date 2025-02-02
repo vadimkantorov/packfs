@@ -363,8 +363,10 @@ void* packfs_find(int fd, void* ptr)
 
 const char* packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
 {
-    int packfs_enabled = packfs_enabled && packfs_initialized;
-    struct dirent* ptr = (packfs_enabled && dirfd != AT_FDCWD) ? packfs_find(dirfd, NULL) : NULL;
+    int _packfs_enabled = packfs_enabled && packfs_initialized;
+    printf("resolve: check %d %d\n", packfs_enabled, packfs_initialized);
+
+    struct dirent* ptr = (_packfs_enabled && dirfd != AT_FDCWD) ? packfs_find(dirfd, NULL) : NULL;
     const char* dirpath = ptr != NULL ? (packfs_archive_entries_names + (size_t)ptr->d_off) : "";
     
     printf("resolve: %d '%s' -> %p\n", dirfd, path, (void*)ptr);
