@@ -23,44 +23,51 @@
 #define PACKFS_WRAP(x) PACKFS_CONCAT(__wrap_, x)
 #endif
 
-int                  PACKFS_EXTERN(__real_open)(const char *path, int flags, ...);
-int                  PACKFS_EXTERN(__real_openat)(int dirfd, const char *path, int flags, ...);
-int                  PACKFS_EXTERN(__real_close)(int fd);
-ssize_t              PACKFS_EXTERN(__real_read)(int fd, void* buf, size_t count);
-int                  PACKFS_EXTERN(__real_access)(const char *path, int flags);
-off_t                PACKFS_EXTERN(__real_lseek)(int fd, off_t offset, int whence);
-int                  PACKFS_EXTERN(__real_stat)(const char *restrict path, struct stat *restrict statbuf);
-int                  PACKFS_EXTERN(__real_fstat)(int fd, struct stat * statbuf);
-int                  PACKFS_EXTERN(__real_fstatat)(int dirfd, const char* path, struct stat * statbuf, int flags);
-int                  PACKFS_EXTERN(__real_statx)(int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statbuf);
-FILE*                PACKFS_EXTERN(__real_fopen)(const char *path, const char *mode);
-int                  PACKFS_EXTERN(__real_fclose)(FILE* stream);
-int                  PACKFS_EXTERN(__real_fileno)(FILE* stream);
-int                  PACKFS_EXTERN(__real_fcntl)(int fd, int action, ...);
-DIR*                 PACKFS_EXTERN(__real_opendir)(const char *path);
-DIR*                 PACKFS_EXTERN(__real_fdopendir)(int dirfd);
-int                  PACKFS_EXTERN(__real_closedir)(DIR *dirp);
-struct dirent*       PACKFS_EXTERN(__real_readdir)(DIR *dirp);
+int                  PACKFS_EXTERN(__real_open)         (const char *path, int flags, ...);
+int                  PACKFS_EXTERN(__real_openat)       (int dirfd, const char *path, int flags, ...);
+int                  PACKFS_EXTERN(__real_close)        (int fd);
+ssize_t              PACKFS_EXTERN(__real_read)         (int fd, void* buf, size_t count);
+int                  PACKFS_EXTERN(__real_access)       (const char *path, int flags);
+off_t                PACKFS_EXTERN(__real_lseek)        (int fd, off_t offset, int whence);
+int                  PACKFS_EXTERN(__real_stat)         (const char *restrict path, struct stat *restrict statbuf);
+int                  PACKFS_EXTERN(__real_fstat)        (int fd, struct stat * statbuf);
+int                  PACKFS_EXTERN(__real_fstatat)      (int dirfd, const char* path, struct stat * statbuf, int flags);
+int                  PACKFS_EXTERN(__real_statx)        (int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statbuf);
+FILE*                PACKFS_EXTERN(__real_fopen)        (const char *path, const char *mode);
+int                  PACKFS_EXTERN(__real_fclose)       (FILE* stream);
+int                  PACKFS_EXTERN(__real_fileno)       (FILE* stream);
+int                  PACKFS_EXTERN(__real_fcntl)        (int fd, int action, ...);
+DIR*                 PACKFS_EXTERN(__real_opendir)      (const char *path);
+DIR*                 PACKFS_EXTERN(__real_fdopendir)    (int dirfd);
+int                  PACKFS_EXTERN(__real_closedir)     (DIR *dirp);
+struct dirent*       PACKFS_EXTERN(__real_readdir)      (DIR *dirp);
 
-#include "packfsutils.h"
-
-
-#include <archive.h>
-#include <archive_entry.h>
-
-const char* packfs_archive_read_new(struct archive* a)
+void packfs_init__real()
 {
-    static char packfs_archive_suffix[] = ".iso:.zip:.tar:.tar.gz:.tar.xz";
-    if(a != NULL)
-    {
-        archive_read_support_format_iso9660(a);
-        archive_read_support_format_zip(a);
-        archive_read_support_format_tar(a);
-        archive_read_support_filter_gzip(a);
-        archive_read_support_filter_xz(a);
-    }
-    return packfs_archive_suffix;
+#ifdef PACKFS_DYNAMIC_LINKING
+    #include <dlfcn.h>
+    __real_open      = dlsym(RTLD_NEXT, "open");
+    __real_openat    = dlsym(RTLD_NEXT, "openat");
+    __real_close     = dlsym(RTLD_NEXT, "close");
+    __real_read      = dlsym(RTLD_NEXT, "read");
+    __real_access    = dlsym(RTLD_NEXT, "access");
+    __real_lseek     = dlsym(RTLD_NEXT, "lseek");
+    __real_stat      = dlsym(RTLD_NEXT, "stat");
+    __real_fstat     = dlsym(RTLD_NEXT, "fstat");
+    __real_fstatat   = dlsym(RTLD_NEXT, "fstatat");
+    __real_statx     = dlsym(RTLD_NEXT, "statx");
+    __real_fopen     = dlsym(RTLD_NEXT, "fopen");
+    __real_fclose    = dlsym(RTLD_NEXT, "fclose");
+    __real_fileno    = dlsym(RTLD_NEXT, "fileno");
+    __real_fcntl     = dlsym(RTLD_NEXT, "fcntl");
+    __real_opendir   = dlsym(RTLD_NEXT, "opendir");
+    __real_fdopendir = dlsym(RTLD_NEXT, "fdopendir");
+    __real_closedir  = dlsym(RTLD_NEXT, "closedir");
+    __real_readdir   = dlsym(RTLD_NEXT, "readdir");
+#endif
 }
+    
+#include "packfsutils.h"
 
 enum
 {
@@ -94,10 +101,21 @@ size_t packfs_archive_entries_archive_lens[packfs_archive_entries_nummax];
 size_t packfs_archive_entries_archive_total;
 
 ///////////
+#include <archive.h>
+#include <archive_entry.h>
 
-int packfs_fd_in_range(int fd)
+const char* packfs_archive_read_new(struct archive* a)
 {
-    return fd >= 0 && fd >= packfs_filefd_min && fd < packfs_filefd_max;
+    static char packfs_archive_suffix[] = ".iso:.zip:.tar:.tar.gz:.tar.xz";
+    if(a != NULL)
+    {
+        archive_read_support_format_iso9660(a);
+        archive_read_support_format_zip(a);
+        archive_read_support_format_tar(a);
+        archive_read_support_filter_gzip(a);
+        archive_read_support_filter_xz(a);
+    }
+    return packfs_archive_suffix;
 }
 
 void packfs_scan_archive(const char* packfs_archive_filename, const char* prefix) // for every entry need to store index into a list of archives and index into a list of prefixes
@@ -260,32 +278,13 @@ void packfs_extract_archive_entry(const char* packfs_archive_prefix, const char*
     
 }
 
+///////////
+
 void packfs_init(const char* path)
 { 
     if(packfs_initialized != 1)
     {
-#ifdef PACKFS_DYNAMIC_LINKING
-        #include <dlfcn.h>
-        __real_open      = dlsym(RTLD_NEXT, "open");
-        __real_openat    = dlsym(RTLD_NEXT, "openat");
-        __real_read      = dlsym(RTLD_NEXT, "read");
-        __real_access    = dlsym(RTLD_NEXT, "access");
-        __real_lseek     = dlsym(RTLD_NEXT, "lseek");
-        __real_stat      = dlsym(RTLD_NEXT, "stat");
-        __real_fstat     = dlsym(RTLD_NEXT, "fstat");
-        __real_fstatat   = dlsym(RTLD_NEXT, "fstatat");
-        __real_statx     = dlsym(RTLD_NEXT, "statx");
-        __real_close     = dlsym(RTLD_NEXT, "close");
-        __real_opendir   = dlsym(RTLD_NEXT, "opendir");
-        __real_fdopendir = dlsym(RTLD_NEXT, "fdopendir");
-        __real_readdir   = dlsym(RTLD_NEXT, "readdir");
-        __real_closedir  = dlsym(RTLD_NEXT, "closedir");
-        __real_fopen     = dlsym(RTLD_NEXT, "fopen");
-        __real_fileno    = dlsym(RTLD_NEXT, "fileno");
-        __real_fclose    = dlsym(RTLD_NEXT, "fclose");
-        __real_fcntl     = dlsym(RTLD_NEXT, "fcntl");
-#endif
-        
+        packfs_init__real();
         packfs_initialized = 1;
         packfs_enabled = 0;
     }
@@ -329,6 +328,11 @@ void packfs_init(const char* path)
     }
 }
 
+int packfs_fd_in_range(int fd)
+{
+    return fd >= 0 && fd >= packfs_filefd_min && fd < packfs_filefd_max;
+}
+
 void* packfs_find(int fd, void* ptr)
 {
     if(ptr != NULL)
@@ -356,9 +360,9 @@ void* packfs_find(int fd, void* ptr)
 
 const char* packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
 {
-    int packfs_enabled = packfs_initialized && packfs_enabled;
-    struct dirent* ptr = (dirfd != AT_FDCWD && packfs_enabled) ? packfs_find(dirfd, NULL) : NULL;
-    const char* dirpath = (packfs_enabled && ptr != NULL) ? (packfs_archive_entries_names + (size_t)ptr->d_off) : "";
+    int packfs_enabled = packfs_enabled && packfs_initialized;
+    struct dirent* ptr = (packfs_enabled && dirfd != AT_FDCWD) ? packfs_find(dirfd, NULL) : NULL;
+    const char* dirpath = ptr != NULL ? (packfs_archive_entries_names + (size_t)ptr->d_off) : "";
 
     if(ptr != NULL)
     {
