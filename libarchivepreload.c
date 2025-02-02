@@ -459,6 +459,7 @@ FILE* packfs_open(const char* path)
             const char* entrypath = packfs_archive_entries_names  + packfs_archive_entries_names_offset;
             const char* archive   = packfs_archive_entries_archive+ packfs_archive_entries_archive_offset;
             
+            printf("open: '%s' '%s' '%s'\n", path_sanitized, prefix, entrypath);
             if(!packfs_archive_entries_isdir[i] && packfs_match(path_sanitized, prefix, entrypath))
             {
                 fileino = i;
@@ -501,8 +502,9 @@ void* packfs_opendir(const char* path)
     {
         for(size_t i = 0, packfs_archive_entries_names_offset = 0, packfs_archive_entries_prefix_offset = 0; i < packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_archive_entries_names_lens[i] + 1), packfs_archive_entries_prefix_offset += (packfs_archive_entries_prefix_lens[i] + 1), i++)
         {
-            const char* prefix     = packfs_archive_entries_prefix + packfs_archive_entries_prefix_offset;
+            const char* prefix    = packfs_archive_entries_prefix + packfs_archive_entries_prefix_offset;
             const char* entrypath = packfs_archive_entries_names  + packfs_archive_entries_names_offset;
+            printf("opendir: '%s' '%s' '%s'\n", path_sanitized, prefix, entrypath);
             if(packfs_archive_entries_isdir[i] && packfs_match(path_sanitized, prefix, entrypath))
             {
                 d_ino = i;
