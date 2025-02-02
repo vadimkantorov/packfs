@@ -38,19 +38,6 @@ struct dirent* (*__real_readdir)(DIR *dirp);
 int (*__real_closedir)(DIR *dirp);
 int (*__real_fcntl)(int fd, int action, ...);
 
-enum
-{
-    packfs_filefd_min = 1000000000, 
-    packfs_filefd_max = 1000008192, 
-    packfs_entries_name_maxlen = 128, 
-    packfs_archive_entries_nummax = 8192,
-};
-
-int packfs_fd_in_range(int fd)
-{
-    return fd >= 0 && fd >= packfs_filefd_min && fd < packfs_filefd_max;
-}
-
 const char* packfs_archive_read_new(struct archive* a)
 {
     static char packfs_archive_suffix[] = ".iso:.zip:.tar:.tar.gz:.tar.xz";
@@ -63,6 +50,19 @@ const char* packfs_archive_read_new(struct archive* a)
         archive_read_support_filter_xz(a);
     }
     return packfs_archive_suffix;
+}
+
+enum
+{
+    packfs_filefd_min = 1000000000, 
+    packfs_filefd_max = 1000008192, 
+    packfs_entries_name_maxlen = 128, 
+    packfs_archive_entries_nummax = 8192,
+};
+
+int packfs_fd_in_range(int fd)
+{
+    return fd >= 0 && fd >= packfs_filefd_min && fd < packfs_filefd_max;
 }
     
 int packfs_initialized, packfs_enabled;
