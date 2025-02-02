@@ -365,7 +365,7 @@ const char* packfs_resolve_relative_path(char* dest, int dirfd, const char* path
     struct dirent* ptr = (packfs_enabled && dirfd != AT_FDCWD) ? packfs_find(dirfd, NULL) : NULL;
     const char* dirpath = ptr != NULL ? (packfs_archive_entries_names + (size_t)ptr->d_off) : "";
     
-    printf("resolve: %p\n", (void*)ptr);
+    printf("resolve: %d '%s' -> %p\n", dirfd, path, (void*)ptr);
 
     if(ptr != NULL)
     {
