@@ -347,11 +347,14 @@ void* packfs_find(int fd, void* ptr)
     }
     else
     {
-        if(fd < packfs_filefd_min || fd >= packfs_filefd_max)
+        if(!packfs_fd_in_range(fd))
             return NULL;
         
         for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
         {
+            if(fd != 0)
+                printf("find: %d ~ %d\n", packfs_filefd[k], fd);
+
             if(packfs_filefd[k] == fd)
                 return packfs_fileptr[k];
         }
