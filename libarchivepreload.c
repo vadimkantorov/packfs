@@ -12,19 +12,14 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 
-#include <archive.h>
-#include <archive_entry.h>
-
-#include "packfsutils.h"
-
 #define PACKFS_CONCAT_(X, Y) X ## Y
 #define PACKFS_CONCAT(X, Y) PACKFS_CONCAT_(X, Y)
 
 #ifdef  PACKFS_DYNAMIC_LINKING
-#define PACKFS_EXTERN(x) (*x)
-#define PACKFS_WRAP(x) (x)
+#define PACKFS_EXTERN(x)       (*x)
+#define PACKFS_WRAP(x)         ( x)
 #else
-#define PACKFS_EXTERN(x) extern(x)
+#define PACKFS_EXTERN(x) extern( x)
 #define PACKFS_WRAP(x) PACKFS_CONCAT(__wrap_, x)
 #endif
 
@@ -46,6 +41,12 @@ DIR*                 PACKFS_EXTERN(__real_opendir)(const char *path);
 DIR*                 PACKFS_EXTERN(__real_fdopendir)(int dirfd);
 int                  PACKFS_EXTERN(__real_closedir)(DIR *dirp);
 struct dirent*       PACKFS_EXTERN(__real_readdir)(DIR *dirp);
+
+#include "packfsutils.h"
+
+
+#include <archive.h>
+#include <archive_entry.h>
 
 const char* packfs_archive_read_new(struct archive* a)
 {
@@ -69,6 +70,7 @@ enum
     packfs_archive_entries_nummax = 8192,
 };
 
+int packfs_initialized, packfs_enabled;
 int packfs_filefd          [packfs_filefd_max - packfs_filefd_min];
 int packfs_filefdrefs      [packfs_filefd_max - packfs_filefd_min];
 char packfs_fileisdir      [packfs_filefd_max - packfs_filefd_min];
@@ -77,25 +79,19 @@ size_t packfs_filesize     [packfs_filefd_max - packfs_filefd_min];
 size_t packfs_fileino      [packfs_filefd_max - packfs_filefd_min];
 struct dirent packfs_dirent[packfs_filefd_max - packfs_filefd_min];
 
-char packfs_archive_prefix[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
-
+char   packfs_archive_prefix[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
 size_t packfs_archive_entries_num;
 size_t packfs_archive_entries_sizes[packfs_archive_entries_nummax];
-char packfs_archive_entries_isdir[packfs_archive_entries_nummax];
-
-char packfs_archive_entries_names[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
+char   packfs_archive_entries_isdir[packfs_archive_entries_nummax];
+char   packfs_archive_entries_names[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
 size_t packfs_archive_entries_names_lens[packfs_archive_entries_nummax];
 size_t packfs_archive_entries_names_total;
-
-char packfs_archive_entries_prefix[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
+char   packfs_archive_entries_prefix[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
 size_t packfs_archive_entries_prefix_lens[packfs_archive_entries_nummax];
 size_t packfs_archive_entries_prefix_total;
-
-char packfs_archive_entries_archive[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
+char   packfs_archive_entries_archive[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
 size_t packfs_archive_entries_archive_lens[packfs_archive_entries_nummax];
 size_t packfs_archive_entries_archive_total;
-
-int packfs_initialized, packfs_enabled;
 
 ///////////
 
