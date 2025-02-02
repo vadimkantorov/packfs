@@ -555,7 +555,8 @@ void* packfs_opendir(const char* path)
 
 int packfs_close(int fd)
 {
-    if(fd < packfs_filefd_min || fd >= packfs_filefd_max)
+    printf("close: %d\n", fd);
+    if(!packfs_fd_in_range(fd))
         return -2;
 
     for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
