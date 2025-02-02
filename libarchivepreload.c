@@ -352,8 +352,7 @@ void* packfs_find(int fd, void* ptr)
         
         for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
         {
-            if(fd != 0)
-                printf("find: %d ~ %d\n", packfs_filefd[k], fd);
+            printf("find: %d (%d)\n", packfs_filefd[k], fd);
 
             if(packfs_filefd[k] == fd)
                 return packfs_fileptr[k];
@@ -601,6 +600,8 @@ int packfs_seek(int fd, long offset, int whence)
 
 int packfs_dup(int oldfd, int newfd)
 {
+    printf("dup: %d -> %d\n", oldfd, newfd);
+
     int K = -1;
     if(oldfd >= 0 && packfs_filefd_min <= oldfd && oldfd < packfs_filefd_max)
     {
