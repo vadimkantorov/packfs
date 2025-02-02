@@ -101,6 +101,7 @@ size_t packfs_archive_entries_archive_lens[packfs_archive_entries_nummax];
 size_t packfs_archive_entries_archive_total;
 
 ///////////
+
 #include <archive.h>
 #include <archive_entry.h>
 
@@ -363,6 +364,8 @@ const char* packfs_resolve_relative_path(char* dest, int dirfd, const char* path
     int packfs_enabled = packfs_enabled && packfs_initialized;
     struct dirent* ptr = (packfs_enabled && dirfd != AT_FDCWD) ? packfs_find(dirfd, NULL) : NULL;
     const char* dirpath = ptr != NULL ? (packfs_archive_entries_names + (size_t)ptr->d_off) : "";
+    
+    printf("resolve: %p\n", (void*)ptr);
 
     if(ptr != NULL)
     {
