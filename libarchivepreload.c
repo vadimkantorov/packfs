@@ -379,11 +379,12 @@ const char* packfs_resolve_relative_path(char* dest, int dirfd, const char* path
 
 void packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
 {
-    size_t k = 0, found = 0;
-    for(k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
+    size_t K = 0, found = 0;
+    for(size_t k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
     {
         if(packfs_filefd[k] == dirfd)
         {
+            K = packfs_fileino[k];
             found = 1;
             break;
         }
@@ -391,7 +392,7 @@ void packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
 
     for(size_t i = 0, packfs_archive_entries_names_offset = 0, packfs_archive_entries_prefix_offset = 0; packfs_enabled && packfs_initialized && found && i < packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_archive_entries_names_lens[i] + 1), packfs_archive_entries_prefix_offset += (packfs_archive_entries_prefix_lens[i] + 1), i++)
     {
-        if(i == k)
+        if(i == K)
         {
             const char* prefix    = packfs_archive_entries_prefix + packfs_archive_entries_prefix_offset;
             const char* entrypath = packfs_archive_entries_names  + packfs_archive_entries_names_offset;
@@ -733,7 +734,9 @@ int PACKFS_WRAP(openat)(int dirfd, const char *path, int flags, ...)
     }
 
     packfs_init(path);
+    printf("openat before: %d '%s'\n", dirfd, path);
     char path_sanitized[packfs_entries_name_maxlen]; packfs_resolve_relative_path(path_sanitized, dirfd, path);
+    printf("openat after: %d '%s'\n", dirfd, path_sanitized);
     if(packfs_enabled && packfs_path_in_range(packfs_archive_prefix, path_sanitized))
     {
         void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(path_sanitized) : (void*)packfs_open(path_sanitized);
