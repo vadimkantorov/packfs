@@ -379,14 +379,24 @@ const char* packfs_resolve_relative_path(char* dest, int dirfd, const char* path
 
 void packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
 {
-    for(size_t i = 0, packfs_archive_entries_names_offset = 0, packfs_archive_entries_prefix_offset = 0; packfs_enabled && packfs_initialized && packfs_fd_in_range(dirfd) && i < packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_archive_entries_names_lens[i] + 1), packfs_archive_entries_prefix_offset += (packfs_archive_entries_prefix_lens[i] + 1), i++)
+    size_t k = 0, found = 0;
+    for(k = 0; k < packfs_filefd_max - packfs_filefd_min; k++)
     {
-        const char* prefix    = packfs_archive_entries_prefix + packfs_archive_entries_prefix_offset;
-        const char* entrypath = packfs_archive_entries_names  + packfs_archive_entries_names_offset;
-        entrypath = (strlen(entrypath) > 1 && entrypath[0] == '.' && entrypath[1] == packfs_sep) ? (entrypath + 2) : entrypath;
-        path = (strlen(path) > 1 && path[0] == '.' && path[1] == packfs_sep) ? (path + 2) : path;
-        if(packfs_archive_entries_isdir[i] && packfs_filefd[i] == dirfd)
+        if(packfs_filefd[k] == dirfd)
         {
+            found = 1;
+            break;
+        }
+    }
+
+    for(size_t i = 0, packfs_archive_entries_names_offset = 0, packfs_archive_entries_prefix_offset = 0; packfs_enabled && packfs_initialized && found && i < packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_archive_entries_names_lens[i] + 1), packfs_archive_entries_prefix_offset += (packfs_archive_entries_prefix_lens[i] + 1), i++)
+    {
+        if(i == k)
+        {
+            const char* prefix    = packfs_archive_entries_prefix + packfs_archive_entries_prefix_offset;
+            const char* entrypath = packfs_archive_entries_names  + packfs_archive_entries_names_offset;
+            entrypath = (strlen(entrypath) > 1 && entrypath[0] == '.' && entrypath[1] == packfs_sep) ? (entrypath + 2) : entrypath;
+            path = (strlen(path) > 1 && path[0] == '.' && path[1] == packfs_sep) ? (path + 2) : path;
             if(strlen(entrypath) > 0)
                 sprintf(dest, "%s%c%s%c%s", prefix, (char)packfs_sep, entrypath, (char)packfs_sep, path);
             else
