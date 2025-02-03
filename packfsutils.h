@@ -6,27 +6,27 @@ enum
     packfs_pathsep = ':'
 };
 
-void packfs_sanitize_path(char* path_sanitized, const char* path)
+void packfs_normalize_path(char* path_normalized, const char* path)
 {
     size_t len = path != NULL ? strlen(path) : 0;
     if(len == 0)
-        path_sanitized[0] = '\0';
+        path_normalized[0] = '\0';
 
     // lstrips ./ in the beginning; collapses double consecutive slashes; and rstrips abc/asd/..
     for(int i = (path != NULL && len > 2 && path[0] == '.' && path[1] == packfs_sep) ? 2 : 0, k = 0; len > 0 && i < len; i++)
     {
         if(!(i > 1 && path[i] == packfs_sep && path[i - 1] == packfs_sep))
         {
-            path_sanitized[k++] = path[i];
-            path_sanitized[k] = '\0';
+            path_normalized[k++] = path[i];
+            path_normalized[k] = '\0';
         }
     }
     
-    size_t path_sanitized_len = strlen(path_sanitized);
-    if(path_sanitized_len >= 3 && path_sanitized[path_sanitized_len - 1] == '.' && path_sanitized[path_sanitized_len - 2] == '.'  && path_sanitized[path_sanitized_len - 3] == packfs_sep)
+    size_t path_normalized_len = strlen(path_normalized);
+    if(path_normalized_len >= 3 && path_normalized[path_normalized_len - 1] == '.' && path_normalized[path_normalized_len - 2] == '.'  && path_normalized[path_normalized_len - 3] == packfs_sep)
     {
-        path_sanitized[path_sanitized_len - 3] = '\0';
-        char* trailing_slash = strrchr(path_sanitized, packfs_sep);
+        path_normalized[path_normalized_len - 3] = '\0';
+        char* trailing_slash = strrchr(path_normalized, packfs_sep);
         if(trailing_slash != NULL)
             *trailing_slash = '\0';
     }
@@ -67,28 +67,6 @@ int packfs_indir(const char* dir_path, const char* path)
     if(0 == strncmp(dir_path, path, dir_path_len) && trailing_slash == (path + dir_path_len))
         return 1;
     return 0;
-}
-
-const char* packfs_lstrip_prefix(const char* path, const char* prefix)
-{
-    if(path == NULL || prefix == NULL)
-        return NULL;
-    
-    size_t prefix_len = strlen(prefix);
-
-    if(prefix_len == 0)
-        return path;
-
-    if(0 == strncmp(prefix, path, prefix_len))
-    {
-        const char* path_without_prefix = path + prefix_len;
-        if(path_without_prefix[0] == packfs_sep)
-            path_without_prefix++;
-        return path_without_prefix;
-    }
-    
-    return NULL;
-    //return path;
 }
 
 size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
