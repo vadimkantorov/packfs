@@ -409,9 +409,9 @@ void packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
     return strcpy(dest, path);
 }
 
-struct dirent* packfs_readdir(DIR* stream)
+struct dirent* packfs_readdir(void* stream)
 {
-    struct dirent* dir_entry = (struct dirent*)stream;
+    struct dirent* dir_entry = stream;
     for(size_t i = 0, packfs_archive_entries_names_offset = 0; i < packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_archive_entries_names_lens[i] + 1), i++)
     {
         const char* path = packfs_archive_entries_names + packfs_archive_entries_names_offset;
@@ -425,7 +425,6 @@ struct dirent* packfs_readdir(DIR* stream)
             return dir_entry;
         }
     }
-    
     return NULL;
 }
 
@@ -433,7 +432,6 @@ struct dirent* packfs_readdir(DIR* stream)
 int packfs_access(const char* path)
 {
     char path_sanitized[packfs_entries_name_maxlen]; packfs_sanitize_path(path_sanitized, path);
-
     if(packfs_path_in_range(packfs_archive_prefix, path_sanitized))
     {
         for(size_t i = 0, packfs_archive_entries_names_offset = 0, packfs_archive_entries_prefix_offset = 0; i < packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_archive_entries_names_lens[i] + 1), packfs_archive_entries_prefix_offset += (packfs_archive_entries_prefix_lens[i] + 1), i++)
@@ -666,7 +664,6 @@ FILE* PACKFS_WRAP(fopen)(const char *path, const char *mode)
         if(res != NULL)
             return res;
     }
-
     return __real_fopen(path, mode);
 }
 
@@ -734,9 +731,7 @@ int PACKFS_WRAP(openat)(int dirfd, const char *path, int flags, ...)
     }
 
     packfs_init(path);
-    printf("openat before: %d '%s'\n", dirfd, path);
     char path_sanitized[packfs_entries_name_maxlen]; packfs_resolve_relative_path(path_sanitized, dirfd, path);
-    printf("openat after: %d '%s'\n", dirfd, path_sanitized);
     if(packfs_enabled && packfs_path_in_range(packfs_archive_prefix, path_sanitized))
     {
         void* stream = ((flags & O_DIRECTORY) != 0) ? (void*)packfs_opendir(path_sanitized) : (void*)packfs_open(path_sanitized);
@@ -760,7 +755,6 @@ int PACKFS_WRAP(close)(int fd)
         if(res >= -1)
             return res;
     }
-    
     return __real_close(fd);
 }
 
@@ -773,7 +767,6 @@ ssize_t PACKFS_WRAP(read)(int fd, void* buf, size_t count)
         if(res >= 0)
             return res;
     }
-
     return __real_read(fd, buf, count);
 }
 
@@ -786,7 +779,6 @@ off_t PACKFS_WRAP(lseek)(int fd, off_t offset, int whence)
         if(res >= 0)
             return res;
     }
-
     return __real_lseek(fd, offset, whence);
 }
 
@@ -799,7 +791,6 @@ int PACKFS_WRAP(access)(const char *path, int flags)
         if(res >= -1)
             return res;
     }
-    
     return __real_access(path, flags); 
 }
 
@@ -903,7 +894,6 @@ DIR* PACKFS_WRAP(opendir)(const char *path)
             return (DIR*)stream;
         }
     }
-    
     return __real_opendir(path);
 }
 
@@ -916,7 +906,6 @@ DIR* PACKFS_WRAP(fdopendir)(int dirfd)
         if(stream != NULL)
             return stream;
     }
-    
     return __real_fdopendir(dirfd);
 }
 
@@ -929,24 +918,20 @@ struct dirent* PACKFS_WRAP(readdir)(DIR* stream)
         if(ptr != NULL)
             return packfs_readdir(stream);
     }
-    
     return __real_readdir(stream);
 }
 
 int PACKFS_WRAP(closedir)(DIR* stream)
 {
     packfs_init(NULL);
-    
     if(packfs_enabled && packfs_find(-1, stream) != NULL)
     {        
         int* ptr = packfs_find(-1, stream);
         int fd = ptr == NULL ? -1 : *ptr;
-
         int res = packfs_close(fd);
         if(res >= -1)
             return res;
     }
-
     return __real_closedir(stream);
 }
 
