@@ -23,6 +23,8 @@
 #define PACKFS_WRAP(x) PACKFS_CONCAT(__wrap_, x)
 #endif
 
+//size_t packfs_builtin_files_num, packfs_builtin_dirs_num; const char** packfs_builtin_abspaths; const char** packfs_builtin_abspaths_dirs; const char** packfs_builtin_starts; const char** packfs_builtin_ends;
+
 int                  PACKFS_EXTERN(__real_open)         (const char *path, int flags, ...);
 int                  PACKFS_EXTERN(__real_openat)       (int dirfd, const char *path, int flags, ...);
 int                  PACKFS_EXTERN(__real_close)        (int fd);
