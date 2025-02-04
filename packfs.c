@@ -23,11 +23,6 @@
 #define PACKFS_WRAP(x) PACKFS_CONCAT(__wrap_, x)
 #endif
 
-// TODO: unify packfs_open and packfs_opendir
-// TODO: unify builtin and archive lists
-
-size_t packfs_builtin_files_num, packfs_builtin_dirs_num; const char** packfs_builtin_abspaths; const char** packfs_builtin_abspaths_dirs; const char** packfs_builtin_starts; const char** packfs_builtin_ends;
-
 int                  PACKFS_EXTERN(__real_open)         (const char *path, int flags, ...);
 int                  PACKFS_EXTERN(__real_openat)       (int dirfd, const char *path, int flags, ...);
 int                  PACKFS_EXTERN(__real_close)        (int fd);
@@ -82,6 +77,9 @@ enum
     packfs_archive_entries_nummax = 8192,
 };
 
+// TODO: unify packfs_open and packfs_opendir
+// TODO: unify builtin and archive lists
+
 int packfs_initialized, packfs_enabled;
 int packfs_filefd          [packfs_filefd_max - packfs_filefd_min];
 int packfs_filefdrefs      [packfs_filefd_max - packfs_filefd_min];
@@ -91,8 +89,15 @@ size_t packfs_filesize     [packfs_filefd_max - packfs_filefd_min];
 size_t packfs_fileino      [packfs_filefd_max - packfs_filefd_min];
 struct dirent packfs_dirent[packfs_filefd_max - packfs_filefd_min];
 
-char   packfs_archive_prefix[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
+size_t packfs_builtin_files_num;
+size_t packfs_builtin_dirs_num;
+const char** packfs_builtin_abspaths; 
+const char** packfs_builtin_abspaths_dirs; 
+const char** packfs_builtin_starts; 
+const char** packfs_builtin_ends;
+
 size_t packfs_archive_entries_num;
+char   packfs_archive_prefix[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
 size_t packfs_archive_entries_sizes[packfs_archive_entries_nummax];
 char   packfs_archive_entries_isdir[packfs_archive_entries_nummax];
 char   packfs_archive_entries_names[packfs_archive_entries_nummax * packfs_entries_name_maxlen];
