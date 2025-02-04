@@ -389,11 +389,11 @@ void packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
                 sprintf(dest, "%s%c%s%c%s", prefix, (char)packfs_sep, entrypath, (char)packfs_sep, path);
             else
                 sprintf(dest, "%s%c%s", prefix, (char)packfs_sep, path);
-            return dest;
+            return;
         }
     }
 
-    return strcpy(dest, path);
+    strcpy(dest, path);
 }
 
 struct dirent* packfs_readdir(void* stream)
@@ -514,7 +514,7 @@ FILE* packfs_open(const char* path)
     {
         for(size_t i = 0; i < packfs_builtin_files_num; i++)
         {
-            if(0 == strcmp(path_sanitized, packfs_builtin_abspaths[i]))
+            if(0 == strcmp(path_normalized, packfs_builtin_abspaths[i]))
             {
                 filesize = (size_t)(packfs_builtin_ends[i] - packfs_builtin_starts[i]);
                 fileptr = fmemopen((void*)packfs_builtin_starts[i], filesize, "r");
