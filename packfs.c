@@ -574,8 +574,8 @@ void* packfs_open(const char* path, int flags)
             if(found == 2)
             {
                 packfs_dirent[k] = (struct dirent){0};
-                packfs_dirent[k]->d_ino = (ino_t)d_ino;
-                packfs_dirent[k]->d_off = (off_t)d_off;
+                packfs_dirent[k].d_ino = (ino_t)d_ino;
+                packfs_dirent[k].d_off = (off_t)d_off;
                 fileptr = &packfs_dirent[k];
             }
 
