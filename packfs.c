@@ -441,7 +441,7 @@ struct dirent* packfs_readdir(void* stream)
                 size_t ind = last_slash != NULL ? (last_slash - dir_entry->d_name + 1) : 0;
                 size_t cnt = entrypath_len - 1 - ind;
                 strncpy(dir_entry->d_name, entrypath + ind, cnt);
-                fprintf(stderr, "packfs_readdir21: '%s'\n", dir_entry->d_name);
+                fprintf(stderr, "packfs_readdir21: '%s' '%s' | '%s'\n", dir_entry->d_name, entrypath, dir_entry_name);
             }
             else
             {
