@@ -416,9 +416,10 @@ struct dirent* packfs_readdir(void* stream)
         size_t entrypath_len = strlen(entrypath);
         int entryisdir = entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep;
         
-        fprintf("packfs_readdir '%s' '%s'\n", dir_entry_name, entrypath);
+        fprintf(stderr, "packfs_readdir1 '%s' '%s'\n", dir_entry_name, entrypath);
         if(i > (size_t)dir_entry->d_ino && packfs_indir(dir_entry_name, entrypath))
         {
+            fprintf(stderr, "packfs_readdir2 '%s' '%s'\n", dir_entry_name, entrypath);
             if(entryisdir)
             {
                 strcpy(dir_entry->d_name, entrypath);
@@ -433,6 +434,7 @@ struct dirent* packfs_readdir(void* stream)
                 const char* last_slash = strrchr(entrypath, packfs_sep);
                 strcpy(dir_entry->d_name, last_slash != NULL ? (last_slash + 1) : entrypath);
             }
+            fprintf(stderr, "packfs_readdir3 '%s' %d\n", dir_entry->d_name, entryisdir);
             dir_entry->d_type = entryisdir ? DT_DIR : DT_REG;
             dir_entry->d_ino = (ino_t)i;
             return dir_entry;
