@@ -16,23 +16,26 @@ jobs:
       - name: Build
         run: make
       
-      - name: Test
+      - name: Test zip
         run: |
-          #sudo apt install ltrace && ltrace /usr/bin/find .git
-          zip -r   packfs.zip    packfs.c .git
-          #tar -cJf packfs.tar.xz packfs.c .git
-          
+          zip -r packfs.zip packfs.c .git
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat packfs.zip/packfs.c
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/stat packfs.zip/packfs.c
           #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah packfs.zip
           #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah packfs.zip/packfs.c
           #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find packfs.zip
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat packfs.tar.xz/packfs.c
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/stat packfs.tar.xz/packfs.c
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah packfs.tar.xz
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah packfs.tar.xz/packfs.c
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find packfs.tar.xz
           #LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=packfs.zip /usr/bin/cat /packfs/packfs.c
+          
+      
+      #- name: Test xz
+      #  run: |
+      #    #sudo apt install ltrace && ltrace /usr/bin/find .git
+      #    tar -cJf packfs.tar.xz packfs.c .git
+      #    LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat packfs.tar.xz/packfs.c
+      #    LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/stat packfs.tar.xz/packfs.c
+      #    LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah packfs.tar.xz
+      #    LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah packfs.tar.xz/packfs.c
+      #    LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find packfs.tar.xz
        
       - name: Artifacts
         uses: actions/upload-artifact@v4
