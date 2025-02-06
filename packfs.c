@@ -408,12 +408,13 @@ void packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
 int packfs_indir(const char* dirpath, const char* path)
 {
     size_t dirpath_len = strlen(dirpath);
+    if(dirpath_len > 0 && dirpath[dirpath_len - 1] != packfs_sep)
+        return 0;
     const char* trailing_slash = strrchr(path, packfs_sep);
     if((dirpath_len == 0 || (dirpath_len == 1 && dirpath[0] == packfs_sep)) && (trailing_slash == NULL || trailing_slash == path))
         return 1;
-
     int first_slash = dirpath[0] == packfs_sep ? 1 : 0;
-    if(0 == strncmp(dirpath + first_slash, path, dirpath_len - first_slash) && trailing_slash == (path + dirpath_len - first_slash))
+    if(0 == strncmp(dirpath + first_slash, path, dirpath_len - first_slash) && trailing_slash == (path + dirpath_len - 1 - first_slash))
         return 1;
     return 0;
 }
