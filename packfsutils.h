@@ -51,17 +51,6 @@ int packfs_path_in_range(const char* prefixes, const char* path)
     return 0;
 }
 
-int packfs_indir(const char* dir_path, const char* path)
-{
-    size_t dir_path_len = strlen(dir_path);
-    const char* trailing_slash = strrchr(path, packfs_sep);
-    if(dir_path_len == 0 && trailing_slash == NULL)
-        return 1;
-    if(0 == strncmp(dir_path, path, dir_path_len) && trailing_slash == (path + dir_path_len))
-        return 1;
-    return 0;
-}
-
 size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
 {
     if(path == NULL || suffixes == NULL || suffixes[0] == '\0')
