@@ -441,11 +441,13 @@ struct dirent* packfs_readdir(void* stream)
                 size_t ind = last_slash != NULL ? (last_slash - dir_entry->d_name + 1) : 0;
                 size_t cnt = entrypath_len - 1 - ind;
                 strncpy(dir_entry->d_name, entrypath + ind, cnt);
+                fprintf(stderr, "packfs_readdir21: '%s'\n", dir_entry->d_name);
             }
             else
             {
                 const char* last_slash = strrchr(entrypath, packfs_sep);
                 strcpy(dir_entry->d_name, last_slash != NULL ? (last_slash + 1) : entrypath);
+                fprintf(stderr, "packfs_readdir22: '%s'\n", dir_entry->d_name, entryisdir);
             }
             fprintf(stderr, "packfs_readdir2: '%s' '%d'\n", dir_entry->d_name, entryisdir);
             dir_entry->d_type = entryisdir ? DT_DIR : DT_REG;
