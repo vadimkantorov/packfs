@@ -416,6 +416,7 @@ struct dirent* packfs_readdir(void* stream)
         size_t entrypath_len = strlen(entrypath);
         int entryisdir = entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep;
         
+        fprintf("packfs_readdir '%s' '%s'\n", dir_entry_name, entrypath);
         if(i > (size_t)dir_entry->d_ino && packfs_indir(dir_entry_name, entrypath))
         {
             if(entryisdir)
@@ -453,7 +454,7 @@ int packfs_access(const char* path)
         
         for(size_t i = 0, packfs_archive_entries_names_offset = 0, packfs_archive_entries_prefix_offset = 0; i < packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_archive_entries_names_lens[i] + 1), packfs_archive_entries_prefix_offset += (packfs_archive_entries_prefix_lens[i] + 1), i++)
         {
-            const char* prefix     = packfs_archive_entries_prefix + packfs_archive_entries_prefix_offset;
+            const char* prefix    = packfs_archive_entries_prefix + packfs_archive_entries_prefix_offset;
             const char* entrypath = packfs_archive_entries_names  + packfs_archive_entries_names_offset;
             int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
             if(!entryisdir && packfs_match(path_normalized, prefix, entrypath))
@@ -925,9 +926,11 @@ DIR* PACKFS_WRAP(opendir)(const char *path)
     packfs_init(path);
     if(packfs_enabled && packfs_path_in_range(packfs_archive_prefix, path))
     {
+        fprintf(stderr, "opendir '%s'\n", path);
         void* stream = packfs_open(path, 1);
         if(stream != NULL)
         {
+            fprintf(stderr, "opendir ok '%s'\n", path);
             int* ptr = packfs_find(-1, stream);
             int fd = ptr == NULL ? -1 : *ptr;
             return (DIR*)stream;
@@ -951,8 +954,10 @@ DIR* PACKFS_WRAP(fdopendir)(int dirfd)
 struct dirent* PACKFS_WRAP(readdir)(DIR* stream)
 {
     packfs_init(NULL);
+    fprintf(stderr, "readdir %p\n", (void*)stream);
     if(packfs_enabled && packfs_find(-1, stream) != NULL)
     {
+        fprintf(stderr, "readdir ok %p\n", (void*)stream);
         int* ptr = packfs_find(-1, stream);
         if(ptr != NULL)
             return packfs_readdir(stream);
