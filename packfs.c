@@ -957,8 +957,9 @@ struct dirent* PACKFS_WRAP(readdir)(DIR* stream)
     fprintf(stderr, "readdir %p\n", (void*)stream);
     if(packfs_enabled && packfs_find(-1, stream) != NULL)
     {
-        fprintf(stderr, "readdir ok %p\n", (void*)stream);
+        fprintf(stderr, "readdir ok1 %p\n", (void*)stream);
         int* ptr = packfs_find(-1, stream);
+        fprintf(stderr, "readdir ok2 %p\n", (void*)ptr);
         if(ptr != NULL)
             return packfs_readdir(stream);
     }
