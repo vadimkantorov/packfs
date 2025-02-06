@@ -201,13 +201,16 @@ void packfs_scan_archive(const char* packfs_archive_filename, const char* prefix
             
             if(entryisdir || entryisfile)
             {
-                fprintf(stderr, "scan1: '%s' %zu\n", entrypath, entrypath_len);
+                fprintf(stderr, "scan1: '%s' %zu %zu\n", entrypath, entrypath_len, entryisdir);
                 strncpy(packfs_archive_entries_names + packfs_archive_entries_names_total, entrypath, entrypath_len);
                 fprintf(stderr, "scan2: '%s'\n", packfs_archive_entries_names + packfs_archive_entries_names_total);
                 
                 if(entryisdir && (entrypath_len == 0 || entrypath[entrypath_len - 1] != packfs_sep)) entrypath_len++;
                 if(entryisfile && (entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep)) entrypath_len--;
                 if(entryisdir) packfs_archive_entries_names[packfs_archive_entries_names_total + (entrypath_len - 1)] = '/';
+                fprintf(stderr, "scan3: '%.*s'\n", (int)entrypath_len, packfs_archive_entries_names + packfs_archive_entries_names_total);
+                fprintf(stderr, "scan4: '%s'\n", packfs_archive_entries_names + packfs_archive_entries_names_total);
+
                 packfs_archive_entries_names_lens[packfs_archive_entries_num] = entrypath_len;
                 packfs_archive_entries_names_total += packfs_archive_entries_names_lens[packfs_archive_entries_num] + 1;
             
