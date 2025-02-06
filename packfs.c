@@ -429,7 +429,7 @@ struct dirent* packfs_readdir(void* stream)
         size_t entrypath_len = strlen(entrypath);
         int entryisdir = entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep;
         
-        fprintf(stderr, "packfs_readdir1: '%s' '%s'\n", dir_entry_name, entrypath);
+        fprintf(stderr, "packfs_readdir1: '%s' '%s' %d\n", dir_entry_name, entrypath, packfs_indir(dir_entry_name, entrypath));
 
         if(i > (size_t)dir_entry->d_ino && packfs_indir(dir_entry_name, entrypath))
         {
