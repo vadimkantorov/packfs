@@ -191,7 +191,7 @@ void packfs_scan_archive(const char* packfs_archive_filename, const char* prefix
             if (r != ARCHIVE_OK)
                 break; //fprintf(stderr, "%s\n", archive_error_string(a));
                 
-            int entrytype = archive_entry_entrytype(entry);
+            int entrytype = archive_entry_filetype(entry);
             size_t entrysize = (size_t)archive_entry_size(entry);
             const char* entrypath = archive_entry_pathname(entry);
             size_t entrypath_len = strlen(entrypath);
@@ -207,6 +207,7 @@ void packfs_scan_archive(const char* packfs_archive_filename, const char* prefix
                 if(entryisdir) packfs_archive_entries_names[packfs_archive_entries_names_total + (entrypath_len - 1)] = '/';
                 packfs_archive_entries_names_lens[packfs_archive_entries_num] = entrypath_len;
                 packfs_archive_entries_names_total += packfs_archive_entries_names_lens[packfs_archive_entries_num] + 1;
+                puts(packfs_archive_entries_names + packfs_archive_entries_names_total);
             
                 
                 strncpy(packfs_archive_entries_prefix + packfs_archive_entries_prefix_total, prefix, prefix_len);
