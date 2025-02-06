@@ -538,6 +538,7 @@ void* packfs_open(const char* path, int flags)
     
     if(packfs_path_in_range(packfs_archive_prefix, path_normalized))
     {
+        /*
         for(size_t i = 0; i < packfs_builtin_enries_num; i++)
         {
             if(0 == strcmp(path_normalized, packfs_builtin_entries_names[i]))
@@ -550,6 +551,7 @@ void* packfs_open(const char* path, int flags)
                 break;
             }
         }
+        */
         
         for(size_t i = 0, packfs_archive_entries_names_offset = 0, packfs_archive_entries_prefix_offset = 0, packfs_archive_entries_archive_offset = 0; i < packfs_archive_entries_num; packfs_archive_entries_names_offset += (packfs_archive_entries_names_lens[i] + 1), packfs_archive_entries_prefix_offset += (packfs_archive_entries_prefix_lens[i] + 1), packfs_archive_entries_archive_offset += (packfs_archive_entries_archive_lens[i] + 1), i++)
         {
@@ -558,10 +560,12 @@ void* packfs_open(const char* path, int flags)
             const char* archive   = packfs_archive_entries_archive+ packfs_archive_entries_archive_offset;
             int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
             
+            fprintf(stderr, "open1: '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
             if(packfs_match(path_normalized, prefix, entrypath))
             {
                 if(entryisdir)
                 {
+                    fprintf(stderr, "open2 dir: '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
                     found = 2;
                     d_ino = i;
                     d_off = packfs_archive_entries_names_offset;
@@ -569,9 +573,12 @@ void* packfs_open(const char* path, int flags)
                 }
                 else
                 {
+                    fprintf(stderr, "open2 file: '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
+                    found = 1;
                     d_ino = i;
                     d_off = 0;
                     filesize = packfs_archive_entries_sizes[i];
+
                     fileptr = fmemopen(NULL, filesize, "rb+");
                     packfs_extract_archive_entry(archive, entrypath, (FILE*)fileptr);
                     fseek((FILE*)fileptr, 0, SEEK_SET);
