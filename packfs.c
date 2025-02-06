@@ -447,7 +447,7 @@ struct dirent* packfs_readdir(void* stream)
                 const char* last_slash = strrchr(entrypath, packfs_sep);
                 strcpy(dir_entry->d_name, last_slash != NULL ? (last_slash + 1) : entrypath);
             }
-            fprintf(stderr, "packfs_readdir2: '%s' '%s'\n", dir_entry->d_name, entryisdir);
+            fprintf(stderr, "packfs_readdir2: '%s' '%d'\n", dir_entry->d_name, entryisdir);
             dir_entry->d_type = entryisdir ? DT_DIR : DT_REG;
             dir_entry->d_ino = (ino_t)i;
             return dir_entry;
