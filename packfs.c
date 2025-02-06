@@ -429,10 +429,8 @@ struct dirent* packfs_readdir(void* stream)
         size_t entrypath_len = strlen(entrypath);
         int entryisdir = entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep;
         
-        fprintf(stderr, "packfs_readdir1 '%s' '%s'\n", dir_entry_name, entrypath);
         if(i > (size_t)dir_entry->d_ino && packfs_indir(dir_entry_name, entrypath))
         {
-            fprintf(stderr, "packfs_readdir2 '%s' '%s'\n", dir_entry_name, entrypath);
             if(entryisdir)
             {
                 strcpy(dir_entry->d_name, entrypath);
@@ -447,7 +445,6 @@ struct dirent* packfs_readdir(void* stream)
                 const char* last_slash = strrchr(entrypath, packfs_sep);
                 strcpy(dir_entry->d_name, last_slash != NULL ? (last_slash + 1) : entrypath);
             }
-            fprintf(stderr, "packfs_readdir3 '%s' %d\n", dir_entry->d_name, entryisdir);
             dir_entry->d_type = entryisdir ? DT_DIR : DT_REG;
             dir_entry->d_ino = (ino_t)i;
             return dir_entry;
@@ -576,12 +573,10 @@ void* packfs_open(const char* path, int flags)
             const char* archive   = packfs_archive_entries_archive+ packfs_archive_entries_archive_offset;
             int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
             
-            fprintf(stderr, "open1: '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
             if(packfs_match(path_normalized, prefix, entrypath))
             {
                 if(entryisdir)
                 {
-                    fprintf(stderr, "open2 dir: '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
                     found = 2;
                     d_ino = i;
                     d_off = packfs_archive_entries_names_offset;
@@ -589,7 +584,6 @@ void* packfs_open(const char* path, int flags)
                 }
                 else
                 {
-                    fprintf(stderr, "open2 file: '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
                     found = 1;
                     d_ino = i;
                     d_off = 0;
@@ -941,11 +935,9 @@ DIR* PACKFS_WRAP(opendir)(const char *path)
     packfs_init(path);
     if(packfs_enabled && packfs_path_in_range(packfs_archive_prefix, path))
     {
-        fprintf(stderr, "opendir '%s'\n", path);
         void* stream = packfs_open(path, 1);
         if(stream != NULL)
         {
-            fprintf(stderr, "opendir ok '%s'\n", path);
             int* ptr = packfs_find(-1, stream);
             int fd = ptr == NULL ? -1 : *ptr;
             return (DIR*)stream;
@@ -969,12 +961,9 @@ DIR* PACKFS_WRAP(fdopendir)(int dirfd)
 struct dirent* PACKFS_WRAP(readdir)(DIR* stream)
 {
     packfs_init(NULL);
-    fprintf(stderr, "readdir %p\n", (void*)stream);
     if(packfs_enabled && packfs_find(-1, stream) != NULL)
     {
-        fprintf(stderr, "readdir ok1 %p\n", (void*)stream);
         int* ptr = packfs_find(-1, stream);
-        fprintf(stderr, "readdir ok2 %p\n", (void*)ptr);
         if(ptr != NULL)
             return packfs_readdir(stream);
     }
