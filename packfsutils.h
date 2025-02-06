@@ -32,13 +32,6 @@ void packfs_normalize_path(char* path_normalized, const char* path)
     }
 }
 
-const char* packfs_basename(const char* path)
-{
-    const char* trailing_slash = strrchr(path, packfs_sep);
-    const char* basename = trailing_slash ? (trailing_slash + 1) : path;
-    return basename;
-}
-
 int packfs_path_in_range(const char* prefixes, const char* path)
 {
     if(prefixes == NULL || prefixes[0] == '\0' || path == NULL || path[0] == '\0')
