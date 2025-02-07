@@ -333,7 +333,7 @@ void packfs_init(const char* path)
         else if(path != NULL)
         {
             packfs_normalize_path(path_normalized, path);
-            size_t path_prefix_len = packfs_prefix_extract(path_normalized, packfs_archives_suffixes);
+            size_t path_prefix_len = packfs_archive_prefix_extract(path_normalized, packfs_archives_suffixes);
             if(path_prefix_len > 0)
             {
                 path_normalized[path_prefix_len] = '\0';
@@ -546,7 +546,7 @@ void* packfs_open(const char* path, int flags)
     
     if(packfs_path_in_range(packfs_static_prefix, path_normalized) || packfs_path_in_range(packfs_dynamic_prefix, path_normalized))
     {
-        for(size_t i = (packfs_path_in_range(packfs_static_prefix, path_normalized) : 0 : packfs_static_entries_num); i < packfs_static_entries_num; i++)
+        for(size_t i = (packfs_path_in_range(packfs_static_prefix, path_normalized) ? 0 : packfs_static_entries_num); i < packfs_static_entries_num; i++)
         {
             const char* prefix = packfs_static_prefix;
             const char* entrypath = packfs_static_entries_names[i];
@@ -601,7 +601,7 @@ void* packfs_open(const char* path, int flags)
                     if(packfs_archive_fileptr != NULL)
                     {
                         packfs_extract_archive_entry_from_FILE_to_FILE(packfs_archive_fileptr, entrypath, (FILE*)fileptr, packfs_archive_read_new);
-                        __real_fclose(packfs_archive_fileptr)
+                        __real_fclose(packfs_archive_fileptr);
                     }
                     fseek((FILE*)fileptr, 0, SEEK_SET);
                 }
