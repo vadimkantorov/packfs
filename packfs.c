@@ -100,7 +100,7 @@ const char** packfs_static_entries_names;
 const char** packfs_static_starts; 
 const char** packfs_static_ends;
 
-char   packfs_dynamix_prefix       [packfs_dynamic_entries_nummax * packfs_entries_name_maxlen];
+char   packfs_dynamic_prefix       [packfs_dynamic_entries_nummax * packfs_entries_name_maxlen];
 size_t packfs_dynamic_entries_num;
 size_t packfs_dynamic_entries_sizes[packfs_dynamic_entries_nummax];
 
