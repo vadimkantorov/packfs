@@ -11,7 +11,7 @@ jobs:
           submodules: recursive
       
       - name: Install prerequisites for xz autogen
-        run: sudo apt-get install autopoint po4a gdb
+        run: sudo apt-get update && sudo apt-get install autopoint po4a gdb
       
       - name: Build
         run: make
