@@ -123,7 +123,7 @@ size_t packfs_dynamic_entries_archive_total;
 const char* packfs_archive_read_new(void* ptr)
 {
     static char packfs_archive_suffix[] = ".iso:.zip:.tar:.tar.gz:.tar.xz";
-    if(a != NULL)
+    if(ptr != NULL)
     {
         struct archive* a = ptr;
         archive_read_support_format_iso9660(a);
@@ -135,7 +135,7 @@ const char* packfs_archive_read_new(void* ptr)
     return packfs_archive_suffix;
 }
 
-void packfs_scan_archive(const char* packfs_archive_filename, const char* prefix) // for every entry need to store index into a list of archives and index into a list of prefixes
+void packfs_scan_archive(const char* packfs_archive_filename, const char* prefix, const char* (*packfs_archive_init_formats)(void* ptr)) // for every entry need to store index into a list of archives and index into a list of prefixes
 //FILE* (*__real_fopen)(const char *path, const char *mode), int (*__real_fclose)(FILE* stream)
 {
     //FIXME: adds prefix even if input archive cannot be opened
@@ -155,7 +155,7 @@ void packfs_scan_archive(const char* packfs_archive_filename, const char* prefix
     if(prefix_len > 0 && prefix[prefix_len - 1] == packfs_sep) prefix_len--;
     size_t packfs_archive_filename_len = strlen(packfs_archive_filename);
 
-    struct archive *a = archive_read_new(); packfs_archive_read_new(a);
+    struct archive *a = archive_read_new(); packfs_archive_init_formats(a);
     struct archive_entry *entry;
     FILE* packfs_archive_fileptr = NULL;
     do
@@ -327,7 +327,7 @@ void packfs_init(const char* path)
                 path_normalized[a != NULL ? (a - begin) : len] = '\0';
                 
                 packfs_enabled = 1;
-                packfs_scan_archive(path_normalized, prefix);
+                packfs_scan_archive(path_normalized, prefix, packfs_archive_read_new);
             }
         }
         else if(path != NULL)
@@ -340,7 +340,7 @@ void packfs_init(const char* path)
                 const char* prefix = path_normalized;
                 
                 packfs_enabled = 1;
-                packfs_scan_archive(path_normalized, prefix);
+                packfs_scan_archive(path_normalized, prefix, packfs_archive_read_new);
             }
         }
     }
