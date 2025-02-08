@@ -241,8 +241,60 @@ void packfs_extract_archive_entry_from_FILE_to_FILE(FILE* f, const char* entrypa
     struct archive_entry *entry;
     do
     {
-        //fseek(packfs_archive_fileptr, 0, SEEK_SET);
         if(archive_read_open_FILE(a, f) != ARCHIVE_OK)
+            break;
+        
+        while (1)
+        {
+            int r = archive_read_next_header(a, &entry);
+            if (r == ARCHIVE_EOF)
+                break;
+            if (r != ARCHIVE_OK)
+                break; //fprintf(stderr, "%s\n", archive_error_string(a));
+
+            if(0 == strcmp(entrypath, archive_entry_pathname(entry)))
+            {
+                enum { MAX_WRITE = 1024 * 1024};
+                const void *buff;
+                size_t size;
+                off_t offset;
+
+                while ((r = archive_read_data_block(a, &buff, &size, &offset)) == ARCHIVE_OK)
+                {
+                    // assert(offset <= output_offset), do not support sparse files just yet, https://github.com/libarchive/libarchive/issues/2299
+                    const char* p = buff;
+                    while (size > 0)
+                    {
+                        ssize_t bytes_written = fwrite(p, 1, size, h);
+                        p += bytes_written;
+                        size -= bytes_written;
+                    }
+                }
+                break;
+            }
+            else
+            {
+                r = archive_read_data_skip(a);
+                if (r == ARCHIVE_EOF)
+                    break;
+                if (r != ARCHIVE_OK)
+                    break; //fprintf(stderr, "%s\n", archive_error_string(a));
+            }
+        }
+    }
+    while(0);
+    archive_read_close(a);
+    archive_read_free(a);
+}
+
+void packfs_extract_archive_entry_from_memory_to_FILE(void* f, size_t s, const char* entrypath, FILE* h, const char* (*packfs_archive_init_formats)(void* ptr))
+{
+    struct archive *a = archive_read_new();
+    packfs_archive_init_formats(a);
+    struct archive_entry *entry;
+    do
+    {
+        if(archive_read_open_memory(a, f, s) != ARCHIVE_OK)
             break;
         
         while (1)
