@@ -77,6 +77,8 @@ enum
     packfs_filefd_max = 1000008192, 
     packfs_entries_name_maxlen = 128, 
     packfs_dynamic_entries_nummax = 8192,
+    packfs_static_ino_offset = 1000000000,
+    packfs_dynamic_ino_offset = 2000000000
 };
 
 // TODO: unify static and archive lists
@@ -478,34 +480,45 @@ int packfs_indir(const char* dirpath, const char* path)
 struct dirent* packfs_readdir(void* stream)
 {
     struct dirent* dir_entry = stream;
-    for(size_t i = 0, packfs_dynamic_entries_names_offset = 0; i < packfs_dynamic_entries_num; packfs_dynamic_entries_names_offset += (packfs_dynamic_entries_names_lens[i] + 1), i++)
+    
+    size_t d_ino = (size_t)dir_entry->d_ino;
+    if(d_ino >= packfs_static_ino_offset && d_ino < packfs_dynamic_ino_offset)
     {
-        const char* dir_entry_name = packfs_dynamic_entries_names + (size_t)dir_entry->d_off;
-
-        const char* entrypath = packfs_dynamic_entries_names + packfs_dynamic_entries_names_offset;
-        size_t entrypath_len = strlen(entrypath);
-        int entryisdir = entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep;
+        size_t entry_index = d_ino - packfs_static_ino_offset;
         
-        if(i > (size_t)dir_entry->d_ino && packfs_indir(dir_entry_name, entrypath))
+    }
+    else if(d_ino >= packfs_dynamic_ino_offset)
+    {
+        size_t entry_index = d_ino - packfs_dynamic_ino_offset;
+        for(size_t i = 0, packfs_dynamic_entries_names_offset = 0; i < packfs_dynamic_entries_num; packfs_dynamic_entries_names_offset += (packfs_dynamic_entries_names_lens[i] + 1), i++)
         {
-            if(entryisdir)
+            const char* dir_entry_name = packfs_dynamic_entries_names + (size_t)dir_entry->d_off;
+
+            const char* entrypath = packfs_dynamic_entries_names + packfs_dynamic_entries_names_offset;
+            size_t entrypath_len = strlen(entrypath);
+            int entryisdir = entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep;
+            
+            if(i > entry_index && packfs_indir(dir_entry_name, entrypath))
             {
-                strcpy(dir_entry->d_name, entrypath);
-                dir_entry->d_name[entrypath_len - 1] = '\0';
-                const char* last_slash = strrchr(dir_entry->d_name, packfs_sep); 
-                size_t ind = last_slash != NULL ? (last_slash - dir_entry->d_name + 1) : 0;
-                size_t cnt = entrypath_len - 1 - ind;
-                strncpy(dir_entry->d_name, entrypath + ind, cnt);
-                dir_entry->d_name[cnt] = '\0';
+                if(entryisdir)
+                {
+                    strcpy(dir_entry->d_name, entrypath);
+                    dir_entry->d_name[entrypath_len - 1] = '\0';
+                    const char* last_slash = strrchr(dir_entry->d_name, packfs_sep); 
+                    size_t ind = last_slash != NULL ? (last_slash - dir_entry->d_name + 1) : 0;
+                    size_t cnt = entrypath_len - 1 - ind;
+                    strncpy(dir_entry->d_name, entrypath + ind, cnt);
+                    dir_entry->d_name[cnt] = '\0';
+                }
+                else
+                {
+                    const char* last_slash = strrchr(entrypath, packfs_sep);
+                    strcpy(dir_entry->d_name, last_slash != NULL ? (last_slash + 1) : entrypath);
+                }
+                dir_entry->d_type = entryisdir ? DT_DIR : DT_REG;
+                dir_entry->d_ino = (ino_t)(packfs_dynamic_ino_offset + i);
+                return dir_entry;
             }
-            else
-            {
-                const char* last_slash = strrchr(entrypath, packfs_sep);
-                strcpy(dir_entry->d_name, last_slash != NULL ? (last_slash + 1) : entrypath);
-            }
-            dir_entry->d_type = entryisdir ? DT_DIR : DT_REG;
-            dir_entry->d_ino = (ino_t)i;
-            return dir_entry;
         }
     }
     return NULL;
@@ -610,14 +623,14 @@ void* packfs_open(const char* path, int flags)
                 if(entryisdir)
                 {
                     found = 2;
-                    d_ino = i;
+                    d_ino = packfs_static_ino_offset + i;
                     d_off = 0; //packfs_dynamic_entries_names_offset;
                     filesize = 0;
                 }
                 else
                 {
                     found = 1;
-                    d_ino = i;
+                    d_ino = packfs_static_ino_offset + i;
                     d_off = 0;
                     
                     filesize = (size_t)(packfs_static_ends[i] - packfs_static_starts[i]);
@@ -639,14 +652,14 @@ void* packfs_open(const char* path, int flags)
                 if(entryisdir)
                 {
                     found = 2;
-                    d_ino = i;
+                    d_ino = packfs_dynamic_ino_offset + i;
                     d_off = packfs_dynamic_entries_names_offset;
                     filesize = 0;
                 }
                 else
                 {
                     found = 1;
-                    d_ino = i;
+                    d_ino = packfs_dynamic_ino_offset + i;
                     d_off = 0;
                     filesize = packfs_dynamic_entries_sizes[i];
 
