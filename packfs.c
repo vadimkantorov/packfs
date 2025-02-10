@@ -81,7 +81,6 @@ enum
     packfs_dynamic_ino_offset = 2000000000
 };
 
-// TODO: unify static and archive lists
 // TODO: support working with linked zip
 // TODO: use trailing slash as dir indicator
 // TODO: where do path normalization?
@@ -511,6 +510,7 @@ struct dirent* packfs_readdir(void* stream)
             const char* dir_entry_name = packfs_static_entries_names[(size_t)dir_entry->d_off];
             
             const char* entrypath = packfs_static_entries_names[i];
+            size_t entrypath_len = strlen(entrypath);
             int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
             
             if(i > entry_index && packfs_indir(dir_entry_name, entrypath))
