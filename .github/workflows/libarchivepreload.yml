@@ -26,6 +26,7 @@ jobs:
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find packfs.zip
           LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=packfs.zip /usr/bin/cat /packfs/packfs.c
           
+	  python packfs.py -i .git -o packfs.h --prefix=/packfs/dotgit --ld=ld
       
       #- name: Test xz
       #  run: |
@@ -40,4 +41,7 @@ jobs:
       - name: Artifacts
         uses: actions/upload-artifact@v4
         with:
-          path: libarchivepreload.so
+          path: |
+            libarchivepreload.so
+            packfs.h
+            packfs.h.txt

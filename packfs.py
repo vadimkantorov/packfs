@@ -56,7 +56,7 @@ g = open(args.output_path + '.txt', 'w')
 print('\n'.join(objects), file = g)
 f = open(args.output_path, 'w')
 
-print('char packfs_static_prefix[] = "', args.prefix, '";', sep = '', file = f)
+print('char packfs_static_prefix[] = "', args.prefix.rstrip(os.path.sep) + os.path.sep, '";', sep = '', file = f)
 print("size_t packfs_static_entries_num = ", len(relpaths), ";\n\n", file = f)
 print("const char* packfs_static_entries_names[] = {\n\"" , "\",\n\"".join(relpaths), "\"\n};\n\n", sep = '', file = f)
 print("\n".join(f"extern char _binary_{_}_start[], _binary_{_}_end[];" if _ else "" for _ in safepaths), "\n\n", file = f)
