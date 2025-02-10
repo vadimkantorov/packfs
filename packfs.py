@@ -20,7 +20,7 @@ translate = {ord('.') : '_', ord('-') : '__', ord('_') : '__', ord('/') : '_'}
 
 output_path_o = args.output_path + '.o'
 os.makedirs(output_path_o, exist_ok = True)
-objects, safepaths, relpaths  = [], [], ['/']
+objects, safepaths, relpaths  = [], [], []
 
 cwd = os.getcwd()
 for (dirpath, dirnames, filenames) in os.walk(args.input_path):
