@@ -20,12 +20,14 @@ translate = {ord('.') : '_', ord('-') : '__', ord('_') : '__', ord('/') : '_'}
 
 output_path_o = args.output_path + '.o'
 os.makedirs(output_path_o, exist_ok = True)
-objects, safepaths, relpaths, relpaths_dirs  = [], [], [], ['']
+objects, safepaths, relpaths  = [], [], ['/']
 
 cwd = os.getcwd()
 for (dirpath, dirnames, filenames) in os.walk(args.input_path):
-    relpaths_dirs.extend(os.path.join(dirpath, basename).removeprefix(args.input_path).lstrip(os.path.sep) for basename in dirnames)
+    #relpaths_dirs.extend(os.path.join(dirpath, basename).removeprefix(args.input_path).lstrip(os.path.sep) for basename in dirnames)
     
+    relpaths.append(dirpath.removeprefix(args.input_path).strip(os.path.sep) + os.path.sep)
+    safepaths.append('')
     for basename in filenames:
         p = os.path.join(dirpath, basename)
         relpath = p.removeprefix(args.input_path).lstrip(os.path.sep)
@@ -53,9 +55,10 @@ for (dirpath, dirnames, filenames) in os.walk(args.input_path):
 g = open(args.output_path + '.txt', 'w')
 print('\n'.join(objects), file = g)
 f = open(args.output_path, 'w')
-print("size_t packfs_builtin_files_num = ", len(relpaths), ', packfs_builtin_dirs_num = ', len(relpaths_dirs), ";\n\n", file = f)
-print("const char* packfs_builtin_abspaths[] = {\n\"" , "\",\n\"".join(os.path.join(args.prefix, _) for _ in relpaths), "\"\n};\n\n", sep = '', file = f)
-print("const char* packfs_builtin_abspaths_dirs[] = {\n\"" , "\",\n\"".join(os.path.join(args.prefix, _).rstrip('/') for _ in relpaths_dirs), "\"\n};\n\n", sep = '', file = f)
-print("\n".join(f"extern char _binary_{_}_start[], _binary_{_}_end[];" for _ in safepaths), "\n\n", file = f)
-print("const char* packfs_builtin_starts[] = {\n", "\n".join(f"_binary_{_}_start," for _ in safepaths), "\n};\n\n", file = f)
-print("const char* packfs_builtin_ends[] = {\n", "\n".join(f"_binary_{_}_end," for _ in safepaths), "\n};\n\n", file = f)
+
+print('char packfs_static_prefix[] = "', args.prefix, '";', sep = '', file = f)
+print("size_t packfs_static_entries_num = ", len(relpaths), ";\n\n", file = f)
+print("const char* packfs_static_entries_names[] = {\n\"" , "\",\n\"".join(relpaths), "\"\n};\n\n", sep = '', file = f)
+print("\n".join(f"extern char _binary_{_}_start[], _binary_{_}_end[];" if _ else "" for _ in safepaths), "\n\n", file = f)
+print("const char* packfs_static_starts[] = {\n", "\n".join(f"_binary_{_}_start," if _ else "NULL," for _ in safepaths), "\n};\n\n", file = f)
+print("const char* packfs_static_ends[] = {\n", "\n".join(f"_binary_{_}_end," if _ else "NULL," for _ in safepaths), "\n};\n\n", file = f)
