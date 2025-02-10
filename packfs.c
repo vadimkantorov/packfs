@@ -616,7 +616,7 @@ int packfs_stat(const char* path, int fd, size_t* isdir, size_t* size, size_t* d
             {
                 *size = packfs_static_ends[i] - packfs_static_starts[i];
                 *isdir = entryisdir;
-                *d_ino = i; // FIXME: need encoding if static or dynamic
+                *d_ino = packfs_static_ino_offset + i;
                 return 0;
             }
         }
@@ -630,7 +630,7 @@ int packfs_stat(const char* path, int fd, size_t* isdir, size_t* size, size_t* d
             {
                 *size = packfs_dynamic_entries_sizes[i];
                 *isdir = entryisdir;
-                *d_ino = i;
+                *d_ino = packfs_dynamic_ino_offset + i;
                 return 0;
             }
         }
