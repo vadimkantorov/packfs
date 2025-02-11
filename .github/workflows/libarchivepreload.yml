@@ -26,6 +26,10 @@ jobs:
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find packfs.zip
           LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=packfs.zip /usr/bin/cat /packfs/packfs.c
           python packfs.py -i .git -o packfs.h --prefix=/packfs/dotgit --ld=ld
+
+          mkdir test && echo aa > test/a.txt && zip -r testa.zip test && rm -rf test
+          mkdir test && echo bb > test/b.txt && zip -r testb.zip test && rm -rf test
+          LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVE=testa.zip@/packfstest:testb.zip@/packfstest /usr/bin/find /packfstest
       
       #- name: Test xz
       #  run: |
