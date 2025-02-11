@@ -211,12 +211,13 @@ void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const cha
             
                 
                 strncpy(packfs_dynamic_entries_prefix + packfs_dynamic_entries_prefix_total, prefix, prefix_len);
+                fprintf(stderr, "'%s' '%s' prefix:'%s'\n", prefix, packfs_archive_filename, packfs_dynamic_entries_prefix + packfs_dynamic_entries_prefix_total);
                 packfs_dynamic_entries_prefix_lens[packfs_dynamic_entries_num] = prefix_len;
                 packfs_dynamic_entries_prefix_total += packfs_dynamic_entries_prefix_lens[packfs_dynamic_entries_num] + 1;
             
                 
                 strncpy(packfs_dynamic_entries_archive + packfs_dynamic_entries_archive_total, packfs_archive_filename, packfs_archive_filename_len);
-                fprintf(stderr, "'%s' '%s' '%s'\n", prefix, packfs_archive_filename, packfs_dynamic_entries_archive + packfs_dynamic_entries_archive_total);
+                fprintf(stderr, "'%s' '%s' path:'%s'\n", prefix, packfs_archive_filename, packfs_dynamic_entries_archive + packfs_dynamic_entries_archive_total);
                 packfs_dynamic_entries_archive_lens[packfs_dynamic_entries_num] = packfs_archive_filename_len;
                 packfs_dynamic_entries_archive_total += packfs_dynamic_entries_archive_lens[packfs_dynamic_entries_num] + 1;
         
