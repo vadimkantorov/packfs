@@ -374,6 +374,7 @@ void packfs_init(const char* path)
                 char* a = strchr(path_normalized, '@');
                 const char* prefix = a != NULL ? (a + 1) : "/packfs";
                 path_normalized[a != NULL ? (a - begin) : len] = '\0';
+                if(a != NULL) *a = '\0';
                 fprintf(stderr, "packfs_init2: '%s', '%s'\n", path_normalized, prefix);
                 
                 FILE* packfs_archive_fileptr = __real_fopen(path_normalized, "rb");
