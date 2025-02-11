@@ -138,7 +138,7 @@ const char* packfs_archive_read_new(void* ptr)
 
 void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const char* prefix, const char* (*packfs_archive_init_formats)(void* ptr))
 {
-    fprintf(stderr, "'%s' '%s'\n", prefix, packfs_archive_filename);
+    fprintf(stderr, "packfs_scan_archive '%s' '%s'\n", prefix, packfs_archive_filename);
 
     // TODO: for every entry need to store index into a list of archives and index into a list of prefixes
     //FIXME: adds prefix even if input archive cannot be opened
@@ -211,13 +211,13 @@ void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const cha
             
                 
                 strncpy(packfs_dynamic_entries_prefix + packfs_dynamic_entries_prefix_total, prefix, prefix_len);
-                fprintf(stderr, "'%s' '%s' prefix:'%s'\n", prefix, packfs_archive_filename, packfs_dynamic_entries_prefix + packfs_dynamic_entries_prefix_total);
+                fprintf(stderr, "packfs_scan_archive '%s' '%s' prefix:'%s'\n", prefix, packfs_archive_filename, packfs_dynamic_entries_prefix + packfs_dynamic_entries_prefix_total);
                 packfs_dynamic_entries_prefix_lens[packfs_dynamic_entries_num] = prefix_len;
                 packfs_dynamic_entries_prefix_total += packfs_dynamic_entries_prefix_lens[packfs_dynamic_entries_num] + 1;
             
                 
                 strncpy(packfs_dynamic_entries_archive + packfs_dynamic_entries_archive_total, packfs_archive_filename, packfs_archive_filename_len);
-                fprintf(stderr, "'%s' '%s' path:'%s'\n", prefix, packfs_archive_filename, packfs_dynamic_entries_archive + packfs_dynamic_entries_archive_total);
+                fprintf(stderr, "packfs_scan_archive '%s' '%s' path:'%s'\n", prefix, packfs_archive_filename, packfs_dynamic_entries_archive + packfs_dynamic_entries_archive_total);
                 packfs_dynamic_entries_archive_lens[packfs_dynamic_entries_num] = packfs_archive_filename_len;
                 packfs_dynamic_entries_archive_total += packfs_dynamic_entries_archive_lens[packfs_dynamic_entries_num] + 1;
         
