@@ -207,17 +207,17 @@ void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const cha
                 if(entryisfile && (entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep)) entrypath_len--;
                 if(entryisdir) packfs_dynamic_entries_names[packfs_dynamic_entries_names_total + (entrypath_len - 1)] = '/';
                 packfs_dynamic_entries_names_lens[packfs_dynamic_entries_num] = entrypath_len;
+                fprintf(stderr, "packfs_scan_archive2 '%s' entrypath:'%s'\n", prefix, packfs_dynamic_entries_names + packfs_dynamic_entries_names_total);
                 packfs_dynamic_entries_names_total += packfs_dynamic_entries_names_lens[packfs_dynamic_entries_num] + 1;
             
                 
                 strncpy(packfs_dynamic_entries_prefix + packfs_dynamic_entries_prefix_total, prefix, prefix_len);
-                fprintf(stderr, "packfs_scan_archive2 '%s' '%s' prefix:'%s'\n", prefix, packfs_archive_filename, packfs_dynamic_entries_prefix + packfs_dynamic_entries_prefix_total);
+                fprintf(stderr, "packfs_scan_archive3 '%s' prefix:'%s'\n", prefix, packfs_dynamic_entries_prefix + packfs_dynamic_entries_prefix_total);
                 packfs_dynamic_entries_prefix_lens[packfs_dynamic_entries_num] = prefix_len;
                 packfs_dynamic_entries_prefix_total += packfs_dynamic_entries_prefix_lens[packfs_dynamic_entries_num] + 1;
             
                 
                 strncpy(packfs_dynamic_entries_archive + packfs_dynamic_entries_archive_total, packfs_archive_filename, packfs_archive_filename_len);
-                fprintf(stderr, "packfs_scan_archive3 '%s' '%s' path:'%s'\n", prefix, packfs_archive_filename, packfs_dynamic_entries_archive + packfs_dynamic_entries_archive_total);
                 packfs_dynamic_entries_archive_lens[packfs_dynamic_entries_num] = packfs_archive_filename_len;
                 packfs_dynamic_entries_archive_total += packfs_dynamic_entries_archive_lens[packfs_dynamic_entries_num] + 1;
         
