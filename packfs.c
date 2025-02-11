@@ -365,7 +365,6 @@ void packfs_init(const char* path)
         
         if(packfs_archives != NULL && packfs_archives[0] != '\0')
         {
-            fprintf(stderr, "packfs_init1: '%s'\n", packfs_archives);
             for(const char* begin = packfs_archives, *end = strchr(packfs_archives, packfs_pathsep), *prevend  = packfs_archives; prevend != NULL && *begin != '\0'; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_pathsep) : NULL)
             {
                 size_t len = end == NULL ? strlen(begin) : (end - begin);
@@ -375,7 +374,7 @@ void packfs_init(const char* path)
                 char* a = strchr(path_normalized, '@');
                 const char* prefix = a != NULL ? (a + 1) : "/packfs";
                 path_normalized[a != NULL ? (a - begin) : len] = '\0';
-                fprintf(stderr, "packfs_init2: '%s'\n", path_normalized);
+                fprintf(stderr, "packfs_init2: '%s', '%s'\n", path_normalized, prefix);
                 
                 FILE* packfs_archive_fileptr = __real_fopen(path_normalized, "rb");
                 if(packfs_archive_fileptr != NULL)
