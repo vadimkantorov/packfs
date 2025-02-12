@@ -95,11 +95,15 @@ size_t          packfs_filesize         [packfs_filefd_max - packfs_filefd_min];
 size_t          packfs_fileino          [packfs_filefd_max - packfs_filefd_min];
 struct dirent   packfs_dirent           [packfs_filefd_max - packfs_filefd_min];
 
-char   packfs_static_prefix        [packfs_dynamic_entries_nummax * packfs_entries_name_maxlen];
+#ifdef PACKFS_STATIC
+#include "packfs.h"
+#else
+char   packfs_static_prefix[1];
 size_t packfs_static_entries_num;
 const char** packfs_static_entries_names; 
 const char** packfs_static_starts; 
 const char** packfs_static_ends;
+#endif
 
 char   packfs_dynamic_prefix       [packfs_dynamic_entries_nummax * packfs_entries_name_maxlen];
 size_t packfs_dynamic_entries_num;
