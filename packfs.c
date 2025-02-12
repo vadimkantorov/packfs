@@ -261,6 +261,7 @@ int packfs_access(const char* path, int entryisdirok)
 {
     char path_normalized[packfs_entries_name_maxlen]; packfs_normalize_path(path_normalized, path);
     
+    fprintf(stderr, "packfs_access1: '%s' %d\n", path_normalized, entryisdirok);
     if(packfs_path_in_range(packfs_static_prefix, path_normalized) || packfs_path_in_range(packfs_dynamic_prefix, path_normalized))
     {
         for(size_t i = (packfs_path_in_range(packfs_static_prefix, path_normalized) ? 0 : packfs_static_entries_num); i < packfs_static_entries_num; i++)
@@ -269,7 +270,10 @@ int packfs_access(const char* path, int entryisdirok)
             const char* entrypath = packfs_static_entries_names[i];
             int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
             if(entryisdir == entryisdirok && packfs_match(path_normalized, prefix, entrypath))
+            {
+                fprintf(stderr, "packfs_access2: found '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
                 return 0;
+            }
         }
         for(size_t i = (packfs_path_in_range(packfs_dynamic_prefix, path_normalized) ? 0 : packfs_dynamic_entries_num), packfs_dynamic_entries_names_offset = 0, packfs_dynamic_entries_prefix_offset = 0; i < packfs_dynamic_entries_num; packfs_dynamic_entries_names_offset += (packfs_dynamic_entries_names_lens[i] + 1), packfs_dynamic_entries_prefix_offset += (packfs_dynamic_entries_prefix_lens[i] + 1), i++)
         {
@@ -277,10 +281,15 @@ int packfs_access(const char* path, int entryisdirok)
             const char* entrypath = packfs_dynamic_entries_names  + packfs_dynamic_entries_names_offset;
             int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
             if(entryisdir == entryisdirok && packfs_match(path_normalized, prefix, entrypath))
+            {
+                fprintf(stderr, "packfs_access3: found '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
                 return 0;
+            }
         }
+        fprintf(stderr, "packfs_access4: not found\n");
         return -1;
     }
+    fprintf(stderr, "packfs_access5: not found\n");
     return -2;
 }
 
