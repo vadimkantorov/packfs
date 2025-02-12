@@ -262,6 +262,7 @@ int packfs_access(const char* path, int entryisdirok)
     char path_normalized[packfs_entries_name_maxlen]; packfs_normalize_path(path_normalized, path);
     
     fprintf(stderr, "packfs_access1: '%s' %d\n", path_normalized, entryisdirok);
+    fprintf(stderr, "packfs_access11: '%s' %d '%s' '%s'\n", path_normalized, entryisdirok, packfs_static_prefix, packfs_dynamic_prefix);
     if(packfs_path_in_range(packfs_static_prefix, path_normalized) || packfs_path_in_range(packfs_dynamic_prefix, path_normalized))
     {
         for(size_t i = (packfs_path_in_range(packfs_static_prefix, path_normalized) ? 0 : packfs_static_entries_num); i < packfs_static_entries_num; i++)
