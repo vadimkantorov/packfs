@@ -558,6 +558,7 @@ struct dirent* packfs_readdir(void* stream)
             size_t entrypath_len = strlen(entrypath);
             int entryisdir = entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep;
             
+            fprintf(stderr, "packfs_readdir1: '%s' '%s'\n", dir_entry_name, entrypath);
             if(i > entry_index && packfs_indir(dir_entry_name, entrypath))
             {
                 if(entryisdir)
@@ -577,6 +578,7 @@ struct dirent* packfs_readdir(void* stream)
                 }
                 dir_entry->d_type = entryisdir ? DT_DIR : DT_REG;
                 dir_entry->d_ino = (ino_t)(ino_offset + i);
+                fprintf(stderr, "packfs_readdir2: '%s' '%s' '%s' %d\n", dir_entry_name, entrypath, dir_entry->d_name, entryisdir);
                 return dir_entry;
             }
         }

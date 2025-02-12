@@ -29,8 +29,8 @@ jobs:
 
           mkdir test && echo aa > test/a.txt && zip -r testa.zip test && rm -rf test
           mkdir test && echo bb > test/b.txt && zip -r testb.zip test && rm -rf test
-          #LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=testa.zip@/packfstest:testb.zip@/packfstest /usr/bin/find /packfstest
-          LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=testa.zip@/packfstest /usr/bin/find /packfstest
+          LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=testa.zip@/packfstest:testb.zip@/packfstest /usr/bin/find /packfstest
+          #LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=testa.zip@/packfstest /usr/bin/find /packfstest
       
       #- name: Test xz
       #  run: |
