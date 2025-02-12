@@ -269,9 +269,11 @@ int packfs_access(const char* path, int entryisdirok)
             const char* prefix = packfs_static_prefix;
             const char* entrypath = packfs_static_entries_names[i];
             int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
+            if(entryisdir)
+                fprintf(stderr, "packfs_access2: tryin '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
             if(entryisdir == entryisdirok && packfs_match(path_normalized, prefix, entrypath))
             {
-                fprintf(stderr, "packfs_access2: found '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
+                fprintf(stderr, "packfs_access3: found '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
                 return 0;
             }
         }
@@ -280,16 +282,18 @@ int packfs_access(const char* path, int entryisdirok)
             const char* prefix    = packfs_dynamic_entries_prefix + packfs_dynamic_entries_prefix_offset;
             const char* entrypath = packfs_dynamic_entries_names  + packfs_dynamic_entries_names_offset;
             int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
+            if(entryisdir)
+                fprintf(stderr, "packfs_access4: tryin '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
             if(entryisdir == entryisdirok && packfs_match(path_normalized, prefix, entrypath))
             {
-                fprintf(stderr, "packfs_access3: found '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
+                fprintf(stderr, "packfs_access5: found '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
                 return 0;
             }
         }
-        fprintf(stderr, "packfs_access4: not found\n");
+        fprintf(stderr, "packfs_access6: not found\n");
         return -1;
     }
-    fprintf(stderr, "packfs_access5: not found\n");
+    fprintf(stderr, "packfs_access7: not found\n");
     return -2;
 }
 
