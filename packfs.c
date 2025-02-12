@@ -257,6 +257,33 @@ const char* packfs_archive_read_new(void* ptr)
     return packfs_archive_suffix;
 }
 
+int packfs_access(const char* path, int entryisdirok)
+{
+    char path_normalized[packfs_entries_name_maxlen]; packfs_normalize_path(path_normalized, path);
+    
+    if(packfs_path_in_range(packfs_static_prefix, path_normalized) || packfs_path_in_range(packfs_dynamic_prefix, path_normalized))
+    {
+        for(size_t i = (packfs_path_in_range(packfs_static_prefix, path_normalized) ? 0 : packfs_static_entries_num); i < packfs_static_entries_num; i++)
+        {
+            const char* prefix = packfs_static_prefix;
+            const char* entrypath = packfs_static_entries_names[i];
+            int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
+            if(entryisdir == entryisdirok && packfs_match(path_normalized, prefix, entrypath))
+                return 0;
+        }
+        for(size_t i = (packfs_path_in_range(packfs_dynamic_prefix, path_normalized) ? 0 : packfs_dynamic_entries_num), packfs_dynamic_entries_names_offset = 0, packfs_dynamic_entries_prefix_offset = 0; i < packfs_dynamic_entries_num; packfs_dynamic_entries_names_offset += (packfs_dynamic_entries_names_lens[i] + 1), packfs_dynamic_entries_prefix_offset += (packfs_dynamic_entries_prefix_lens[i] + 1), i++)
+        {
+            const char* prefix    = packfs_dynamic_entries_prefix + packfs_dynamic_entries_prefix_offset;
+            const char* entrypath = packfs_dynamic_entries_names  + packfs_dynamic_entries_names_offset;
+            int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
+            if(entryisdir == entryisdirok && packfs_match(path_normalized, prefix, entrypath))
+                return 0;
+        }
+        return -1;
+    }
+    return -2;
+}
+
 void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_filename, const char* prefix)
 {
     // TODO: for every entry need to store index into a list of archives and index into a list of prefixes
@@ -286,21 +313,23 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
         //if(archive_read_open1(a) != ARCHIVE_OK)
         //    break;
         
-        strncpy(packfs_dynamic_entries_names + packfs_dynamic_entries_names_total, "/", 1);
-        packfs_dynamic_entries_names_lens[packfs_dynamic_entries_num] = 1;
-        packfs_dynamic_entries_names_total += packfs_dynamic_entries_names_lens[packfs_dynamic_entries_num] + 1;
-        
-        strncpy(packfs_dynamic_entries_prefix + packfs_dynamic_entries_prefix_total, prefix, prefix_len);
-        packfs_dynamic_entries_prefix_lens[packfs_dynamic_entries_num] = prefix_len;
-        packfs_dynamic_entries_prefix_total += packfs_dynamic_entries_prefix_lens[packfs_dynamic_entries_num] + 1;
-        
-        
-        strncpy(packfs_dynamic_entries_archive + packfs_dynamic_entries_archive_total, packfs_archive_filename, packfs_archive_filename_len);
-        packfs_dynamic_entries_archive_lens[packfs_dynamic_entries_num] = packfs_archive_filename_len;
-        packfs_dynamic_entries_archive_total += packfs_dynamic_entries_archive_lens[packfs_dynamic_entries_num] + 1;
-        
+        if(packfs_access("/", 1) != 0)
+        {
+            strncpy(packfs_dynamic_entries_names + packfs_dynamic_entries_names_total, "/", 1);
+            packfs_dynamic_entries_names_lens[packfs_dynamic_entries_num] = 1;
+            packfs_dynamic_entries_names_total += packfs_dynamic_entries_names_lens[packfs_dynamic_entries_num] + 1;
+            
+            strncpy(packfs_dynamic_entries_prefix + packfs_dynamic_entries_prefix_total, prefix, prefix_len);
+            packfs_dynamic_entries_prefix_lens[packfs_dynamic_entries_num] = prefix_len;
+            packfs_dynamic_entries_prefix_total += packfs_dynamic_entries_prefix_lens[packfs_dynamic_entries_num] + 1;
+            
+            
+            strncpy(packfs_dynamic_entries_archive + packfs_dynamic_entries_archive_total, packfs_archive_filename, packfs_archive_filename_len);
+            packfs_dynamic_entries_archive_lens[packfs_dynamic_entries_num] = packfs_archive_filename_len;
+            packfs_dynamic_entries_archive_total += packfs_dynamic_entries_archive_lens[packfs_dynamic_entries_num] + 1;
 
-        packfs_dynamic_entries_num++;
+            packfs_dynamic_entries_num++;
+        }
         
         while(1)
         {
@@ -318,7 +347,7 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
             int entryisdir = entrytype == AE_IFDIR;
             int entryisfile = entrytype == AE_IFREG;
             
-            if(entryisdir || entryisfile)
+            if(entryisfile || (entryisdir && packfs_access(entrypath, 1) != 0)) // TODO: execute after entrypath has trailing slash
             {
                 strncpy(packfs_dynamic_entries_names + packfs_dynamic_entries_names_total, entrypath, entrypath_len);
                 if(entryisdir && (entrypath_len == 0 || entrypath[entrypath_len - 1] != packfs_sep)) entrypath_len++;
@@ -699,33 +728,6 @@ struct dirent* packfs_readdir(void* stream)
     return NULL;
 }
 
-int packfs_access(const char* path)
-{
-    char path_normalized[packfs_entries_name_maxlen]; packfs_normalize_path(path_normalized, path);
-    
-    if(packfs_path_in_range(packfs_static_prefix, path_normalized) || packfs_path_in_range(packfs_dynamic_prefix, path_normalized))
-    {
-        for(size_t i = (packfs_path_in_range(packfs_static_prefix, path_normalized) ? 0 : packfs_static_entries_num); i < packfs_static_entries_num; i++)
-        {
-            const char* prefix = packfs_static_prefix;
-            const char* entrypath = packfs_static_entries_names[i];
-            int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
-            if(!entryisdir && packfs_match(path_normalized, prefix, entrypath))
-                return 0;
-        }
-        for(size_t i = (packfs_path_in_range(packfs_dynamic_prefix, path_normalized) ? 0 : packfs_dynamic_entries_num), packfs_dynamic_entries_names_offset = 0, packfs_dynamic_entries_prefix_offset = 0; i < packfs_dynamic_entries_num; packfs_dynamic_entries_names_offset += (packfs_dynamic_entries_names_lens[i] + 1), packfs_dynamic_entries_prefix_offset += (packfs_dynamic_entries_prefix_lens[i] + 1), i++)
-        {
-            const char* prefix    = packfs_dynamic_entries_prefix + packfs_dynamic_entries_prefix_offset;
-            const char* entrypath = packfs_dynamic_entries_names  + packfs_dynamic_entries_names_offset;
-            int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
-            if(!entryisdir && packfs_match(path_normalized, prefix, entrypath))
-                return 0;
-        }
-        return -1;
-    }
-    return -2;
-}
-
 int packfs_stat(const char* path, int fd, size_t* isdir, size_t* size, size_t* d_ino)
 {
     char path_normalized[packfs_entries_name_maxlen]; packfs_normalize_path(path_normalized, path);
@@ -1095,7 +1097,7 @@ int PACKFS_WRAP(access)(const char *path, int flags)
     packfs_init(path);
     if(packfs_enabled && (packfs_path_in_range(packfs_static_prefix, path) || packfs_path_in_range(packfs_dynamic_prefix, path)))
     {
-        int res = packfs_access(path);
+        int res = packfs_access(path, 0);
         if(res >= -1)
             return res;
     }
