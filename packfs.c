@@ -502,7 +502,8 @@ int packfs_indir(const char* dirpath, const char* path)
     int prefix_matches = 0 == strncmp(dirpath + first_slash, path, dirpath_len - first_slash);
     const char* suffix_slash = strchr(path + dirpath_len - first_slash, packfs_sep);
     int suffix_without_dirs = NULL == suffix_slash || (path + path_len - 1 == suffix_slash);
-    return prefix_matches && suffix_without_dirs;
+    int suffix_not_empty = strlen(path + dirpath_len - first_slash) > 0;
+    return prefix_matches && suffix_without_dirs && suffix_not_empty;
 }
 
 struct dirent* packfs_readdir(void* stream)
