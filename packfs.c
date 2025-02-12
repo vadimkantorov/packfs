@@ -489,7 +489,7 @@ void packfs_init(const char* path)
                     packfs_enabled = 1;
                     struct archive *a = archive_read_new();
                     packfs_archive_read_new(a);
-                    packfs_scan_archive(a, packfs_archive_fileptr, path_normalized, prefix, packfs_archive_read_new);
+                    packfs_scan_archive(a, packfs_archive_fileptr, path_normalized, prefix);
                     archive_read_close(a);
                     archive_read_free(a);
                     __real_fclose(packfs_archive_fileptr);
@@ -511,7 +511,7 @@ void packfs_init(const char* path)
                     packfs_enabled = 1;
                     struct archive *a = archive_read_new();
                     packfs_archive_read_new(a);
-                    packfs_scan_archive(a, packfs_archive_fileptr, path_normalized, prefix, packfs_archive_read_new);
+                    packfs_scan_archive(a, packfs_archive_fileptr, path_normalized, prefix);
                     archive_read_close(a);
                     archive_read_free(a);
                     __real_fclose(packfs_archive_fileptr);
@@ -843,7 +843,7 @@ void* packfs_open(const char* path, int flags)
                         
                         struct archive *a = archive_read_new();
                         packfs_archive_read_new(a);
-                        packfs_extract_archive_entry_from_FILE_to_FILE(packfs_archive_fileptr, entrypath, (FILE*)fileptr, packfs_archive_read_new);
+                        packfs_extract_archive_entry_from_FILE_to_FILE(a, packfs_archive_fileptr, entrypath, (FILE*)fileptr);
                         archive_read_close(a);
                         archive_read_free(a);
                         __real_fclose(packfs_archive_fileptr);
