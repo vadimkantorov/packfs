@@ -84,6 +84,11 @@ enum
     packfs_dynamic_ino_offset = 2000000000
 };
 
+enum
+{
+    packfs_sep = '/',
+    packfs_pathsep = ':'
+};
 
 #ifdef PACKFS_STATIC
 #include "packfs.h"
@@ -119,16 +124,6 @@ size_t packfs_dynamic_entries_prefix_total;
 char   packfs_dynamic_entries_archive[packfs_dynamic_entries_nummax * packfs_entries_name_maxlen];
 size_t packfs_dynamic_entries_archive_lens[packfs_dynamic_entries_nummax];
 size_t packfs_dynamic_entries_archive_total;
-
-
-
-#include <string.h>
-
-enum
-{
-    packfs_sep = '/',
-    packfs_pathsep = ':'
-};
 
 void packfs_normalize_path(char* path_normalized, const char* path)
 {
@@ -681,7 +676,6 @@ struct dirent* packfs_readdir(void* stream)
             size_t entrypath_len = strlen(entrypath);
             int entryisdir = entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep;
             
-            fprintf(stderr, "packfs_readdir1: '%s' '%s'\n", dir_entry_name, entrypath);
             if(i > entry_index && packfs_indir(dir_entry_name, entrypath))
             {
                 if(entryisdir)
