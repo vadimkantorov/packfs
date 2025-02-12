@@ -615,12 +615,14 @@ int packfs_indir(const char* dirpath, const char* path)
     size_t path_len = strlen(path);
     if(dirpath_len == 0 || (dirpath_len > 0 && dirpath[dirpath_len - 1] != packfs_sep))
         return 0;
-    int first_slash = dirpath[0] == packfs_sep ? 1 : 0;
-    int prefix_matches = 0 == strncmp(dirpath + first_slash, path, dirpath_len - first_slash);
-    const char* suffix_slash = strchr(path + dirpath_len - first_slash, packfs_sep);
+    int dirpath_first_slash = dirpath[0] == packfs_sep ? 1 : 0;
+    int prefix_matches = 0 == strncmp(dirpath + dirpath_first_slash, path, dirpath_len - dirpath_first_slash);
+    if(!prefix_matches)
+        return 0;
+    const char* suffix_slash = strchr(path + dirpath_len - dirpath_first_slash, packfs_sep);
     int suffix_without_dirs = NULL == suffix_slash || (path + path_len - 1 == suffix_slash);
-    int suffix_not_empty = strlen(path + dirpath_len - first_slash) > 0;
-    return prefix_matches && suffix_without_dirs && suffix_not_empty;
+    int suffix_not_empty = strlen(path + dirpath_len) > 0;
+    return suffix_without_dirs && suffix_not_empty;
 }
 
 struct dirent* packfs_readdir(void* stream)
@@ -830,6 +832,7 @@ void* packfs_open(const char* path, int flags)
             {
                 if(entryisdir)
                 {
+                    fprintf(stderr, "packfs_opendir '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
                     found = 2;
                     d_ino = packfs_dynamic_ino_offset + i;
                     d_off = packfs_dynamic_entries_names_offset;
