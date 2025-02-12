@@ -292,10 +292,7 @@ int packfs_dir_exists(const char* path, const char* prefix)
         const char* entrypath = packfs_static_entries_names[i];
         int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
         if(entryisdir && 0 == strcmp(path, entrypath))
-        {
-            fprintf(stderr, "packfs_dir_exists1 found '%s' '%s'\n", path, prefix);
             return 1;
-        }
     }
     for(size_t i = (packfs_path_in_range(packfs_dynamic_prefix, prefix) ? 0 : packfs_dynamic_entries_num), packfs_dynamic_entries_names_offset = 0, packfs_dynamic_entries_prefix_offset = 0; i < packfs_dynamic_entries_num; packfs_dynamic_entries_names_offset += (packfs_dynamic_entries_names_lens[i] + 1), packfs_dynamic_entries_prefix_offset += (packfs_dynamic_entries_prefix_lens[i] + 1), i++)
     {
@@ -303,12 +300,8 @@ int packfs_dir_exists(const char* path, const char* prefix)
         const char* entrypath = packfs_dynamic_entries_names  + packfs_dynamic_entries_names_offset;
         int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
         if(entryisdir && 0 == strcmp(path, entrypath))
-        {
-            fprintf(stderr, "packfs_dir_exists2 found '%s' '%s'\n", path, prefix);
             return 1;
-        }
     }
-    fprintf(stderr, "packfs_dir_exists3 notfound '%s' '%s'\n", path, prefix);
     return 0;
 }
 
