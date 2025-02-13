@@ -443,7 +443,7 @@ void packfs_init(const char* path)
                 const char* prefix = a != NULL ? (a + 1) : "/packfs";
                 path_normalized[a != NULL ? (a - begin) : len] = '\0';
                 
-                //if(a != NULL) *a = '\0';
+                if(a != NULL) *a = '\0';
                 
                 FILE* packfs_archive_fileptr = __real_fopen(path_normalized, "rb");
                 if(packfs_archive_fileptr != NULL)
