@@ -114,12 +114,9 @@ char   packfs_dynamic_prefix       [packfs_dynamic_entries_nummax * packfs_entri
 size_t packfs_dynamic_entries_num;
 size_t packfs_dynamic_entries_sizes[packfs_dynamic_entries_nummax];
 
-char   packfs_dynamic_entries_names[packfs_dynamic_entries_nummax * packfs_entries_name_maxlen];
-size_t packfs_dynamic_entries_names_total;
-char   packfs_dynamic_entries_prefix[packfs_dynamic_entries_nummax * packfs_entries_name_maxlen];
-size_t packfs_dynamic_entries_prefix_total;
-char   packfs_dynamic_entries_archive[packfs_dynamic_entries_nummax * packfs_entries_name_maxlen];
-size_t packfs_dynamic_entries_archive_total;
+char   packfs_dynamic_entries_names[packfs_dynamic_entries_nummax * packfs_entries_name_maxlen]; size_t packfs_dynamic_entries_names_total;
+char   packfs_dynamic_entries_prefix[packfs_dynamic_entries_nummax * packfs_entries_name_maxlen]; size_t packfs_dynamic_entries_prefix_total;
+char   packfs_dynamic_entries_archive[packfs_dynamic_entries_nummax * packfs_entries_name_maxlen]; size_t packfs_dynamic_entries_archive_total;
 
 void packfs_normalize_path(char* path_normalized, const char* path)
 {
@@ -340,6 +337,7 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
                 if(entryisdir && (entrypath_len == 0 || entrypath[entrypath_len - 1] != packfs_sep)) entrypath_len++;
                 if(entryisfile && (entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep)) entrypath_len--;
                 if(entryisdir) packfs_dynamic_entries_names[packfs_dynamic_entries_names_total + (entrypath_len - 1)] = '/';
+                fprintf(stderr, "packfs_scan: '%s'\n", packfs_dynamic_entries_names + packfs_dynamic_entries_names_total);
                 packfs_dynamic_entries_names_total += (entrypath_len) + 1;
             
                 
