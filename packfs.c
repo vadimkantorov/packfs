@@ -713,8 +713,10 @@ int packfs_stat(const char* path, int fd, size_t* isdir, size_t* size, size_t* d
             const char* prefix     = packfs_dynamic_entries_prefix + packfs_dynamic_entries_prefix_offset;
             const char* entrypath = packfs_dynamic_entries_names  + packfs_dynamic_entries_names_offset;
             int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
+            fprintf(stderr, "packfs_stat1: '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
             if(packfs_match(path_normalized, prefix, entrypath))
             {
+                fprintf(stderr, "packfs_stat2: '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
                 *size = packfs_dynamic_entries_sizes[i];
                 *isdir = entryisdir;
                 *d_ino = packfs_dynamic_ino_offset + i;
@@ -784,8 +786,10 @@ void* packfs_open(const char* path, int flags)
             const char* archive   = packfs_dynamic_entries_archive+ packfs_dynamic_entries_archive_offset;
             int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
             
+            fprintf(stderr, "packfs_open1: '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
             if(packfs_match(path_normalized, prefix, entrypath))
             {
+                fprintf(stderr, "packfs_open2: '%s' '%s' '%s'\n", path_normalized, prefix, entrypath);
                 if(entryisdir)
                 {
                     found = 2;
