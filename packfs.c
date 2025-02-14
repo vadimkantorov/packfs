@@ -118,7 +118,6 @@ char   packfs_dynamic_entries_archive[packfs_dynamic_entries_nummax * packfs_ent
 size_t packfs_dynamic_entries_archive_offset[packfs_dynamic_entries_nummax];
 
 char   packfs_dynamic_entries_names[packfs_dynamic_entries_nummax * packfs_entries_name_maxlen]; size_t packfs_dynamic_entries_names_total;
-size_t packfs_dynamic_entries_names_offset[packfs_dynamic_entries_nummax];
 size_t packfs_dynamic_entries_names_offsetprefix[packfs_dynamic_entries_nummax];
 
 void packfs_normalize_path(char* path_normalized, const char* path)
