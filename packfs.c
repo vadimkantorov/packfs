@@ -308,7 +308,7 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
             strncpy(packfs_dynamic_entries_names + packfs_dynamic_entries_names_total, "/", 1);
             packfs_dynamic_entries_names_total += (1) + 1;
             
-            packfs_dynamic_entries_names_offsetprefix[packfs_dynamic_entries_num] = prefix_len;
+            packfs_dynamic_entries_names_offsetprefix[packfs_dynamic_entries_num] = prefix_len + 1;
             
             packfs_dynamic_entries_archive_offset[packfs_dynamic_entries_num] = archive_offset;
             packfs_dynamic_entries_num++;
@@ -332,18 +332,19 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
 
             if(entryisfile || (entryisdir && !packfs_dir_exists(entrypath, prefix))) // TODO: execute after entrypath has trailing slash
             {
-                packfs_dynamic_entries_names_offsetprefix[packfs_dynamic_entries_num] = prefix_len;
+                packfs_dynamic_entries_names_offsetprefix[packfs_dynamic_entries_num] = prefix_len + 1;
                 
                 const char* full_path = packfs_dynamic_entries_names + packfs_dynamic_entries_names_total;
                 strncpy(packfs_dynamic_entries_names + packfs_dynamic_entries_names_total, prefix, prefix_len);
-                packfs_dynamic_entries_names_total += prefix_len;
+                packfs_dynamic_entries_names_total += prefix_len + 1;
                 packfs_dynamic_entries_names[packfs_dynamic_entries_names_total] = packfs_sep;
                 packfs_dynamic_entries_names_total++;
+                fprintf(stderr, "packfs_scan: prefix:'%s' %zu\n", full_path, prefix_len);
                 strncpy(packfs_dynamic_entries_names + packfs_dynamic_entries_names_total, entrypath, entrypath_len);
                 if(entryisdir && (entrypath_len == 0 || entrypath[entrypath_len - 1] != packfs_sep)) entrypath_len++;
                 if(entryisfile && (entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep)) entrypath_len--;
                 if(entryisdir) packfs_dynamic_entries_names[packfs_dynamic_entries_names_total + (entrypath_len - 1)] = packfs_sep;
-                fprintf(stderr, "packfs_scan: prefix:'%s' entry:'%s' %zu\n", full_path, packfs_dynamic_entries_names + packfs_dynamic_entries_names_total, prefix_len);
+                fprintf(stderr, "packfs_scan: entry:'%s'\n", packfs_dynamic_entries_names + packfs_dynamic_entries_names_total);
                 packfs_dynamic_entries_names_total += (entrypath_len) + 1;
             
                 packfs_dynamic_entries_sizes[packfs_dynamic_entries_num] = entrysize;
