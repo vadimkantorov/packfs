@@ -791,6 +791,7 @@ void* packfs_open(const char* path, int flags)
             const char* archive   = packfs_dynamic_entries_archive+ packfs_dynamic_entries_archive_offset[i];
             const char* prefix    = packfs_dynamic_entries_names + packfs_dynamic_entries_names_offset;
             const char* entrypath = packfs_dynamic_entries_names + packfs_dynamic_entries_names_offset + prefix_len;
+            fprintf(stderr, "packfs_open: '%s'\n", entrypath);
             int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
             
             if(packfs_match(path_normalized, prefix, entrypath, prefix_len))
