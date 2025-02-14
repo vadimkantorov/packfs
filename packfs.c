@@ -118,6 +118,9 @@ char   packfs_dynamic_entries_archive[packfs_dynamic_entries_nummax * packfs_ent
 size_t packfs_dynamic_entries_archive_offset[packfs_dynamic_entries_nummax];
 
 char   packfs_dynamic_entries_names[packfs_dynamic_entries_nummax * packfs_entries_name_maxlen]; size_t packfs_dynamic_entries_names_total;
+size_t packfs_dynamic_entries_names_offset[packfs_dynamic_entries_nummax];
+size_t packfs_dynamic_entries_names_offsetprefix[packfs_dynamic_entries_nummax];
+
 char   packfs_dynamic_entries_prefix[packfs_dynamic_entries_nummax * packfs_entries_name_maxlen]; size_t packfs_dynamic_entries_prefix_total;
 
 void packfs_normalize_path(char* path_normalized, const char* path)
@@ -312,6 +315,7 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
             
             strncpy(packfs_dynamic_entries_prefix + packfs_dynamic_entries_prefix_total, prefix, prefix_len);
             packfs_dynamic_entries_prefix_total += (prefix_len) + 1;
+            packfs_dynamic_entries_names_offsetprefix[packfs_dynamic_entries_num] = prefix_len;
             
             packfs_dynamic_entries_archive_offset[packfs_dynamic_entries_num] = archive_offset;
             packfs_dynamic_entries_num++;
@@ -344,6 +348,7 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
                 strncpy(packfs_dynamic_entries_prefix + packfs_dynamic_entries_prefix_total, prefix, prefix_len);
                 packfs_dynamic_entries_prefix_total += (prefix_len) + 1;
                 
+                packfs_dynamic_entries_names_offsetprefix[packfs_dynamic_entries_num] = prefix_len;
                 packfs_dynamic_entries_sizes[packfs_dynamic_entries_num] = entrysize;
                 packfs_dynamic_entries_archive_offset[packfs_dynamic_entries_num] = archive_offset;
                 packfs_dynamic_entries_num++;
