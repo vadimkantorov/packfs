@@ -113,11 +113,12 @@ struct dirent   packfs_dirent           [packfs_filefd_max - packfs_filefd_min];
 char   packfs_dynamic_prefix       [packfs_dynamic_entries_nummax * packfs_entries_name_maxlen];
 size_t packfs_dynamic_entries_num;
 size_t packfs_dynamic_entries_sizes[packfs_dynamic_entries_nummax];
+
+char   packfs_dynamic_entries_archive[packfs_dynamic_entries_nummax * packfs_entries_name_maxlen]; 
 size_t packfs_dynamic_entries_archive_offset[packfs_dynamic_entries_nummax];
 
 char   packfs_dynamic_entries_names[packfs_dynamic_entries_nummax * packfs_entries_name_maxlen]; size_t packfs_dynamic_entries_names_total;
 char   packfs_dynamic_entries_prefix[packfs_dynamic_entries_nummax * packfs_entries_name_maxlen]; size_t packfs_dynamic_entries_prefix_total;
-char   packfs_dynamic_entries_archive[packfs_dynamic_entries_nummax * packfs_entries_name_maxlen]; 
 
 void packfs_normalize_path(char* path_normalized, const char* path)
 {
