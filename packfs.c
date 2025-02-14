@@ -635,6 +635,7 @@ void* packfs_readdir(void* stream)
             size_t prefix_len = packfs_dynamic_entries_names_offsetprefix[i];
             const char* prefix    = packfs_dynamic_entries_names + packfs_dynamic_entries_names_offset;
             const char* entrypath = packfs_dynamic_entries_names + packfs_dynamic_entries_names_offset + prefix_len;
+            size_t entrypath_len = strlen(entrypath);
             int entryisdir = entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep;
             
             if(i > entry_index && packfs_indir(dir_entry_name, entrypath))
