@@ -335,7 +335,7 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
                 
                 const char* full_path = packfs_dynamic_entries_names + packfs_dynamic_entries_names_total;
                 strncpy(packfs_dynamic_entries_names + packfs_dynamic_entries_names_total, prefix, prefix_len);
-                packfs_dynamic_entries_names_total += prefix_len + 1;
+                packfs_dynamic_entries_names_total += prefix_len;
                 packfs_dynamic_entries_names[packfs_dynamic_entries_names_total] = packfs_sep;
                 packfs_dynamic_entries_names_total++;
                 fprintf(stderr, "packfs_scan: prefix:'%s' %zu\n", full_path, prefix_len);
