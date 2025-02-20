@@ -818,14 +818,14 @@ void* packfs_open(const char* path, int flags)
         }
         */
         
-        for(size_t i = (packfs_path_in_range(packfs_dynamic_prefix, path_normalized) ? 0 : packfs_dynamic_dirs_num), offset = 0; i < packfs_dynamic_dirs_num; offset += (strlen(packfs_dynamic_dirpaths  + offset) + 1), i++)
+        for(size_t i = (packfs_path_in_range(packfs_dynamic_prefix, path_normalized) ? 0 : packfs_dynamic_dirs_num), offset = 0; i < packfs_dynamic_dirs_num; offset += (strlen(packfs_dynamic_dirpaths + offset) + 1), i++)
         {
             const char* entryabspath = packfs_dynamic_dirpaths + offset;
             if(0 == strcmp(path_normalized, entryabspath))
             {
                 found = 2;
                 d_ino = packfs_dynamic_ino_offset + packfs_dirs_ino_offset + i;
-                d_off = packfs_dynamic_paths_offset + prefix_len;
+                d_off = offset;
                 filesize = 0;
             }
         }
