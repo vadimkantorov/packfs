@@ -266,7 +266,7 @@ int packfs_dir_exists(const char* path, const char* prefix)
     */
     for(size_t i = (packfs_path_in_range(packfs_dynamic_prefix, prefix) ? 0 : packfs_dynamic_dirs_num), offset = 0; i < packfs_dynamic_dirs_num; offset += (strlen(packfs_dynamic_dirpaths  + offset) + 1), i++)
     {
-        const char* entrypath = packfs_dynamic_dirpaths + offset + packfs_dynamic_dirpaths_prefixlen[i];
+        const char* entrypath = packfs_dynamic_dirpaths + offset;
         if(0 == strcmp(path, entrypath))
             return 1;
     }
@@ -293,6 +293,7 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
     if(prefix_len > 0 && prefix[prefix_len - 1] == packfs_sep) prefix_len--;
     size_t packfs_archive_filename_len = strlen(packfs_archive_filename);
                 
+    size_t archive_offset = packfs_dynamic_archivepaths_total;
     strncpy(packfs_dynamic_archivepaths + packfs_dynamic_archivepaths_total, packfs_archive_filename, packfs_archive_filename_len);
     packfs_dynamic_archivepaths_total += packfs_archive_filename_len + 1;
 
@@ -304,8 +305,8 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
         
         if(!packfs_dir_exists("/", prefix) != 0)
         {
-            strncpy(packfs_dynamic_dirdirpaths + packfs_dynamic_dirpaths_total, "/", 1);
-            packfs_dynamic_dirdirpaths_total += (1) + 1;
+            strncpy(packfs_dynamic_dirpaths + packfs_dynamic_dirpaths_total, "/", 1);
+            packfs_dynamic_dirpaths_total += (1) + 1;
             
             packfs_dynamic_dirs_num++;
         }
@@ -665,7 +666,7 @@ void* packfs_readdir(void* stream)
             d_ino = packfs_dynamic_ino_offset;
         }
         
-        for(size_t i = 0, offset = 0; check_files && i < packfs_dynamic_paths_num; offset += (strlen(packfs_dynamic_paths + offset) + 1), i++)
+        for(size_t i = 0, offset = 0; check_files && i < packfs_dynamic_files_num; offset += (strlen(packfs_dynamic_paths + offset) + 1), i++)
         {
             const char* dirabspath = packfs_dynamic_dirpaths + (size_t)dir_entry->d_off;
             const char* entryabspath = packfs_dynamic_paths + offset;
