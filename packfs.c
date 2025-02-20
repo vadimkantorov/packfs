@@ -184,54 +184,6 @@ size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
     return 0;
 }
 
-int strcmp_without_trailing_slash(const char* a, const char* b)
-{
-    size_t a_len = a != NULL ? strlen(a) : 0;
-    size_t b_len = b != NULL ? strlen(b) : 0;
-    int a_trailing_slash = a_len > 0 && a[a_len - 1] == packfs_sep;
-    int b_trailing_slash = b_len > 0 && b[b_len - 1] == packfs_sep;
-
-    size_t a_len_m1 = a_len - a_trailing_slash;
-    size_t b_len_m1 = b_len - b_trailing_slash;
-    
-    if(a_len_m1 == 0 && b_len_m1 == 0)
-        return 0;
-    if((a_len_m1 == 0) ^ (b_len_m1 == 0))
-        return 1;
-    return strncmp(a, b, a_len_m1 > b_len_m1 ? a_len_m1 : b_len_m1);
-}
-
-int packfs_match(const char* path, const char* prefix, const char* entrypath, size_t prefix_len)
-{
-    if(path == NULL || prefix == NULL || entrypath == NULL)
-        return 0;
-
-    size_t path_len = strlen(path);
-    size_t entrypath_len = strlen(entrypath);
-    
-    int path_trailing_slash = path_len > 0 && path[path_len - 1] == packfs_sep;
-    int prefix_trailing_slash = prefix_len > 0 && prefix[prefix_len - 1] == packfs_sep;
-    int entrypath_trailing_slash = entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep;
-
-    if(prefix_len > 0)
-    {
-        if(0 != strncmp(path, prefix, prefix_len - prefix_trailing_slash))
-            return 0;
-        if(path_len - path_trailing_slash == prefix_len - prefix_trailing_slash)
-            return 1;
-        if(path[prefix_len - prefix_trailing_slash] != packfs_sep)
-            return 0;
-        if(0 != strcmp_without_trailing_slash(path + prefix_len + (!prefix_trailing_slash), entrypath))
-            return 0;
-        return 1;
-    }
-    else
-    {
-        return 0 == strcmp_without_trailing_slash(path, entrypath);
-    }
-
-    return 0;
-}
 
 ///////////
 
