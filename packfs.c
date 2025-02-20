@@ -82,7 +82,7 @@ enum
     packfs_dynamic_files_nummax = 8192,
     packfs_static_ino_offset = 1000000000,
     packfs_dynamic_ino_offset = 2000000000,
-    packfs_dirs_ino_offset = 500000000,
+    packfs_dirs_ino_offset = 1000000,
 };
 
 enum
@@ -640,19 +640,20 @@ void* packfs_readdir(void* stream)
         int check_dirs = (d_ino >= packfs_dynamic_ino_offset + packfs_dirs_ino_offset) && (d_ino < packfs_dynamic_ino_offset + packfs_dirs_ino_offset + packfs_dirs_ino_offset);
         int check_files = (d_ino >= packfs_dynamic_ino_offset) && (d_ino < packfs_dynamic_ino_offset + packfs_dirs_ino_offset);
         
-        for(size_t i = 0, offset = 0; check_dirs && i < packfs_dynamic_dirpaths_num; offset += (strlen(packfs_dynamic_dirpaths + offset) + 1), i++)
+        for(size_t i = 0, offset = 0; check_dirs && i < packfs_dynamic_dirs_num; offset += (strlen(packfs_dynamic_dirpaths + offset) + 1), i++)
         {
             const char* dirabspath = packfs_dynamic_dirpaths + (size_t)dir_entry->d_off;
             const char* entryabspath = packfs_dynamic_dirpaths + offset;
+            size_t entryabspath_len = strlen(entryabspath);
             
             if(i > (d_ino - packfs_dynamic_ino_offset - packfs_dirs_ino_offset) && packfs_indir(dirabspath, entryabspath))
             {
-                strcpy(dir_entry->d_name, entrypath);
-                dir_entry->d_name[entrypath_len - 1] = '\0';
+                strcpy(dir_entry->d_name, entryabspath);
+                dir_entry->d_name[entryabspath_len - 1] = '\0';
                 const char* last_slash = strrchr(dir_entry->d_name, packfs_sep); 
                 size_t ind = last_slash != NULL ? (last_slash - dir_entry->d_name + 1) : 0;
-                size_t cnt = entrypath_len - 1 - ind;
-                strncpy(dir_entry->d_name, entrypath + ind, cnt);
+                size_t cnt = entryabspath_len - 1 - ind;
+                strncpy(dir_entry->d_name, entryabspath + ind, cnt);
                 dir_entry->d_name[cnt] = '\0';
                 dir_entry->d_type = DT_DIR; 
                 dir_entry->d_ino = (ino_t)(packfs_dynamic_ino_offset + packfs_dirs_ino_offset + i);
