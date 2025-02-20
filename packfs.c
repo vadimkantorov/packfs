@@ -488,6 +488,7 @@ void packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
         }
     }
     
+    /*
     for(size_t i = 0; found && (d_ino >= packfs_static_ino_offset && d_ino < packfs_dynamic_ino_offset) && i < packfs_static_files_num; i++)
     {
         size_t entry_index = d_ino - packfs_static_ino_offset;
@@ -505,6 +506,7 @@ void packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
             return;
         }
     }
+    */
     
     for(size_t i = 0, packfs_dynamic_paths_offset = 0; packfs_enabled && packfs_initialized && found && d_ino >= packfs_dynamic_ino_offset && i < packfs_dynamic_files_num; packfs_dynamic_paths_offset += (strlen(packfs_dynamic_paths  + packfs_dynamic_paths_offset) + 1), i++)
     {
