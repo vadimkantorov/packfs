@@ -255,7 +255,7 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
         if(archive_read_open_FILE(a, f) != ARCHIVE_OK) //if(archive_read_open1(a) != ARCHIVE_OK)
             break;
         
-        if(!packfs_dir_exists(prefix, ""))
+        //if(!packfs_dir_exists(prefix, ""))
         {
             const char* full_path = packfs_dynamic_dirpaths + packfs_dynamic_dirpaths_total;
             strncpy(packfs_dynamic_dirpaths + packfs_dynamic_dirpaths_total, prefix, prefix_len);
@@ -263,6 +263,7 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
             packfs_dynamic_dirpaths[packfs_dynamic_dirpaths_total] = packfs_sep;
             packfs_dynamic_dirpaths_total++;
             packfs_dynamic_dirs_num++;
+            fprintf(stderr, "packfs_scan_archive1: '%s'\n", full_path);
         }
         
         while(1)
@@ -293,6 +294,7 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
                 packfs_dynamic_dirpaths[packfs_dynamic_dirpaths_total + (entrypath_len - 1)] = packfs_sep;
                 packfs_dynamic_dirpaths_total += (entrypath_len) + 1;
             
+                fprintf(stderr, "packfs_scan_archive2: '%s'\n", full_path);
                 packfs_dynamic_dirs_num++;
             }
             else if(entryisfile) // TODO: execute after entrypath has trailing slash
@@ -310,6 +312,8 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
             
                 packfs_dynamic_files_sizes[packfs_dynamic_files_num] = entrysize;
                 packfs_dynamic_files_archiveoffset[packfs_dynamic_files_num] = archive_offset;
+                
+                fprintf(stderr, "packfs_scan_archive3: '%s'\n", full_path);
                 packfs_dynamic_files_num++;
             }
                 
