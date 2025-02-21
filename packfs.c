@@ -752,6 +752,7 @@ int packfs_stat(const char* path, int fd, size_t* isdir, size_t* size, size_t* d
 void* packfs_open(const char* path, int flags)
 {
     char path_normalized[packfs_files_name_maxlen]; packfs_normalize_path(path_normalized, path);
+    size_t path_normalized_len = strlen(path_normalized);
 
     void* fileptr = NULL; size_t filesize = 0, d_ino = 0, d_off = 0, found = 0;
     
@@ -791,7 +792,7 @@ void* packfs_open(const char* path, int flags)
         {
             const char* entryabspath = packfs_dynamic_dirpaths + offset;
             fprintf(stderr, "packfs_open1: '%s' '%s'\n", path_normalized, entryabspath);
-            if(0 == strcmp(path_normalized, entryabspath))
+            if(0 == strncmp(path_normalized, entryabspath, path_normalized_len) && entryabspath[path_normalized_len] == packfs_sep && entryabspath[path_normalized_len + 1] == '\0')
             {
                 found = 2;
                 d_ino = packfs_dynamic_ino_offset + packfs_dirs_ino_offset + i;
