@@ -1128,6 +1128,9 @@ int PACKFS_WRAP(fstatat)(int dirfd, const char* path, struct stat * statbuf, int
 {
     packfs_init(path);
     char path_normalized[packfs_files_name_maxlen]; packfs_resolve_relative_path(path_normalized, dirfd, path);
+
+    fprintf(stderr, "fstatat: %d '%s' '%s'\n", dirfd, path, path_normalized);
+
     if(packfs_enabled && (packfs_path_in_range(packfs_static_prefix, path_normalized) || packfs_path_in_range(packfs_dynamic_prefix, path_normalized)))
     {
         *statbuf = (struct stat){0};
