@@ -216,12 +216,15 @@ int packfs_dir_exists(const char* prefix, const char* path)
             return 1;
     }
     */
+    
+    /*
     for(size_t i = (packfs_path_in_range(packfs_dynamic_prefix, prefix) ? 0 : packfs_dynamic_dirs_num), offset = 0; i < packfs_dynamic_dirs_num; offset += (strlen(packfs_dynamic_dirpaths  + offset) + 1), i++)
     {
         const char* entrypath = packfs_dynamic_dirpaths + offset;
         if(0 == strcmp(path, entrypath))
             return 1;
     }
+    */
     return 0;
 }
 
@@ -255,7 +258,7 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
         if(archive_read_open_FILE(a, f) != ARCHIVE_OK) //if(archive_read_open1(a) != ARCHIVE_OK)
             break;
         
-        //if(!packfs_dir_exists(prefix, ""))
+        if(!packfs_dir_exists(prefix, ""))
         {
             const char* full_path = packfs_dynamic_dirpaths + packfs_dynamic_dirpaths_total;
             strncpy(packfs_dynamic_dirpaths + packfs_dynamic_dirpaths_total, prefix, prefix_len);
