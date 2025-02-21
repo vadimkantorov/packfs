@@ -264,7 +264,7 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
             strncpy(packfs_dynamic_dirpaths + packfs_dynamic_dirpaths_total, prefix, prefix_len);
             packfs_dynamic_dirpaths_total += prefix_len;
             packfs_dynamic_dirpaths[packfs_dynamic_dirpaths_total] = packfs_sep;
-            packfs_dynamic_dirpaths_total++;
+            packfs_dynamic_dirpaths_total += 2;
             packfs_dynamic_dirs_num++;
             fprintf(stderr, "packfs_scan_archive1: '%s'\n", full_path);
         }
