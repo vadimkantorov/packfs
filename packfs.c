@@ -517,21 +517,15 @@ void packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
     }
     */
     
-    for(size_t i = 0, packfs_dynamic_paths_offset = 0; packfs_enabled && packfs_initialized && found && d_ino >= packfs_dynamic_ino_offset && i < packfs_dynamic_files_num; packfs_dynamic_paths_offset += (strlen(packfs_dynamic_paths  + packfs_dynamic_paths_offset) + 1), i++)
+    for(size_t i = 0, offset = 0; i < packfs_dynamic_dirs_num; offset += (strlen(packfs_dynamic_dirpaths + offset) + 1), i++)
     {
-        size_t entry_index = d_ino - packfs_dynamic_ino_offset;
-        if(i == entry_index)
+        const char* entryabspath = packfs_dynamic_dirpaths + offset;
+    
+        if(i == d_ino - packfs_dynamic_ino_offset - packfs_dirs_ino_offset)
         {
-            size_t prefix_len = packfs_dynamic_paths_prefixlen[i];
-            const char* prefix    = packfs_dynamic_paths + packfs_dynamic_paths_offset;
-            const char* entrypath = packfs_dynamic_paths  + packfs_dynamic_paths_offset + prefix_len;
-            entrypath = (strlen(entrypath) > 1 && entrypath[0] == '.' && entrypath[1] == packfs_sep) ? (entrypath + 2) : entrypath;
             path = (strlen(path) > 1 && path[0] == '.' && path[1] == packfs_sep) ? (path + 2) : path;
-            if(strlen(entrypath) > 0)
-                sprintf(dest, "%s%c%s%c%s", prefix, (char)packfs_sep, entrypath, (char)packfs_sep, path);
-            else
-                sprintf(dest, "%s%c%s", prefix, (char)packfs_sep, path);
-            return;
+            strcpy(dest, entryabspath);
+            return strcat(dest, path);
         }
     }
 
