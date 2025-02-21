@@ -776,6 +776,7 @@ void* packfs_open(const char* path, int flags)
         for(size_t i = (packfs_path_in_range(packfs_dynamic_prefix, path_normalized) ? 0 : packfs_dynamic_dirs_num), offset = 0; i < packfs_dynamic_dirs_num; offset += (strlen(packfs_dynamic_dirpaths + offset) + 1), i++)
         {
             const char* entryabspath = packfs_dynamic_dirpaths + offset;
+            fprintf(stderr, "packfs_open1: '%s' '%s'\n", path_normalized, entryabspath);
             if(0 == strcmp(path_normalized, entryabspath))
             {
                 found = 2;
@@ -791,6 +792,8 @@ void* packfs_open(const char* path, int flags)
             size_t prefix_len = packfs_dynamic_paths_prefixlen[i];
             const char* entrypath = packfs_dynamic_paths + offset + prefix_len;
             const char* archivepath   = packfs_dynamic_archivepaths + packfs_dynamic_files_archiveoffset[i];
+            
+            fprintf(stderr, "packfs_open2: '%s' '%s' '%s'\n", path_normalized, entryabspath, archivepath);
             if(0 == strcmp(path_normalized, entryabspath))
             {
                 found = 1;
