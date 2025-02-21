@@ -794,6 +794,7 @@ void* packfs_open(const char* path, int flags)
             fprintf(stderr, "packfs_open1: '%s' '%s'\n", path_normalized, entryabspath);
             if(0 == strncmp(path_normalized, entryabspath, path_normalized_len) && entryabspath[path_normalized_len] == packfs_sep && entryabspath[path_normalized_len + 1] == '\0')
             {
+                fprintf(stderr, "packfs_open11: '%s' '%s'\n", path_normalized, entryabspath);
                 found = 2;
                 d_ino = packfs_dynamic_ino_offset + packfs_dirs_ino_offset + i;
                 d_off = offset;
@@ -811,6 +812,7 @@ void* packfs_open(const char* path, int flags)
             fprintf(stderr, "packfs_open2: '%s' '%s' '%s'\n", path_normalized, entryabspath, archivepath);
             if(0 == strcmp(path_normalized, entryabspath))
             {
+                fprintf(stderr, "packfs_open22: '%s' '%s'\n", path_normalized, entryabspath);
                 found = 1;
                 d_ino = packfs_dynamic_ino_offset + i;
                 d_off = 0;
