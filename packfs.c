@@ -680,6 +680,7 @@ int packfs_access(const char* path)
 int packfs_stat(const char* path, int fd, size_t* isdir, size_t* size, size_t* d_ino)
 {
     char path_normalized[packfs_files_name_maxlen]; packfs_normalize_path(path_normalized, path);
+    size_t path_normalized_len = strlen(path_normalized);
     
     if(packfs_path_in_range(packfs_static_prefix, path_normalized) || packfs_path_in_range(packfs_dynamic_prefix, path_normalized))
     {
@@ -704,7 +705,7 @@ int packfs_stat(const char* path, int fd, size_t* isdir, size_t* size, size_t* d
         {
             const char* entryabspath = packfs_dynamic_dirpaths + offset;
             fprintf(stderr, "packfs_stat1: '%s' '%s'\n", path_normalized, entryabspath);
-            if(0 == strcmp(path_normalized, entryabspath))
+            if(0 == strncmp(path_normalized, entryabspath, path_normalized_len) && entryabspath[path_normalized_len] == packfs_sep && entryabspath[path_normalized_len + 1] == '\0')
             {
                 fprintf(stderr, "packfs_stat11: '%s' '%s'\n", path_normalized, entryabspath);
                 *size = 0;
