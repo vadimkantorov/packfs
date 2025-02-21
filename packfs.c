@@ -599,6 +599,7 @@ void* packfs_readdir(void* stream)
             const char* dirabspath = packfs_dynamic_dirpaths + (size_t)dir_entry->d_off;
             const char* entryabspath = packfs_dynamic_dirpaths + offset;
             size_t entryabspath_len = strlen(entryabspath);
+            fprintf(stderr, "packfs_readdir: dirabspath='%s' entryabspath='%s'\n", dirabspath, entryabspath);
             
             if(i > (d_ino - packfs_dynamic_ino_offset - packfs_dirs_ino_offset) && packfs_indir(dirabspath, entryabspath))
             {
