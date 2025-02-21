@@ -205,7 +205,7 @@ const char* packfs_archive_read_new(void* ptr)
     return packfs_archive_suffix;
 }
 
-int packfs_dir_exists(const char* path, const char* prefix)
+int packfs_dir_exists(const char* prefix, const char* path)
 {
     /*
     for(size_t i = (packfs_path_in_range(packfs_static_prefix, prefix) ? 0 : packfs_static_files_num); i < packfs_static_files_num; i++)
@@ -255,11 +255,13 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
         if(archive_read_open_FILE(a, f) != ARCHIVE_OK) //if(archive_read_open1(a) != ARCHIVE_OK)
             break;
         
-        if(!packfs_dir_exists("/", prefix) != 0)
+        if(!packfs_dir_exists(prefix, ""))
         {
-            strncpy(packfs_dynamic_dirpaths + packfs_dynamic_dirpaths_total, "/", 1);
-            packfs_dynamic_dirpaths_total += (1) + 1;
-            
+            const char* full_path = packfs_dynamic_dirpaths + packfs_dynamic_dirpaths_total;
+            strncpy(packfs_dynamic_dirpaths + packfs_dynamic_dirpaths_total, prefix, prefix_len);
+            packfs_dynamic_dirpaths_total += prefix_len;
+            packfs_dynamic_dirpaths[packfs_dynamic_dirpaths_total] = packfs_sep;
+            packfs_dynamic_dirpaths_total++;
             packfs_dynamic_dirs_num++;
         }
         
@@ -279,7 +281,7 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
             int entryisdir = entrytype == AE_IFDIR;
             int entryisfile = entrytype == AE_IFREG;
 
-            if(entryisdir && !packfs_dir_exists(entrypath, prefix)) // TODO: execute after entrypath has trailing slash
+            if(entryisdir && !packfs_dir_exists(prefix, entrypath)) // TODO: execute after entrypath has trailing slash
             {
                 const char* full_path = packfs_dynamic_dirpaths + packfs_dynamic_dirpaths_total;
                 strncpy(packfs_dynamic_dirpaths + packfs_dynamic_dirpaths_total, prefix, prefix_len);
