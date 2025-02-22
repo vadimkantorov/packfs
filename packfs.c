@@ -525,7 +525,8 @@ void packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
         {
             path = (strlen(path) > 1 && path[0] == '.' && path[1] == packfs_sep) ? (path + 2) : path;
             strcpy(dest, entryabspath);
-            return strcat(dest, path);
+            strcat(dest, path);
+            return;
         }
     }
 
