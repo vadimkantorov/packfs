@@ -19,11 +19,11 @@ jobs:
       - name: Test zip
         run: |
           zip -r packfs.zip packfs.c .git
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat packfs.zip/packfs.c
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/stat packfs.zip/packfs.c
-          #LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=packfs.zip /usr/bin/cat /packfs/packfs.c
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah packfs.zip/packfs.c
-          #LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah packfs.zip
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat packfs.zip/packfs.c
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/stat packfs.zip/packfs.c
+          LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=packfs.zip /usr/bin/cat /packfs/packfs.c
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah packfs.zip/packfs.c
+          LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah packfs.zip
           LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find packfs.zip
           #python packfs.py -i .git -o packfs.h --prefix=/packfs/dotgit --ld=ld
           #mkdir test && echo aa > test/a.txt && zip -r testa.zip test && rm -rf test
