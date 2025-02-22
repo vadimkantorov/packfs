@@ -217,14 +217,15 @@ int packfs_dir_exists(const char* prefix, const char* path)
     }
     */
     
-    /*
+    size_t prefix_len = strlen(prefix);
+    
     for(size_t i = (packfs_path_in_range(packfs_dynamic_prefix, prefix) ? 0 : packfs_dynamic_dirs_num), offset = 0; i < packfs_dynamic_dirs_num; offset += (strlen(packfs_dynamic_dirpaths  + offset) + 1), i++)
     {
-        const char* entrypath = packfs_dynamic_dirpaths + offset;
-        if(0 == strcmp(path, entrypath))
+        const char* entryabspath = packfs_dynamic_dirpaths + offset;
+        if(0 == strncmp(prefix, entryabspath, prefix_len) && entryabspath[prefix_len] == packfs_sep && 0 == strcmp(entryabspath + prefix_len + 1, path))
             return 1;
     }
-    */
+    
     return 0;
 }
 
