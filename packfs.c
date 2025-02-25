@@ -394,8 +394,8 @@ void packfs_init(const char* path)
         char path_normalized[packfs_files_name_maxlen]; 
         char path_normalized_entry[packfs_files_name_maxlen]; 
         
-        const char *packfs_archives = getenv("PACKFS_ARCHIVES");
-        const char *packfs_archivedirs = getenv("PACKFS_ARCHIVEDIRS");
+        const char* packfs_archives = getenv("PACKFS_ARCHIVES");
+        const char* packfs_archivedirs = getenv("PACKFS_ARCHIVEDIRS");
         const char* packfs_archives_suffixes = packfs_archive_read_new(NULL);
         
         if(packfs_archivedirs != NULL && packfs_archivedirs[0] != '\0')
@@ -410,6 +410,9 @@ void packfs_init(const char* path)
                 len = a != NULL ? (a - path_normalized) : len;
                 path_normalized[len] = '\0';
 
+                fprintf(stderr, "packfs_init: '%s'\n", path_normalized);
+
+                /*
                 DIR* dirptr = __real_opendir(path_normalized);
                 if(dirptr != NULL)
                 {
@@ -439,6 +442,7 @@ void packfs_init(const char* path)
                     }
                     __real_closedir(dirptr);
                 }
+                */
             }
         }
         else if(packfs_archives != NULL && packfs_archives[0] != '\0')
