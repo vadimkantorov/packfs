@@ -410,13 +410,10 @@ void packfs_init(const char* path)
                 len = a != NULL ? (a - path_normalized) : len;
                 path_normalized[len] = '\0';
 
-                fprintf(stderr, "packfs_init1: '%s'\n", path_normalized);
-
-                
-                DIR* dirptr = __real_opendir(path_normalized);
+                fprintf(stderr, "packfs_init1: '%s' %p\n", path_normalized, (void*)dirptr);
                 if(dirptr != NULL)
                 {
-                    for(struct dirent* entry = readdir(dirptr); entry != NULL; entry = readdir(dirptr))
+                    for(struct dirent* entry = __real_readdir(dirptr); entry != NULL; entry = __real_readdir(dirptr))
                     {
                         fprintf(stderr, "packfs_init2: '%s'\n", entry->d_name);
                         /*
