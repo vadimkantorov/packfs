@@ -410,14 +410,16 @@ void packfs_init(const char* path)
                 len = a != NULL ? (a - path_normalized) : len;
                 path_normalized[len] = '\0';
 
-                fprintf(stderr, "packfs_init: '%s'\n", path_normalized);
+                fprintf(stderr, "packfs_init1: '%s'\n", path_normalized);
 
-                /*
+                
                 DIR* dirptr = __real_opendir(path_normalized);
                 if(dirptr != NULL)
                 {
                     for(struct dirent* entry = readdir(dirptr); entry != NULL; entry = readdir(dirptr))
                     {
+                        fprintf(stderr, "packfs_init2: '%s'\n", entry->d_name);
+                        /*
                         size_t path_prefix_len = packfs_archive_prefix_extract(entry->d_name, packfs_archives_suffixes);
                         if(path_prefix_len > 0)
                         {
@@ -438,11 +440,12 @@ void packfs_init(const char* path)
                                 __real_fclose(fileptr);
                             }
                         }
+                        */
                             
                     }
                     __real_closedir(dirptr);
                 }
-                */
+                
             }
         }
         else if(packfs_archives != NULL && packfs_archives[0] != '\0')
