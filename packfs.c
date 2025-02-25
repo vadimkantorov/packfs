@@ -410,6 +410,7 @@ void packfs_init(const char* path)
                 len = a != NULL ? (a - path_normalized) : len;
                 path_normalized[len] = '\0';
 
+                DIR* dirptr = __real_opendir(path_normalized);
                 fprintf(stderr, "packfs_init1: '%s' %p\n", path_normalized, (void*)dirptr);
                 if(dirptr != NULL)
                 {
