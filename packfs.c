@@ -311,6 +311,8 @@ void packfs_scan_archive(struct archive* a, FILE* f, const char* packfs_archive_
                 strncpy(packfs_dynamic_paths + packfs_dynamic_paths_total, entrypath, entrypath_len);
                 if(entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep) entrypath_len--;
                 packfs_dynamic_paths_total += (entrypath_len) + 1;
+                
+                fprintf(stderr, "packfs_scan: '%s'\n", full_path);
             
                 packfs_dynamic_files_sizes[packfs_dynamic_files_num] = entrysize;
                 packfs_dynamic_files_archiveoffset[packfs_dynamic_files_num] = archive_offset;
