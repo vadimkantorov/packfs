@@ -112,7 +112,7 @@ size_t          packfs_fileino          [packfs_filefd_max - packfs_filefd_min];
 struct dirent   packfs_dirent           [packfs_filefd_max - packfs_filefd_min];
 
 
-char   packfs_dynamic_prefix_default[] = "/packfs";
+char   packfs_default_prefix[] = "/packfs";
 char   packfs_dynamic_prefix      [packfs_dynamic_files_nummax * packfs_files_name_maxlen];
 char   packfs_dynamic_archivepaths[packfs_dynamic_files_nummax * packfs_files_name_maxlen]; size_t packfs_dynamic_archivepaths_total;
 char   packfs_dynamic_paths       [packfs_dynamic_files_nummax * packfs_files_name_maxlen]; size_t packfs_dynamic_paths_total;
@@ -408,7 +408,7 @@ void packfs_init(const char* path)
                 strncpy(path_normalized, begin, len);
                 path_normalized[len] = '\0';
                 char* a = strchr(path_normalized, '@');
-                const char* prefix = a != NULL ? (a + 1) : packfs_dynamic_prefix_default;
+                const char* prefix = a != NULL ? (a + 1) : packfs_default_prefix;
                 len = a != NULL ? (a - path_normalized) : len;
                 path_normalized[len] = '\0';
 
@@ -458,7 +458,7 @@ void packfs_init(const char* path)
                 strncpy(path_normalized, begin, len);
                 path_normalized[len] = '\0';
                 char* a = strchr(path_normalized, '@');
-                const char* prefix = a != NULL ? (a + 1) : packfs_dynamic_prefix_default;
+                const char* prefix = a != NULL ? (a + 1) : packfs_default_prefix;
                 path_normalized[a != NULL ? (a - path_normalized) : len] = '\0';
                 
                 FILE* fileptr = __real_fopen(path_normalized, "rb");
@@ -644,6 +644,7 @@ void* packfs_readdir(void* stream)
         int check_files = (d_ino >= packfs_dynamic_ino_offset) && (d_ino < packfs_dynamic_ino_offset + packfs_dirs_ino_offset);
         const char* dirabspath = packfs_dynamic_dirpaths + (size_t)dir_entry->d_off;
         
+        fprintf(stderr, "packfs_readdir1 %d %d '%s'\n", check_dirs, check_files, dirabspath);
         for(size_t i = 0, offset = 0; check_dirs && i < packfs_dynamic_dirs_num; offset += (strlen(packfs_dynamic_dirpaths + offset) + 1), i++)
         {
             const char* entryabspath = packfs_dynamic_dirpaths + offset;
@@ -674,6 +675,7 @@ void* packfs_readdir(void* stream)
         {
             const char* entryabspath = packfs_dynamic_paths + offset;
             
+            fprintf(stderr, "packfs_readdir2 '%s' '%s'\n", dirabspath, entryabspath);
             if((i > (d_ino - packfs_dynamic_ino_offset) || (i == 0 && check_dirs)) && packfs_indir(dirabspath, entryabspath))
             {
                 const char* last_slash = strrchr(entryabspath, packfs_sep);
