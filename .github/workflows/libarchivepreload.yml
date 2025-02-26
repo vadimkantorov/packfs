@@ -31,6 +31,9 @@ jobs:
           LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=testa.zip@/packfstest:testb.zip@/packfstest /usr/bin/find /packfstest
           mkdir test && mv testa.zip testb.zip test
           LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVEDIRS=test /usr/bin/find /packfs
+          
+          echo '[{"path" : "test/a.txt", "size": 1, "offset": 0}]' > test/testa.zip.json
+          LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_LISTINGS=test/testa.zip.json /usr/bin/find /packfs
       
       #- name: Test xz
       #  run: |
