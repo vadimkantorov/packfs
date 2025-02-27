@@ -253,7 +253,6 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
     //FIXME: adds prefix even if input archive cannot be opened | do not scan the same archive second time
     packfs_add_path(packfs_dynamic_prefix, prefix);
     
-
     size_t archive_offset = packfs_dynamic_archivepaths_total;
     strncpy(packfs_dynamic_archivepaths + packfs_dynamic_archivepaths_total, packfs_archive_filename, packfs_archive_filename_len);
     fprintf(stderr, "packfs_scan_listing1 '%s' '%s' '%s'\n", packfs_listing_filename, prefix, packfs_dynamic_archivepaths + packfs_dynamic_archivepaths_total);
@@ -326,7 +325,7 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
                 packfs_dynamic_files_sizes[packfs_dynamic_files_num] = entrysize;
                 packfs_dynamic_files_archiveoffset[packfs_dynamic_files_num] = archive_offset;
                 
-                fprintf(stderr, "packfs_scan_listing111 '%s'\n", full_path);
+                fprintf(stderr, "packfs_scan_listing111 '%s' '%s'\n", full_path, archive_offset);
                 packfs_dynamic_files_num++;
             }
         }
@@ -774,6 +773,7 @@ void* packfs_readdir(void* stream)
             const char* entryabspath = packfs_dynamic_dirpaths + offset;
             size_t entryabspath_len = strlen(entryabspath);
             
+            fprintf(stderr, "packfs_readdir1 '%s' '%s' %d\n", dirabspath, entryabspath, packfs_indir(dirabspath, entryabspath));
             if(i > (d_ino - packfs_dynamic_ino_offset - packfs_dirs_ino_offset) && packfs_indir(dirabspath, entryabspath))
             {
                 strcpy(dir_entry->d_name, entryabspath);
@@ -798,6 +798,8 @@ void* packfs_readdir(void* stream)
         for(size_t i = 0, offset = 0; check_files && i < packfs_dynamic_files_num; offset += (strlen(packfs_dynamic_paths + offset) + 1), i++)
         {
             const char* entryabspath = packfs_dynamic_paths + offset;
+            
+            fprintf(stderr, "packfs_readdir2 '%s' '%s' %d\n", dirabspath, entryabspath, packfs_indir(dirabspath, entryabspath));
             
             if((i > (d_ino - packfs_dynamic_ino_offset) || (i == 0 && check_dirs)) && packfs_indir(dirabspath, entryabspath))
             {
