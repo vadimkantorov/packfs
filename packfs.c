@@ -273,6 +273,7 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
     
         char entrypath[packfs_files_name_maxlen];
         size_t entrysize, entryoffset, entrypath_len;
+        fscanf(fileptr, "[\n");
         while(1)
         {
             entrysize = entryoffset = 0;
