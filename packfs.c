@@ -305,6 +305,8 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
                 if(entrypath_len == 0 || entrypath[entrypath_len - 1] != packfs_sep) entrypath_len++;
                 packfs_dynamic_dirpaths[packfs_dynamic_dirpaths_total + (entrypath_len - 1)] = packfs_sep;
                 packfs_dynamic_dirpaths_total += (entrypath_len) + 1;
+                
+                fprintf(stderr, "packfs_scan_listing1111 '%s'\n", full_path);
             
                 packfs_dynamic_dirs_num++;
             }
@@ -324,6 +326,7 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
                 packfs_dynamic_files_sizes[packfs_dynamic_files_num] = entrysize;
                 packfs_dynamic_files_archiveoffset[packfs_dynamic_files_num] = archive_offset;
                 
+                fprintf(stderr, "packfs_scan_listing111 '%s'\n", full_path);
                 packfs_dynamic_files_num++;
             }
         }
