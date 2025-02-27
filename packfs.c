@@ -253,8 +253,11 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
     //FIXME: adds prefix even if input archive cannot be opened | do not scan the same archive second time
     packfs_add_path(packfs_dynamic_prefix, prefix);
     
+
     size_t archive_offset = packfs_dynamic_archivepaths_total;
     strncpy(packfs_dynamic_archivepaths + packfs_dynamic_archivepaths_total, packfs_archive_filename, packfs_archive_filename_len);
+    fprintf(stderr, "packfs_scan_listing1 '%s' '%s' '%s'\n", packfs_listing_filename, prefix, packfs_dynamic_archivepaths + packfs_dynamic_archivepaths_total);
+    
     packfs_dynamic_archivepaths_total += packfs_archive_filename_len + 1;
         
     {
@@ -287,6 +290,8 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
 
             int entryisdir = entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep;
             int entryisfile = !entryisdir;
+    
+            fprintf(stderr, "packfs_scan_listing11 '%s' %zu\n", entrypath, entrysize);
             
             if(entryisdir && !packfs_dir_exists(prefix, entrypath))
             {
