@@ -484,7 +484,7 @@ void packfs_init(const char* path)
         const char* packfs_listings = getenv("PACKFS_LISTINGS");
         const char* packfs_archives_suffixes = packfs_archive_read_new(NULL);
         
-        else if(packfs_listings != NULL && packfs_listings[0] != '\0')
+        if(packfs_listings != NULL && packfs_listings[0] != '\0')
         {
             for(const char* begin = packfs_listings, *end = strchr(packfs_listings, packfs_pathsep), *prevend  = packfs_listings; prevend != NULL && *begin != '\0'; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_pathsep) : NULL)
             {
