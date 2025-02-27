@@ -230,7 +230,7 @@ int packfs_dir_exists(const char* prefix, const char* path)
     return 0;
 }
 
-void packfs_add_path(const char* prefixes, const char* prefix)
+void packfs_add_path(char* prefixes, const char* prefix)
 {
     size_t prefixes_len = strlen(prefixes);
     if(prefixes[0] == '\0')
@@ -243,7 +243,7 @@ void packfs_add_path(const char* prefixes, const char* prefix)
     }
 }
 
-void packfs_scan_listing(FILE* f, const char* packfs_listing_filename, const char* prefix)
+void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, const char* prefix)
 {
     size_t prefix_len = prefix != NULL ? strlen(prefix) : 0;
     if(prefix_len > 0 && prefix[prefix_len - 1] == packfs_sep) prefix_len--;
