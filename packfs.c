@@ -112,7 +112,14 @@ size_t          packfs_fileino          [packfs_filefd_max - packfs_filefd_min];
 struct dirent   packfs_dirent           [packfs_filefd_max - packfs_filefd_min];
 
 
-char   packfs_default_prefix[] = "/packfs";
+char   packfs_default_prefix[] = 
+#ifdef PACKFS_PREFIX
+PACKFS_STRING_VALUE(PACKFS_PREFIX)
+#else
+"/packfs"
+#endif
+;
+
 char   packfs_dynamic_prefix      [packfs_dynamic_files_nummax * packfs_files_name_maxlen];
 char   packfs_dynamic_archivepaths[packfs_dynamic_files_nummax * packfs_files_name_maxlen]; size_t packfs_dynamic_archivepaths_total;
 char   packfs_dynamic_paths       [packfs_dynamic_files_nummax * packfs_files_name_maxlen]; size_t packfs_dynamic_paths_total;
@@ -684,24 +691,6 @@ void packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
 
     strcpy(dest, path);
 }
-
-/*
-int packfs_indir(const char* dirpath, const char* path)
-{
-    size_t dirpath_len = strlen(dirpath);
-    size_t path_len = strlen(path);
-    if(dirpath_len == 0 || (dirpath_len > 0 && dirpath[dirpath_len - 1] != packfs_sep))
-        return 0;
-    int dirpath_first_slash = dirpath[0] == packfs_sep ? 1 : 0;
-    int prefix_matches = 0 == strncmp(dirpath + dirpath_first_slash, path, dirpath_len - dirpath_first_slash);
-    if(!prefix_matches)
-        return 0;
-    const char* suffix_slash = strchr(path + dirpath_len - dirpath_first_slash, packfs_sep);
-    int suffix_without_dirs = NULL == suffix_slash || (path + path_len - 1 == suffix_slash);
-    int suffix_not_empty = strlen(path + dirpath_len) > 0;
-    return suffix_without_dirs && suffix_not_empty;
-}
-*/
 
 int packfs_indir(const char* dirpath, const char* path)
 {
