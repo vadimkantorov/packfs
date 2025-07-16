@@ -1,9 +1,9 @@
-name: libarchivepreload
+name: packfs
 
 on: workflow_dispatch
 
 jobs:
-  libarchivepreload:
+  packfs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4

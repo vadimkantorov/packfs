@@ -317,6 +317,7 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
             }
             else if(entryisfile)
             {
+                // TODO: process entrypath dirs in entrypath, especially for files
                 packfs_dynamic_paths_prefixlen[packfs_dynamic_files_num] = prefix_len + 1;
                 
                 const char* full_path = packfs_dynamic_paths + packfs_dynamic_paths_total;
