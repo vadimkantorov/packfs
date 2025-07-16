@@ -1,5 +1,4 @@
 // TODO: support working with linked zip
-// TODO: use trailing slash as dir indicator
 // TODO: where do path normalization?
 // TODO: use safe string functions everywhere
 

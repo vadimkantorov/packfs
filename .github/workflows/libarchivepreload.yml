@@ -30,10 +30,10 @@ jobs:
           mkdir test && echo bb > test/b.txt && zip -r testb.zip test && rm -rf test
           #LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVES=testa.zip@/packfstest:testb.zip@/packfstest /usr/bin/find /packfstest
           mkdir test && mv testa.zip testb.zip test
-          #LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVEDIRS=test /usr/bin/find /packfs
+          LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_ARCHIVEDIRS=test /usr/bin/find /packfs
           
-          echo '[{"path" : "test/", "size": 0, "offset": 0}, {"path" : "test/a.txt", "size": 3, "offset": 0}]' > test/testa.zip.json
-          LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_LISTINGS=test/testa.zip.json /usr/bin/find /packfs
+          #echo '[{"path" : "test/", "size": 0, "offset": 0}, {"path" : "test/a.txt", "size": 3, "offset": 0}]' > test/testa.zip.json
+          #LD_PRELOAD=$PWD/libarchivepreload.so PACKFS_LISTINGS=test/testa.zip.json /usr/bin/find /packfs
       
       #- name: Test xz
       #  run: |
