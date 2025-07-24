@@ -119,6 +119,15 @@ PACKFS_STRING_VALUE(PACKFS_PREFIX)
 #endif
 ;
 
+char packfs_archive_suffix[] =
+#ifdef PACKFS_ARCHIVESUFFIX
+PACKFS_STRING_VALUE(PACKFS_ARCHIVESUFFIX)
+#else
+".iso:.zip:.tar:.tar.gz:.tar.xz"
+#endif
+;
+#define PACKFS_ARCHIVEREADSUPPORTFORMAT(a) archive_read_support_format_iso9660(a);archive_read_support_format_zip(a);archive_read_support_format_tar(a);archive_read_support_filter_gzip(a);archive_read_support_filter_xz(a);
+
 char   packfs_dynamic_prefix      [packfs_dynamic_files_nummax * packfs_files_name_maxlen];
 char   packfs_dynamic_archivepaths[packfs_dynamic_files_nummax * packfs_files_name_maxlen]; size_t packfs_dynamic_archivepaths_total;
 char   packfs_dynamic_paths       [packfs_dynamic_files_nummax * packfs_files_name_maxlen]; size_t packfs_dynamic_paths_total;
@@ -197,18 +206,11 @@ size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
 #include <archive.h>
 #include <archive_entry.h>
 
-const char* packfs_archive_read_new(void* ptr)
+const char* packfs_archive_read_new(struct archive* a)
 {
-    // TODO: move up to defines or globals
-    static char packfs_archive_suffix[] = ".iso:.zip:.tar:.tar.gz:.tar.xz";
-    if(ptr != NULL)
+    if(a != NULL)
     {
-        struct archive* a = ptr;
-        archive_read_support_format_iso9660(a);
-        archive_read_support_format_zip(a);
-        archive_read_support_format_tar(a);
-        archive_read_support_filter_gzip(a);
-        archive_read_support_filter_xz(a);
+        PACKFS_ARCHIVEREADSUPPORTFORMAT(a);
     }
     return packfs_archive_suffix;
 }
