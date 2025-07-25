@@ -1,4 +1,4 @@
-libarchivepreload.so: packfs.c libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a
+libpackfs.so: packfs.c libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a
 	$(CC) -shared -fPIC -o $@ $^ -DPACKFS_DYNAMIC_LINKING -ldl -Ilibarchive -Ilibarchive/libarchive
 
 libarchive/.libs/libarchive.a: zlib/libz.a xz/src/liblzma/.libs/liblzma.a
