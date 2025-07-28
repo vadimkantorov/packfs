@@ -6,7 +6,6 @@ Demo of abusing https://github.com/libarchive/libarchive to make `LD_PRELOAD`-ba
 
 **Limitations:** This demo does not optimize for iterative entry reads or iterative seeks, https://github.com/google/fuse-archive/ makes an attempt in that direction; also see https://github.com/libarchive/libarchive/issues/2306 for future support of fast seeks in ZIP / TAR / CPIO in libarchive
 
-
 ```shell
 cc -shared -fPIC libarchivepreload.c -o libarchivepreload.so -ldl libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a -Ilibarchive -Ilibarchive/libarchive
 
@@ -25,6 +24,23 @@ LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.tar.xz/l
 LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.tar.xz/libarchivepreload.c
 LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.tar.xz
 ```
+
+# Syntax of PACKFS
+`PACKFS` is a colon-separated list of parts:
+- paths to directories, ending with a trailing `/`
+- paths to files: archives or `.json`-listings
+
+Each part can have format:
+- `path`
+- `path@mountpoint`
+- `path@mountpoint@listingresolutiondir` - this is useful if listings are built-in, and the resolution-dir is remote, this allows to not scan the `listingresolutiondir`'s archives when not needed
+
+If `listingresolutiondir` is not empty, `mountpoint` can be empty
+
+## Examples:
+- `/myarchivesdir@/packfsarchives`
+- `/mylistingsdir@/packfslistings@/myarchivesdir`
+
 
 # Overridden libc / posix functions
 - [`open`](https://man7.org/linux/man-pages/man2/open.2.html)
