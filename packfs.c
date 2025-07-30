@@ -599,6 +599,12 @@ void packfs_init(const char* path)
                     fprintf(stderr, "if3\n");
                     if(packfs_scan_archive_2(path_normalized, prefix)) packfs_enabled = 1;
                 }
+
+                prevend = end;
+                begin = (end + 1);
+                end = (end != NULL ? strchr(end + 1, packfs_pathsep) : NULL);
+                k++;
+                fprintf(stderr, "end of loop: prevend = %p, begin = %p, end = %p\n", (void*)prevend, (void*)begin, (void*)end);
             }
         }
         
@@ -614,12 +620,6 @@ void packfs_init(const char* path)
                 if(packfs_scan_archive_2(path_normalized, prefix)) packfs_enabled = 1;
             }
         }
-
-        prevend = end;
-        begin = (end + 1);
-        end = (end != NULL ? strchr(end + 1, packfs_pathsep) : NULL);
-        k++;
-        fprintf(stderr, "end of loop: prevend = %p, begin = %p, end = %p\n", (void*)prevend, (void*)begin, (void*)end);
     }
 }
 
