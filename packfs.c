@@ -520,10 +520,7 @@ void packfs_init(const char* path)
         
         if(packfs_config != NULL && packfs_config[0] != '\0')
         {
-            int k = 0;
-            for(const char* begin = packfs_config, *end = strchr(packfs_config, packfs_pathsep), *prevend  = packfs_config; prevend != NULL && begin[0] != '\0'; )
-
-                prevend = end, begin = (end + 1), end = (end != NULL ? strchr(end + 1, packfs_pathsep) : NULL);
+            for(const char* begin = packfs_config, *end = strchr(packfs_config, packfs_pathsep), *prevend  = packfs_config; prevend != NULL && begin[0] != '\0'; prevend = end, begin = (end + 1), end = (end != NULL ? strchr(end + 1, packfs_pathsep) : NULL))
             {
                 size_t len = end == NULL ? strlen(begin) : (end - begin);
                 strncpy(path_normalized, begin, len);
