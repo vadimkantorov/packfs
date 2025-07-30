@@ -510,6 +510,7 @@ int packfs_scan_archive_2(const char* path_normalized, const char* prefix)
     if(fileptr != NULL)
     {
         packfs_enabled = 1;
+        // something below seems to trigger again packfs_init();
         struct archive *a = archive_read_new();
         packfs_archive_read_new(a);
         packfs_scan_archive(fileptr, a, path_normalized, prefix);
