@@ -126,6 +126,7 @@ PACKFS_STRING_VALUE(PACKFS_PREFIX)
 #endif
 ;
 
+
 char   packfs_dynamic_prefix      [packfs_dynamic_files_nummax * packfs_files_name_maxlen];
 char   packfs_dynamic_archivepaths[packfs_dynamic_files_nummax * packfs_files_name_maxlen]; size_t packfs_dynamic_archivepaths_total;
 char   packfs_dynamic_paths       [packfs_dynamic_files_nummax * packfs_files_name_maxlen]; size_t packfs_dynamic_paths_total;
@@ -135,6 +136,9 @@ size_t packfs_dynamic_files_num, packfs_dynamic_dirs_num;
 size_t packfs_dynamic_files_sizes[packfs_dynamic_files_nummax];
 size_t packfs_dynamic_files_archiveoffset[packfs_dynamic_files_nummax];
 size_t packfs_dynamic_paths_prefixlen[packfs_dynamic_files_nummax];
+
+char packfs_listing_ext[packfs_files_name_maxlen] = ".json";
+
 
 void packfs_normalize_path(char* path_normalized, const char* path)
 {
@@ -440,7 +444,7 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
     size_t prefix_len = prefix != NULL ? strlen(prefix) : 0;
     if(prefix_len > 0 && prefix[prefix_len - 1] == packfs_sep) prefix_len--;
     const char* packfs_archive_filename = packfs_listing_filename;
-    size_t packfs_archive_filename_len = strlen(packfs_listing_filename) - strlen(".json");
+    size_t packfs_archive_filename_len = strlen(packfs_listing_filename) - strlen(packfs_listing_ext);
     
     //FIXME: adds prefix even if input archive cannot be opened | do not scan the same archive second time
     packfs_add_prefix(packfs_dynamic_prefix, prefix);
@@ -552,7 +556,7 @@ void packfs_init(const char* path)
                 size_t path_isdir = len >= 1 ? path_normalized[path_len - 1] == packfs_sep : 0;
                 const char* path_ext = strrchr(path_normalized, packfs_extsep);
 
-                if(0 == strcmp(path_ext, ".json"))
+                if(0 == strcmp(path_ext, packfs_listing_ext))
                 {
                     FILE* fileptr = __real_fopen(path_normalized, "r");
                     if(fileptr != NULL)
