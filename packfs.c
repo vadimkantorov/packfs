@@ -535,8 +535,10 @@ void packfs_init(const char* path)
                 const char* prefix_archive = at_prefixarchive != NULL ? (at_prefixarchive + 1) : ""; 
                 if(at_prefixarchive != NULL) at_prefixarchive[0] = '\0';
 
-                size_t path_isdir = len >= 1 ? path_normalized[path_len - 1] == packfs_sep : 0;
+                size_t path_isdir = path_len >= 1 ? path_normalized[path_len - 1] == packfs_sep : 0;
                 const char* path_ext = strrchr(path_normalized, packfs_extsep);
+                
+                fprintf(stderr, "dirloop0 '%s' %zu\n", path_normalized, path_isdir);
 
                 if(0 == strcmp(path_ext, packfs_listing_ext))
                 {
