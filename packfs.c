@@ -509,6 +509,7 @@ int packfs_scan_archive_2(const char* path_normalized, const char* prefix)
     FILE* fileptr = __real_fopen(path_normalized, "rb");
     if(fileptr != NULL)
     {
+        packfs_enabled = 1;
         struct archive *a = archive_read_new();
         packfs_archive_read_new(a);
         packfs_scan_archive(fileptr, a, path_normalized, prefix);
