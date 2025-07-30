@@ -21,7 +21,7 @@ jobs:
           zip -r packfs.zip packfs.c .git
           LD_PRELOAD=$PWD/libpackfs.so /usr/bin/cat packfs.zip/packfs.c
           LD_PRELOAD=$PWD/libpackfs.so /usr/bin/stat packfs.zip/packfs.c
-          LD_PRELOAD=$PWD/libpackfs.so PACKFS_ARCHIVES=packfs.zip /usr/bin/cat /packfs/packfs.c
+          LD_PRELOAD=$PWD/libpackfs.so PACKFS="packfs.zip" /usr/bin/cat /packfs/packfs.c
           LD_PRELOAD=$PWD/libpackfs.so /usr/bin/ls -lah packfs.zip/packfs.c
           LD_PRELOAD=$PWD/libpackfs.so /usr/bin/ls -lah packfs.zip
           LD_PRELOAD=$PWD/libpackfs.so /usr/bin/find packfs.zip
@@ -30,14 +30,14 @@ jobs:
 
           mkdir test && echo aa > test/a.txt && zip -r testa.zip test && rm -rf test
           mkdir test && echo bb > test/b.txt && zip -r testb.zip test && rm -rf test
-          LD_PRELOAD=$PWD/libpackfs.so PACKFS_ARCHIVES=testa.zip@/packfstest:testb.zip@/packfstest /usr/bin/find /packfstest
+          LD_PRELOAD=$PWD/libpackfs.so PACKFS="testa.zip@/packfstest:testb.zip@/packfstest" /usr/bin/find /packfstest
           
           mkdir test && mv testa.zip testb.zip test
-          LD_PRELOAD=$PWD/libpackfs.so PACKFS_ARCHIVESDIRS=test /usr/bin/find /packfs
+          LD_PRELOAD=$PWD/libpackfs.so PACKFS="test/" /usr/bin/find /packfs
           
           echo '[{"path" : "test/", "size": 0, "offset": 0}, {"path" : "test/a.txt", "size": 3, "offset": 0}]' > test/testa.zip.json
           #echo '[{"path" : "test/a.txt", "size": 3, "offset": 0}]' > test/testa.zip.json
-          LD_PRELOAD=$PWD/libpackfs.so PACKFS_LISTINGS=test/testa.zip.json /usr/bin/find /packfs
+          LD_PRELOAD=$PWD/libpackfs.so PACKFS="test/testa.zip.json" /usr/bin/find /packfs
       
       #- name: Test xz
       #  run: |
