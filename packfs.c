@@ -541,6 +541,7 @@ void packfs_init(const char* path)
             for(const char* begin = packfs_config, *end = strchr(packfs_config, packfs_pathsep), *prevend  = packfs_config; prevend != NULL && *begin != '\0'; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_pathsep) : NULL)
             {
                 size_t len = end == NULL ? strlen(begin) : (end - begin);
+                fprintf(stderr, "begin = %p, end = %p, len = %zu | prevend = %p\n", (void*)begin, (void*)end, len, (void*)prevend);
                 strncpy(path_normalized, begin, len);
                 path_normalized[len] = '\0';
                 fprintf(stderr, "path_normalized = '%s'\n", path_normalized);
