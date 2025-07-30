@@ -543,12 +543,10 @@ void packfs_init(const char* path)
                 size_t len = end == NULL ? strlen(begin) : (end - begin);
                 strncpy(path_normalized, begin, len);
                 path_normalized[len] = '\0';
-                
                 char* at_prefix = strchr(path_normalized, packfs_atsep);
                 const char* prefix = at_prefix != NULL ? (at_prefix + 1) : "";
                 size_t path_len = at_prefix == NULL ? len : (at_prefix - path_normalized);
                 path_normalized[path_len] = '\0';
-
                 char* at_prefixarchive = at_prefix != NULL ? strchr(prefix, packfs_atsep) : NULL;
                 const char* prefix_archive = at_prefixarchive != NULL ? (at_prefixarchive + 1) : ""; 
                 if(prefix_archive != NULL) at_prefixarchive[0] = '\0';
@@ -589,6 +587,7 @@ void packfs_init(const char* path)
                 }
                 else
                 {
+                    fprintf(stderr, "packfs_init: archive '%s' '%s'\n", path_normalized, prefix);
                     if(packfs_scan_archive_2(path_normalized, prefix)) packfs_enabled = 1;
                 }
             }
