@@ -553,6 +553,7 @@ void packfs_init(const char* path)
                     DIR* dirptr = __real_opendir(path_normalized);
                     if(dirptr != NULL)
                     {
+                        packfs_enabled = 1;
                         for(struct dirent* entry = __real_readdir(dirptr); entry != NULL; entry = __real_readdir(dirptr))
                         {
                             size_t path_prefix_len = packfs_archive_prefix_extract(entry->d_name, packfs_archives_suffixes);
