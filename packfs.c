@@ -540,8 +540,9 @@ void packfs_init(const char* path)
                 
                 fprintf(stderr, "dirloop0 '%s' %zu\n", path_normalized, path_isdir);
 
-                if(0 == strcmp(path_ext, packfs_listing_ext))
+                if(path_ext != NULL && 0 == strcmp(path_ext, packfs_listing_ext))
                 {
+                    fprintf(stderr, "argh0\n");
                     FILE* fileptr = __real_fopen(path_normalized, "r");
                     if(fileptr != NULL)
                     {
@@ -552,6 +553,7 @@ void packfs_init(const char* path)
                 }
                 else if(path_isdir)
                 {
+                    fprintf(stderr, "argh1\n");
                     fprintf(stderr, "dirloop1 '%s'\n", path_normalized);
                     DIR* dirptr = __real_opendir(path_normalized);
                     if(dirptr != NULL)
@@ -589,6 +591,7 @@ void packfs_init(const char* path)
                 }
                 else
                 {
+                    fprintf(stderr, "argh2\n");
                     FILE* fileptr = __real_fopen(path_normalized, "rb");
                     if(fileptr != NULL)
                     {
