@@ -147,7 +147,7 @@ void packfs_normalize_path(char* path_normalized, const char* path)
         path_normalized[0] = '\0';
 
     // lstrips ./ in the beginning; collapses double consecutive slashes; and rstrips abc/asd/..
-    for(int i = (path != NULL && len > 2 && path[0] == '.' && path[1] == packfs_sep) ? 2 : 0, k = 0; len > 0 && i < len; i++)
+    for(int i = (path != NULL && len > 2 && path[0] == packfs_extsep && path[1] == packfs_sep) ? 2 : 0, k = 0; len > 0 && i < len; i++)
     {
         if(!(i > 1 && path[i] == packfs_sep && path[i - 1] == packfs_sep))
         {
@@ -157,7 +157,7 @@ void packfs_normalize_path(char* path_normalized, const char* path)
     }
     
     size_t path_normalized_len = strlen(path_normalized);
-    if(path_normalized_len >= 3 && path_normalized[path_normalized_len - 1] == '.' && path_normalized[path_normalized_len - 2] == '.'  && path_normalized[path_normalized_len - 3] == packfs_sep)
+    if(path_normalized_len >= 3 && path_normalized[path_normalized_len - 1] == packfs_extsep && path_normalized[path_normalized_len - 2] == packfs_extsep  && path_normalized[path_normalized_len - 3] == packfs_sep)
     {
         path_normalized[path_normalized_len - 3] = '\0';
         char* trailing_slash = strrchr(path_normalized, packfs_sep);
@@ -546,7 +546,7 @@ void packfs_init(const char* path)
                 fprintf(stderr, "path_normalized = '%s'\n", path_normalized);
 
                 char* at_prefix = strchr(path_normalized, packfs_atsep);
-                const char* prefix = at_prefix != NULL ? (at_prefix + 1) : "";
+                const char* prefix = at_prefix != NULL ? (at_prefix + 1) : packfs_default_prefix;
                 size_t path_len = at_prefix == NULL ? len : (at_prefix - path_normalized);
                 path_normalized[path_len] = '\0';
                 fprintf(stderr, "prefix = '%s' path_normalized = '%s'\n", prefix, path_normalized);
@@ -561,6 +561,7 @@ void packfs_init(const char* path)
 
                 if(0 == strcmp(path_ext, packfs_listing_ext))
                 {
+                    fprintf(stderr, "if1\n");
                     FILE* fileptr = __real_fopen(path_normalized, "r");
                     if(fileptr != NULL)
                     {
@@ -571,6 +572,7 @@ void packfs_init(const char* path)
                 }
                 else if(path_isdir)
                 {
+                    fprintf(stderr, "if2\n");
                     DIR* dirptr = __real_opendir(path_normalized);
                     if(dirptr != NULL)
                     {
@@ -592,6 +594,7 @@ void packfs_init(const char* path)
                 }
                 else
                 {
+                    fprintf(stderr, "if3\n");
                     if(packfs_scan_archive_2(path_normalized, prefix)) packfs_enabled = 1;
                 }
             }
@@ -664,8 +667,8 @@ void packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
             const char* prefix = packfs_static_prefix;
             const char* entrypath = packfs_static_paths[i]; 
             
-            entrypath = (strlen(entrypath) > 1 && entrypath[0] == '.' && entrypath[1] == packfs_sep) ? (entrypath + 2) : entrypath;
-            path = (strlen(path) > 1 && path[0] == '.' && path[1] == packfs_sep) ? (path + 2) : path;
+            entrypath = (strlen(entrypath) > 1 && entrypath[0] == packfs_extset && entrypath[1] == packfs_sep) ? (entrypath + 2) : entrypath;
+            path = (strlen(path) > 1 && path[0] == packfs_extsep && path[1] == packfs_sep) ? (path + 2) : path;
             if(strlen(entrypath) > 0)
                 sprintf(dest, "%s%c%s%c%s", prefix, (char)packfs_sep, entrypath, (char)packfs_sep, path);
             else
@@ -681,7 +684,7 @@ void packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
     
         if(i == d_ino - packfs_dynamic_ino_offset - packfs_dirs_ino_offset)
         {
-            path = (strlen(path) > 1 && path[0] == '.' && path[1] == packfs_sep) ? (path + 2) : path;
+            path = (strlen(path) > 1 && path[0] == packfs_extsep && path[1] == packfs_sep) ? (path + 2) : path;
             strcpy(dest, entryabspath);
             strcat(dest, path);
             return;
