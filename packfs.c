@@ -540,31 +540,24 @@ void packfs_init(const char* path)
         {
             for(const char* begin = packfs_config, *end = strchr(packfs_config, packfs_pathsep), *prevend  = packfs_config; prevend != NULL && *begin != '\0'; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_pathsep) : NULL)
             {
-                fprintf(stderr, "1\n");
                 size_t len = end == NULL ? strlen(begin) : (end - begin);
-                fprintf(stderr, "2\n");
                 strncpy(path_normalized, begin, len);
-                fprintf(stderr, "3\n");
                 path_normalized[len] = '\0';
-                fprintf(stderr, "4\n");
+                fprintf(stderr, "path_normalized = '%s'\n", path_normalized);
+
                 char* at_prefix = strchr(path_normalized, packfs_atsep);
-                fprintf(stderr, "5\n");
                 const char* prefix = at_prefix != NULL ? (at_prefix + 1) : "";
-                fprintf(stderr, "6\n");
                 size_t path_len = at_prefix == NULL ? len : (at_prefix - path_normalized);
-                fprintf(stderr, "7\n");
                 path_normalized[path_len] = '\0';
-                fprintf(stderr, "8\n");
+                fprintf(stderr, "prefix = '%s' path_normalized = '%s'\n", prefix, path_normalized);
+
                 char* at_prefixarchive = at_prefix != NULL ? strchr(prefix, packfs_atsep) : NULL;
-                fprintf(stderr, "9\n");
                 const char* prefix_archive = at_prefixarchive != NULL ? (at_prefixarchive + 1) : ""; 
-                fprintf(stderr, "10\n");
                 if(at_prefixarchive != NULL) at_prefixarchive[0] = '\0';
-                fprintf(stderr, "11\n");
+                fprintf(stderr, "prefix_archive = '%s', prefix = '%s'\n", prefix_archive, prefix);
+
                 size_t path_isdir = len >= 1 ? path_normalized[path_len - 1] == packfs_sep : 0;
-                fprintf(stderr, "12\n");
                 const char* path_ext = strrchr(path_normalized, packfs_extsep);
-                fprintf(stderr, "13\n");
 
                 if(0 == strcmp(path_ext, packfs_listing_ext))
                 {
