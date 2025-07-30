@@ -563,6 +563,7 @@ void packfs_init(const char* path)
                                 _path_normalized[len] = packfs_sep;
                                 _path_normalized[len + 1] = '\0';
                                 strcat(_path_normalized, entry->d_name);
+                                fprintf(stderr, "dirloop '%s' prefix = '%s'\n", _path_normalized, prefix);
                             
                                 FILE* fileptr = __real_fopen(_path_normalized, "rb");
                                 if(fileptr != NULL)
