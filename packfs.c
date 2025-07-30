@@ -93,6 +93,7 @@ enum
 {
     packfs_sep = '/',
     packfs_pathsep = ':',
+    packfs_extsep = '.',
     packfs_atsep = '@'
 };
 
@@ -254,7 +255,7 @@ void packfs_dir_add_dirname(const char* path)
 {
      //TODO: 1) extract dirname, 2) test if dir exists, 3) if not exists, invoke dir_add_all which should iterate all dirs and if not exists, register them
     if(path == NULL || path[0] == '\0')
-        return 0;
+        return;
     for(const char* res = strchr(path, packfs_sep), *prevres = path; prevres != NULL; prevres = res, res = (res != NULL ? strchr(res + 1, packfs_sep) : NULL))
     {
         size_t dirname_len = res == NULL ? strlen(path) : (res - path);
@@ -545,11 +546,11 @@ void packfs_init(const char* path)
                 path_normalized[path_len] = '\0';
 
                 char* at_prefixarchive = at_prefix != NULL ? strchr(prefix, packfs_atsep) : NULL;
-                const char* prefix_archive = ap_prefixarchive != NULL (at_prefixarchive + 1) : ""; 
+                const char* prefix_archive = at_prefixarchive != NULL ? (at_prefixarchive + 1) : ""; 
                 if(prefix_archive != NULL) at_prefixarchive[0] = '\0';
 
                 size_t path_isdir = len >= 1 ? path_normalized[path_len - 1] == packfs_sep : 0;
-                const char* path_ext = strrchr(path_normalized, ".");
+                const char* path_ext = strrchr(path_normalized, packfs_extsep);
 
                 if(0 == strcmp(path_ext, ".json"))
                 {
