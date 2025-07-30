@@ -503,11 +503,6 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
     }
 }
 
-int packfs_scan_archive_2(const char* path_normalized, const char* prefix)
-{
-
-}
-
 void packfs_init(const char* path)
 { 
     if(packfs_initialized != 1)
