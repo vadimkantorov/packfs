@@ -559,7 +559,7 @@ void packfs_init(const char* path)
                 fprintf(stderr, "9\n");
                 const char* prefix_archive = at_prefixarchive != NULL ? (at_prefixarchive + 1) : ""; 
                 fprintf(stderr, "10\n");
-                if(prefix_archive != NULL) at_prefixarchive[0] = '\0';
+                if(at_prefixarchive != NULL) at_prefixarchive[0] = '\0';
                 fprintf(stderr, "11\n");
                 size_t path_isdir = len >= 1 ? path_normalized[path_len - 1] == packfs_sep : 0;
                 fprintf(stderr, "12\n");
