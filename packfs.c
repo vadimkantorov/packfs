@@ -538,11 +538,8 @@ void packfs_init(const char* path)
                 size_t path_isdir = path_len >= 1 ? path_normalized[path_len - 1] == packfs_sep : 0;
                 const char* path_ext = strrchr(path_normalized, packfs_extsep);
                 
-                fprintf(stderr, "dirloop0 '%s' %zu\n", path_normalized, path_isdir);
-
                 if(path_ext != NULL && 0 == strcmp(path_ext, packfs_listing_ext))
                 {
-                    fprintf(stderr, "argh0\n");
                     FILE* fileptr = __real_fopen(path_normalized, "r");
                     if(fileptr != NULL)
                     {
@@ -553,8 +550,6 @@ void packfs_init(const char* path)
                 }
                 else if(path_isdir)
                 {
-                    fprintf(stderr, "argh1\n");
-                    fprintf(stderr, "dirloop1 '%s'\n", path_normalized);
                     DIR* dirptr = __real_opendir(path_normalized);
                     if(dirptr != NULL)
                     {
@@ -562,14 +557,12 @@ void packfs_init(const char* path)
                         for(struct dirent* entry = __real_readdir(dirptr); entry != NULL; entry = __real_readdir(dirptr))
                         {
                             size_t path_prefix_len = packfs_archive_prefix_extract(entry->d_name, packfs_archives_suffixes);
-                            fprintf(stderr, "dirloop2\n");
                             if(path_prefix_len > 0)
                             {
                                 strcpy(_path_normalized, path_normalized);
                                 _path_normalized[len] = packfs_sep;
                                 _path_normalized[len + 1] = '\0';
                                 strcat(_path_normalized, entry->d_name);
-                                fprintf(stderr, "dirloop3 '%s' prefix = '%s'\n", _path_normalized, prefix);
                             
                                 FILE* fileptr = __real_fopen(_path_normalized, "rb");
                                 if(fileptr != NULL)
@@ -591,7 +584,6 @@ void packfs_init(const char* path)
                 }
                 else
                 {
-                    fprintf(stderr, "argh2\n");
                     FILE* fileptr = __real_fopen(path_normalized, "rb");
                     if(fileptr != NULL)
                     {
@@ -783,7 +775,7 @@ void* packfs_readdir(void* stream)
             const char* entryabspath = packfs_dynamic_dirpaths + offset;
             size_t entryabspath_len = strlen(entryabspath);
             
-            fprintf(stderr, "packfs_readdir1 '%s' '%s' %d\n", dirabspath, entryabspath, packfs_indir(dirabspath, entryabspath));
+            //fprintf(stderr, "packfs_readdir1 '%s' '%s' %d\n", dirabspath, entryabspath, packfs_indir(dirabspath, entryabspath));
             if(i > (d_ino - packfs_dynamic_ino_offset - packfs_dirs_ino_offset) && packfs_indir(dirabspath, entryabspath))
             {
                 strcpy(dir_entry->d_name, entryabspath);
@@ -809,7 +801,7 @@ void* packfs_readdir(void* stream)
         {
             const char* entryabspath = packfs_dynamic_paths + offset;
             
-            fprintf(stderr, "packfs_readdir2 '%s' '%s' %d\n", dirabspath, entryabspath, packfs_indir(dirabspath, entryabspath));
+            //fprintf(stderr, "packfs_readdir2 '%s' '%s' %d\n", dirabspath, entryabspath, packfs_indir(dirabspath, entryabspath));
             
             if((i > (d_ino - packfs_dynamic_ino_offset) || (i == 0 && check_dirs)) && packfs_indir(dirabspath, entryabspath))
             {
