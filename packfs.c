@@ -550,6 +550,7 @@ void packfs_init(const char* path)
                 }
                 else if(path_isdir)
                 {
+                    fprintf(stderr, "dirloop1 '%s'\n", path_normalized);
                     DIR* dirptr = __real_opendir(path_normalized);
                     if(dirptr != NULL)
                     {
@@ -557,13 +558,14 @@ void packfs_init(const char* path)
                         for(struct dirent* entry = __real_readdir(dirptr); entry != NULL; entry = __real_readdir(dirptr))
                         {
                             size_t path_prefix_len = packfs_archive_prefix_extract(entry->d_name, packfs_archives_suffixes);
+                            fprintf(stderr, "dirloop2\n");
                             if(path_prefix_len > 0)
                             {
                                 strcpy(_path_normalized, path_normalized);
                                 _path_normalized[len] = packfs_sep;
                                 _path_normalized[len + 1] = '\0';
                                 strcat(_path_normalized, entry->d_name);
-                                fprintf(stderr, "dirloop '%s' prefix = '%s'\n", _path_normalized, prefix);
+                                fprintf(stderr, "dirloop3 '%s' prefix = '%s'\n", _path_normalized, prefix);
                             
                                 FILE* fileptr = __real_fopen(_path_normalized, "rb");
                                 if(fileptr != NULL)
