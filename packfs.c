@@ -538,10 +538,11 @@ void packfs_init(const char* path)
         
         if(packfs_config != NULL && packfs_config[0] != '\0')
         {
-            for(const char* begin = packfs_config, *end = strchr(packfs_config, packfs_pathsep), *prevend  = packfs_config; prevend != NULL && *begin != '\0'; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_pathsep) : NULL)
+            int k = 0;
+            for(const char* begin = packfs_config, *end = strchr(packfs_config, packfs_pathsep), *prevend  = packfs_config; prevend != NULL && begin[0] != '\0'; )
             {
                 size_t len = end == NULL ? strlen(begin) : (end - begin);
-                fprintf(stderr, "begin = %p, end = %p, len = %zu | prevend = %p\n", (void*)begin, (void*)end, len, (void*)prevend);
+                fprintf(stderr, "begin = %p, end = %p, len = %zu | prevend = %p, k = %d\n", (void*)begin, (void*)end, len, (void*)prevend, k);
                 strncpy(path_normalized, begin, len);
                 path_normalized[len] = '\0';
                 fprintf(stderr, "path_normalized = '%s'\n", path_normalized);
@@ -613,6 +614,12 @@ void packfs_init(const char* path)
                 if(packfs_scan_archive_2(path_normalized, prefix)) packfs_enabled = 1;
             }
         }
+
+        prevend = end;
+        begin = (end + 1);
+        end = (end != NULL ? strchr(end + 1, packfs_pathsep) : NULL);
+        k++;
+        fprintf(stderr, "end of loop: prevend = %p, begin = %p, end = %p\n", (void*)prevend, (void*)begin, (void*)end);
     }
 }
 
