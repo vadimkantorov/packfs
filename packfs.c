@@ -1,8 +1,11 @@
 // TODO: support working with linked zip
 // TODO: where do path normalization?
 // TODO: use safe string functions everywhere
-// TODO: make a single env var
 // TODO: support reading from decompressed zip/tar-entries by offset
+
+#define PACKFS_ARCHIVEREADSUPPORTSUFFIX .iso:.zip:.tar:.tar.gz:.tar.xz
+#define PACKFS_ARCHIVEREADSUPPORTFORMAT(a) archive_read_support_format_iso9660(a);archive_read_support_format_zip(a);archive_read_support_format_tar(a);archive_read_support_filter_gzip(a);archive_read_support_filter_xz(a);
+
 
 #define _GNU_SOURCE
 #include <string.h>
@@ -89,7 +92,8 @@ enum
 enum
 {
     packfs_sep = '/',
-    packfs_pathsep = ':'
+    packfs_pathsep = ':',
+    packfs_atsep = '@'
 };
 
 #ifdef PACKFS_STATIC
@@ -297,13 +301,12 @@ size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
 #include <archive_entry.h>
 
 char packfs_archives_suffixes[] =
-#ifdef PACKFS_ARCHIVESUFFIX
-PACKFS_STRING_VALUE(PACKFS_ARCHIVESUFFIX)
+#ifdef PACKFS_ARCHIVEREADSUPPORTSUFFIX
+PACKFS_STRING_VALUE(PACKFS_ARCHIVEREADSUPPORTSUFFIX)
 #else
-".iso:.zip:.tar:.tar.gz:.tar.xz"
+""
 #endif
 ;
-#define PACKFS_ARCHIVEREADSUPPORTFORMAT(a) archive_read_support_format_iso9660(a);archive_read_support_format_zip(a);archive_read_support_format_tar(a);archive_read_support_filter_gzip(a);archive_read_support_filter_xz(a);
 
 void packfs_archive_read_new(struct archive* a)
 {
@@ -431,7 +434,7 @@ void packfs_extract_archive_entry_from_FILE_to_FILE(struct archive* a, FILE* f, 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, const char* prefix)
+void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, const char* prefix, const char* prefix_archive)
 {
     size_t prefix_len = prefix != NULL ? strlen(prefix) : 0;
     if(prefix_len > 0 && prefix[prefix_len - 1] == packfs_sep) prefix_len--;
@@ -495,6 +498,23 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
     }
 }
 
+int packfs_scan_archive_2(const char* path_normalized, const char* prefix)
+{
+
+    FILE* fileptr = __real_fopen(path_normalized, "rb");
+    if(fileptr != NULL)
+    {
+        struct archive *a = archive_read_new();
+        packfs_archive_read_new(a);
+        packfs_scan_archive(fileptr, a, path_normalized, prefix);
+        archive_read_close(a);
+        archive_read_free(a);
+        __real_fclose(fileptr);
+        return 1;
+    }
+    return 0;
+}
+
 void packfs_init(const char* path)
 { 
     if(packfs_initialized != 1)
@@ -509,100 +529,67 @@ void packfs_init(const char* path)
         char path_normalized[packfs_files_name_maxlen]; 
         char path_normalized_entry[packfs_files_name_maxlen]; 
         
-        const char* packfs_listings     = getenv("PACKFS_LISTINGS");
-        const char* packfs_archives     = getenv("PACKFS_ARCHIVES");
-        const char* packfs_archivesdirs = getenv("PACKFS_ARCHIVESDIRS");
+        const char* packfs_config       = getenv("PACKFS");
         
-        if(packfs_listings != NULL && packfs_listings[0] != '\0')
+        if(packfs_config != NULL && packfs_config[0] != '\0')
         {
             for(const char* begin = packfs_listings, *end = strchr(packfs_listings, packfs_pathsep), *prevend  = packfs_listings; prevend != NULL && *begin != '\0'; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_pathsep) : NULL)
             {
                 size_t len = end == NULL ? strlen(begin) : (end - begin);
                 strncpy(path_normalized, begin, len);
                 path_normalized[len] = '\0';
-                char* a = strchr(path_normalized, '@');
-                const char* prefix = a != NULL ? (a + 1) : packfs_default_prefix;
-                path_normalized[a != NULL ? (a - path_normalized) : len] = '\0';
                 
-                FILE* fileptr = __real_fopen(path_normalized, "r");
-                if(fileptr != NULL)
-                {
-                    packfs_enabled = 1;
-                    packfs_scan_listing(fileptr, path_normalized, prefix);
-                    __real_fclose(fileptr);
-                }
-            }
-        }
-        else if(packfs_archivesdirs != NULL && packfs_archivesdirs[0] != '\0')
-        {
-            for(const char* begin = packfs_archivesdirs, *end = strchr(packfs_archivesdirs, packfs_pathsep), *prevend  = packfs_archivesdirs; prevend != NULL && *begin != '\0'; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_pathsep) : NULL)
-            {
-                size_t len = end == NULL ? strlen(begin) : (end - begin);
-                strncpy(path_normalized, begin, len);
-                path_normalized[len] = '\0';
-                char* a = strchr(path_normalized, '@');
-                const char* prefix = a != NULL ? (a + 1) : packfs_default_prefix;
-                len = a != NULL ? (a - path_normalized) : len;
-                path_normalized[len] = '\0';
+                char* at_prefix = strchr(path_normalized, packfs_atsep);
+                const char* prefix = at_prefix != NULL ? (at_prefix + 1) : "";
+                size_t path_len = at_prefix == NULL ? len : (at_prefix - path_normalized);
+                path_normalized[path_len] = '\0';
 
-                DIR* dirptr = __real_opendir(path_normalized);
-                if(dirptr != NULL)
+                char* at_prefixarchive = at_prefix != NULL ? strchr(prefix, packfs_atsep) : NULL;
+                const char* prefix_archive = ap_prefixarchive != NULL (at_prefixarchive + 1) : ""; 
+                if(prefix_archive != NULL) at_prefixarchive[0] = '\0';
+
+                size_t path_isdir = len >= 1 ? path_normalized[path_len - 1] == packfs_sep : 0;
+                const char* path_ext = strrchr(path_normalized, ".");
+
+                if(0 == strcmp(path_ext, ".json"))
                 {
-                    for(struct dirent* entry = __real_readdir(dirptr); entry != NULL; entry = __real_readdir(dirptr))
+                    FILE* fileptr = __real_fopen(path_normalized, "r");
+                    if(fileptr != NULL)
                     {
-                        size_t path_prefix_len = packfs_archive_prefix_extract(entry->d_name, packfs_archives_suffixes);
-                        if(path_prefix_len > 0)
+                        packfs_enabled = 1;
+                        packfs_scan_listing(fileptr, path_normalized, prefix, prefix_archive);
+                        __real_fclose(fileptr);
+                    }
+                }
+                else if(path_isdir)
+                {
+                    DIR* dirptr = __real_opendir(path_normalized);
+                    if(dirptr != NULL)
+                    {
+                        for(struct dirent* entry = __real_readdir(dirptr); entry != NULL; entry = __real_readdir(dirptr))
                         {
-                            strcpy(path_normalized_entry, path_normalized);
-                            path_normalized_entry[len] = packfs_sep;
-                            path_normalized_entry[len + 1] = '\0';
-                            strcat(path_normalized_entry, entry->d_name);
-                        
-                            packfs_enabled = 1;
-                            FILE* fileptr = __real_fopen(path_normalized_entry, "rb");
+                            size_t path_prefix_len = packfs_archive_prefix_extract(entry->d_name, packfs_archives_suffixes);
+                            if(path_prefix_len > 0)
                             {
-                                packfs_enabled = 1;
-                                struct archive *a = archive_read_new();
-                                packfs_archive_read_new(a);
-                                packfs_scan_archive(fileptr, a, path_normalized, prefix);
-                                archive_read_close(a);
-                                archive_read_free(a);
-                                __real_fclose(fileptr);
+                                strcpy(path_normalized_entry, path_normalized);
+                                path_normalized_entry[len] = packfs_sep;
+                                path_normalized_entry[len + 1] = '\0';
+                                strcat(path_normalized_entry, entry->d_name);
+                            
+                                if(packfs_scan_archive_2(path_normalized_entry, prefix)) packfs_enabled = 1;
                             }
                         }
-                        
-                            
+                        __real_closedir(dirptr);
                     }
-                    __real_closedir(dirptr);
                 }
-                
-            }
-        }
-        else if(packfs_archives != NULL && packfs_archives[0] != '\0')
-        {
-            for(const char* begin = packfs_archives, *end = strchr(packfs_archives, packfs_pathsep), *prevend  = packfs_archives; prevend != NULL && *begin != '\0'; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_pathsep) : NULL)
-            {
-                size_t len = end == NULL ? strlen(begin) : (end - begin);
-                strncpy(path_normalized, begin, len);
-                path_normalized[len] = '\0';
-                char* a = strchr(path_normalized, '@');
-                const char* prefix = a != NULL ? (a + 1) : packfs_default_prefix;
-                path_normalized[a != NULL ? (a - path_normalized) : len] = '\0';
-                
-                FILE* fileptr = __real_fopen(path_normalized, "rb");
-                if(fileptr != NULL)
+                else
                 {
-                    packfs_enabled = 1;
-                    struct archive *a = archive_read_new();
-                    packfs_archive_read_new(a);
-                    packfs_scan_archive(fileptr, a, path_normalized, prefix);
-                    archive_read_close(a);
-                    archive_read_free(a);
-                    __real_fclose(fileptr);
+                    if(packfs_scan_archive_2(path_normalized, prefix)) packfs_enabled = 1;
                 }
             }
         }
-        else if(path != NULL)
+        
+        if(path != NULL && path[0] != '\0')
         {
             packfs_normalize_path(path_normalized, path);
             size_t path_prefix_len = packfs_archive_prefix_extract(path_normalized, packfs_archives_suffixes);
@@ -611,17 +598,7 @@ void packfs_init(const char* path)
                 path_normalized[path_prefix_len] = '\0';
                 const char* prefix = path_normalized;
                 
-                FILE* fileptr = __real_fopen(path_normalized, "rb");
-                if(fileptr != NULL)
-                {
-                    packfs_enabled = 1;
-                    struct archive *a = archive_read_new();
-                    packfs_archive_read_new(a);
-                    packfs_scan_archive(fileptr, a, path_normalized, prefix);
-                    archive_read_close(a);
-                    archive_read_free(a);
-                    __real_fclose(fileptr);
-                }
+                if(packfs_scan_archive_2(path_normalized, prefix)) packfs_enabled = 1;
             }
         }
     }
