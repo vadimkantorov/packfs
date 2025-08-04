@@ -2,6 +2,8 @@
 // TODO: where do path normalization?
 // TODO: use safe string functions everywhere
 // TODO: support reading from decompressed zip/tar-entries by offset
+// TODO: add define disabling archive (still keep functions in ABI?)
+// TODO: prevent re-entrant packfs_init: happens when reading archive mentioned in PACKFS_CONFIG
 
 #define PACKFS_ARCHIVEREADSUPPORTSUFFIX .iso:.zip:.tar:.tar.gz:.tar.xz
 #define PACKFS_ARCHIVEREADSUPPORTFORMAT(a) archive_read_support_format_iso9660(a);archive_read_support_format_zip(a);archive_read_support_format_tar(a);archive_read_support_filter_gzip(a);archive_read_support_filter_xz(a);
@@ -20,6 +22,12 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/types.h>
+
+#ifdef PACKFS_ARCHIVEREADSUPPORTSUFFIX
+#include <archive.h>
+#include <archive_entry.h>
+#endif
+
 
 #define PACKFS_STRING_VALUE_(x) #x
 #define PACKFS_STRING_VALUE(x) PACKFS_STRING_VALUE_(x)
@@ -125,6 +133,7 @@ PACKFS_STRING_VALUE(PACKFS_PREFIX)
 "/packfs"
 #endif
 ;
+char packfs_listing_ext[packfs_files_name_maxlen] = ".json";
 
 
 char   packfs_dynamic_prefix      [packfs_dynamic_files_nummax * packfs_files_name_maxlen];
@@ -136,8 +145,6 @@ size_t packfs_dynamic_files_num, packfs_dynamic_dirs_num;
 size_t packfs_dynamic_files_sizes[packfs_dynamic_files_nummax];
 size_t packfs_dynamic_files_archiveoffset[packfs_dynamic_files_nummax];
 size_t packfs_dynamic_paths_prefixlen[packfs_dynamic_files_nummax];
-
-char packfs_listing_ext[packfs_files_name_maxlen] = ".json";
 
 
 void packfs_normalize_path(char* path_normalized, const char* path)
@@ -297,13 +304,9 @@ size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
     return 0;
 }
 
-
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
-
-#include <archive.h>
-#include <archive_entry.h>
 
 char packfs_archives_suffixes[] =
 #ifdef PACKFS_ARCHIVEREADSUPPORTSUFFIX
@@ -313,13 +316,18 @@ PACKFS_STRING_VALUE(PACKFS_ARCHIVEREADSUPPORTSUFFIX)
 #endif
 ;
 
-void packfs_archive_read_new(struct archive* a)
+void packfs_archive_read_new(void* aptr)
 {
+#ifdef PACKFS_ARCHIVEREADSUPPORTSUFFIX
+    struct archive* a = aptr;
     PACKFS_ARCHIVEREADSUPPORTFORMAT(a);
+#endif
 }
 
-void packfs_scan_archive(FILE* f, struct archive* a, const char* packfs_archive_filename, const char* prefix)
+void packfs_scan_archive(FILE* f, void* aptr, const char* packfs_archive_filename, const char* prefix)
 {
+#ifdef PACKFS_ARCHIVEREADSUPPORTSUFFIX
+    struct archive* a = aptr;
     size_t prefix_len = prefix != NULL ? strlen(prefix) : 0;
     if(prefix_len > 0 && prefix[prefix_len - 1] == packfs_sep) prefix_len--;
     size_t packfs_archive_filename_len = strlen(packfs_archive_filename);
@@ -383,10 +391,13 @@ void packfs_scan_archive(FILE* f, struct archive* a, const char* packfs_archive_
         }
     }
     while(0);
+#endif
 }
 
-void packfs_extract_archive_entry_from_FILE_to_FILE(struct archive* a, FILE* f, const char* entrypath, FILE* h)
+void packfs_extract_archive_entry_from_FILE_to_FILE(void* aptr, FILE* f, const char* entrypath, FILE* h)
 {
+#ifdef PACKFS_ARCHIVEREADSUPPORTSUFFIX
+    struct archive* a = aptr;
     struct archive_entry *entry;
     do
     {
@@ -433,6 +444,7 @@ void packfs_extract_archive_entry_from_FILE_to_FILE(struct archive* a, FILE* f, 
         }
     }
     while(0);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -503,7 +515,7 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
     }
 }
 
-void packfs_init(const char* path)
+void packfs_init(const char* path, const char* packfs_config)
 { 
     if(packfs_initialized != 1)
     {
@@ -516,7 +528,8 @@ void packfs_init(const char* path)
     {
         char path_normalized[packfs_files_name_maxlen], _path_normalized[packfs_files_name_maxlen]; 
         
-        const char* packfs_config = getenv("PACKFS_CONFIG");
+        if(packfs_config == NULL)
+            packfs_config = getenv("PACKFS_CONFIG");
         
         if(packfs_config != NULL && packfs_config[0] != '\0')
         {
@@ -569,11 +582,7 @@ void packfs_init(const char* path)
                                 {
                                     packfs_enabled = 1;
                                     // something below seems to trigger again packfs_init();
-                                    struct archive *a = archive_read_new();
-                                    packfs_archive_read_new(a);
-                                    packfs_scan_archive(fileptr, a, _path_normalized, prefix);
-                                    archive_read_close(a);
-                                    archive_read_free(a);
+                                    struct archive *a = archive_read_new(); packfs_archive_read_new(a); packfs_scan_archive(fileptr, a, _path_normalized, prefix); archive_read_close(a); archive_read_free(a);
                                     __real_fclose(fileptr);
                                 }
 
@@ -584,16 +593,13 @@ void packfs_init(const char* path)
                 }
                 else
                 {
+                    const char* _path_normalized = path_normalized;
                     FILE* fileptr = __real_fopen(path_normalized, "rb");
                     if(fileptr != NULL)
                     {
                         packfs_enabled = 1;
                         // something below seems to trigger again packfs_init();
-                        struct archive *a = archive_read_new();
-                        packfs_archive_read_new(a);
-                        packfs_scan_archive(fileptr, a, path_normalized, prefix);
-                        archive_read_close(a);
-                        archive_read_free(a);
+                        struct archive *a = archive_read_new(); packfs_archive_read_new(a); packfs_scan_archive(fileptr, a, path_normalized, prefix); archive_read_close(a); archive_read_free(a);
                         __real_fclose(fileptr);
                     }
                 }
@@ -608,17 +614,14 @@ void packfs_init(const char* path)
             {
                 path_normalized[path_prefix_len] = '\0';
                 const char* prefix = path_normalized;
-                
+               
+                const char* _path_normalized = path_normalized;
                 FILE* fileptr = __real_fopen(path_normalized, "rb");
                 if(fileptr != NULL)
                 {
                     packfs_enabled = 1;
                     // something below seems to trigger again packfs_init();
-                    struct archive *a = archive_read_new();
-                    packfs_archive_read_new(a);
-                    packfs_scan_archive(fileptr, a, path_normalized, prefix);
-                    archive_read_close(a);
-                    archive_read_free(a);
+                    struct archive *a = archive_read_new(); packfs_archive_read_new(a); packfs_scan_archive(fileptr, a, path_normalized, prefix); archive_read_close(a); archive_read_free(a);
                     __real_fclose(fileptr);
                 }
             }
@@ -1104,7 +1107,7 @@ int packfs_dup(int oldfd, int newfd)
 
 FILE* PACKFS_WRAP(fopen)(const char *path, const char *mode)
 {
-    packfs_init(path);
+    packfs_init(path, NULL);
     if(packfs_enabled && (packfs_path_in_range(packfs_static_prefix, path) || packfs_path_in_range(packfs_dynamic_prefix, path)))
     {
         FILE* res = packfs_open(path, 0);
@@ -1116,7 +1119,7 @@ FILE* PACKFS_WRAP(fopen)(const char *path, const char *mode)
 
 int PACKFS_WRAP(fileno)(FILE *stream)
 {
-    packfs_init(NULL);
+    packfs_init(NULL, NULL);
     int res = __real_fileno(stream);
     if(packfs_enabled && res < 0)
     {        
@@ -1128,7 +1131,7 @@ int PACKFS_WRAP(fileno)(FILE *stream)
 
 int PACKFS_WRAP(fclose)(FILE* stream)
 {
-    packfs_init(NULL);
+    packfs_init(NULL, NULL);
     if(packfs_enabled && packfs_find(-1, stream) != NULL)
     {
         int* ptr = packfs_find(-1, stream);
@@ -1151,7 +1154,7 @@ int PACKFS_WRAP(open)(const char *path, int flags, ...)
         va_end(arg);
     }
     
-    packfs_init(path);
+    packfs_init(path, NULL);
     if(packfs_enabled && (packfs_path_in_range(packfs_static_prefix, path) || packfs_path_in_range(packfs_dynamic_prefix, path)))
     {
         void* stream = packfs_open(path, (flags & O_DIRECTORY) != 0);
@@ -1177,7 +1180,7 @@ int PACKFS_WRAP(openat)(int dirfd, const char *path, int flags, ...)
         va_end(arg);
     }
 
-    packfs_init(path);
+    packfs_init(path, NULL);
     char path_normalized[packfs_files_name_maxlen]; packfs_resolve_relative_path(path_normalized, dirfd, path);
     if(packfs_enabled && (packfs_path_in_range(packfs_static_prefix, path_normalized) || packfs_path_in_range(packfs_dynamic_prefix, path_normalized)))
     {
@@ -1195,7 +1198,7 @@ int PACKFS_WRAP(openat)(int dirfd, const char *path, int flags, ...)
 
 int PACKFS_WRAP(close)(int fd)
 {
-    packfs_init(NULL);
+    packfs_init(NULL, NULL);
     if(packfs_enabled && packfs_fd_in_range(fd))
     {
         int res = packfs_close(fd);
@@ -1207,7 +1210,7 @@ int PACKFS_WRAP(close)(int fd)
 
 ssize_t PACKFS_WRAP(read)(int fd, void* buf, size_t count)
 {
-    packfs_init(NULL);
+    packfs_init(NULL, NULL);
     if(packfs_enabled && packfs_fd_in_range(fd))
     {
         ssize_t res = packfs_read(fd, buf, count);
@@ -1219,7 +1222,7 @@ ssize_t PACKFS_WRAP(read)(int fd, void* buf, size_t count)
 
 off_t PACKFS_WRAP(lseek)(int fd, off_t offset, int whence)
 {
-    packfs_init(NULL);
+    packfs_init(NULL, NULL);
     if(packfs_enabled && packfs_fd_in_range(fd))
     {
         int res = packfs_seek(fd, (long)offset, whence);
@@ -1231,7 +1234,7 @@ off_t PACKFS_WRAP(lseek)(int fd, off_t offset, int whence)
 
 int PACKFS_WRAP(access)(const char *path, int flags)
 {
-    packfs_init(path);
+    packfs_init(path, NULL);
     if(packfs_enabled && (packfs_path_in_range(packfs_static_prefix, path) || packfs_path_in_range(packfs_dynamic_prefix, path)))
     {
         int res = packfs_access(path);
@@ -1243,7 +1246,7 @@ int PACKFS_WRAP(access)(const char *path, int flags)
 
 int PACKFS_WRAP(stat)(const char *restrict path, struct stat *restrict statbuf)
 {
-    packfs_init(path);
+    packfs_init(path, NULL);
     if(packfs_enabled && (packfs_path_in_range(packfs_static_prefix, path) || packfs_path_in_range(packfs_dynamic_prefix, path)))
     {
         *statbuf = (struct stat){0};
@@ -1264,7 +1267,7 @@ int PACKFS_WRAP(stat)(const char *restrict path, struct stat *restrict statbuf)
 
 int PACKFS_WRAP(fstat)(int fd, struct stat * statbuf)
 {
-    packfs_init(NULL);
+    packfs_init(NULL, NULL);
     if(packfs_enabled && packfs_fd_in_range(fd))
     {
         *statbuf = (struct stat){0};
@@ -1285,7 +1288,7 @@ int PACKFS_WRAP(fstat)(int fd, struct stat * statbuf)
 
 int PACKFS_WRAP(fstatat)(int dirfd, const char* path, struct stat * statbuf, int flags)
 {
-    packfs_init(path);
+    packfs_init(path, NULL);
     char path_normalized[packfs_files_name_maxlen]; packfs_resolve_relative_path(path_normalized, dirfd, path);
 
     if(packfs_enabled && (packfs_path_in_range(packfs_static_prefix, path_normalized) || packfs_path_in_range(packfs_dynamic_prefix, path_normalized)))
@@ -1309,7 +1312,7 @@ int PACKFS_WRAP(fstatat)(int dirfd, const char* path, struct stat * statbuf, int
 
 int PACKFS_WRAP(statx)(int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statbuf)
 {
-    packfs_init(path);
+    packfs_init(path, NULL);
     char path_normalized[packfs_files_name_maxlen]; packfs_resolve_relative_path(path_normalized, dirfd, path);
 
     if(packfs_enabled && (packfs_path_in_range(packfs_static_prefix, path_normalized) || packfs_path_in_range(packfs_dynamic_prefix, path_normalized)))
@@ -1331,7 +1334,7 @@ int PACKFS_WRAP(statx)(int dirfd, const char *restrict path, int flags, unsigned
 
 DIR* PACKFS_WRAP(opendir)(const char *path)
 {
-    packfs_init(path);
+    packfs_init(path, NULL);
     if(packfs_enabled && (packfs_path_in_range(packfs_static_prefix, path) || packfs_path_in_range(packfs_dynamic_prefix, path)))
     {
         void* stream = packfs_open(path, 1);
@@ -1347,7 +1350,7 @@ DIR* PACKFS_WRAP(opendir)(const char *path)
 
 DIR* PACKFS_WRAP(fdopendir)(int dirfd)
 {
-    packfs_init(NULL);
+    packfs_init(NULL, NULL);
     if(packfs_enabled && packfs_fd_in_range(dirfd))
     {
         DIR* stream = packfs_find(dirfd, NULL);
@@ -1359,7 +1362,7 @@ DIR* PACKFS_WRAP(fdopendir)(int dirfd)
 
 struct dirent* PACKFS_WRAP(readdir)(DIR* stream)
 {
-    packfs_init(NULL);
+    packfs_init(NULL, NULL);
     if(packfs_enabled && packfs_find(-1, stream) != NULL)
     {
         int* ptr = packfs_find(-1, stream);
@@ -1371,7 +1374,7 @@ struct dirent* PACKFS_WRAP(readdir)(DIR* stream)
 
 int PACKFS_WRAP(closedir)(DIR* stream)
 {
-    packfs_init(NULL);
+    packfs_init(NULL, NULL);
     if(packfs_enabled && packfs_find(-1, stream) != NULL)
     {        
         int* ptr = packfs_find(-1, stream);
@@ -1427,7 +1430,7 @@ int PACKFS_WRAP(fcntl)(int fd, int action, ...)
     }
     va_end(arg);
 
-    packfs_init(NULL);
+    packfs_init(NULL, NULL);
     
     if(packfs_enabled && packfs_fd_in_range(fd))
     {
