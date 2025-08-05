@@ -1,9 +1,10 @@
-// TODO: support working with linked zip
 // TODO: where do path normalization?
 // TODO: use safe string functions everywhere
 // TODO: support reading from decompressed zip/tar-entries by offset
-// TODO: add define disabling archive (still keep functions in ABI?)
 // TODO: prevent re-entrant packfs_init: happens when reading archive mentioned in PACKFS_CONFIG
+// TODO: can support doing something like PACKFS_CONFIG=texlive.iso:/packfs/archive/@/packfs/texlive-archive/ ?
+// TODO: support working with zip static-linked in the binary (two cases: compressed, uncompressed and maybe even just appended?), e.g. PACKFS_CONFIG=/packfs/my.zip
+// TODO: add define disabling archive (still keep functions in ABI?)
 
 #define PACKFS_ARCHIVEREADSUPPORTSUFFIX .iso:.zip:.tar:.tar.gz:.tar.xz
 #define PACKFS_ARCHIVEREADSUPPORTFORMAT(a) archive_read_support_format_iso9660(a);archive_read_support_format_zip(a);archive_read_support_format_tar(a);archive_read_support_filter_gzip(a);archive_read_support_filter_xz(a);
@@ -543,7 +544,6 @@ void packfs_init(const char* path, const char* packfs_config)
                 const char* prefix = at_prefix != NULL ? (at_prefix + 1) : packfs_default_prefix;
                 size_t path_len = at_prefix == NULL ? len : (at_prefix - path_normalized);
                 path_normalized[path_len] = '\0';
-
                 char* at_prefixarchive = at_prefix != NULL ? strchr(prefix, packfs_atsep) : NULL;
                 const char* prefix_archive = at_prefixarchive != NULL ? (at_prefixarchive + 1) : ""; 
                 if(at_prefixarchive != NULL) at_prefixarchive[0] = '\0';
