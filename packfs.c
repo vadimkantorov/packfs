@@ -1,9 +1,11 @@
 // TODO: where do path normalization?
 // TODO: use safe string functions everywhere
-// TODO: support reading from decompressed zip/tar-entries by offset
+// TODO: support reading from decompressed zip/tar-entries by offsets
 // TODO: prevent re-entrant packfs_init: happens when reading archive mentioned in PACKFS_CONFIG
 // TODO: can support doing something like PACKFS_CONFIG=texlive.iso:/packfs/archive/@/packfs/texlive-archive/ ?
 // TODO: support working with zip static-linked in the binary (two cases: compressed, uncompressed and maybe even just appended?), e.g. PACKFS_CONFIG=/packfs/my.zip
+// TODO: can support something json static-linked in the binary like PACKFS_CONFIG=/packfs/listings/@/mnt/packfs/@/mnt/http/ )
+
 // TODO: add define disabling archive (still keep functions in ABI?)
 
 #define PACKFS_ARCHIVEREADSUPPORTSUFFIX .iso:.zip:.tar:.tar.gz:.tar.xz
@@ -325,10 +327,12 @@ void packfs_archive_read_new(void* aptr)
 #endif
 }
 
-void packfs_scan_archive(FILE* f, void* aptr, const char* packfs_archive_filename, const char* prefix)
+void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const char* prefix)
 {
 #ifdef PACKFS_ARCHIVEREADSUPPORTSUFFIX
-    struct archive* a = aptr;
+    struct archive *a = archive_read_new();
+    packfs_archive_read_new(a);
+    
     size_t prefix_len = prefix != NULL ? strlen(prefix) : 0;
     if(prefix_len > 0 && prefix[prefix_len - 1] == packfs_sep) prefix_len--;
     size_t packfs_archive_filename_len = strlen(packfs_archive_filename);
@@ -392,13 +396,18 @@ void packfs_scan_archive(FILE* f, void* aptr, const char* packfs_archive_filenam
         }
     }
     while(0);
+
+    archive_read_close(a);
+    archive_read_free(a);
 #endif
 }
 
-void packfs_extract_archive_entry_from_FILE_to_FILE(void* aptr, FILE* f, const char* entrypath, FILE* h)
+void packfs_extract_archive_entry_from_FILE_to_FILE(FILE* f, const char* entrypath, FILE* h)
 {
 #ifdef PACKFS_ARCHIVEREADSUPPORTSUFFIX
-    struct archive* a = aptr;
+    struct archive *a = archive_read_new();
+    packfs_archive_read_new(a);
+
     struct archive_entry *entry;
     do
     {
@@ -445,6 +454,8 @@ void packfs_extract_archive_entry_from_FILE_to_FILE(void* aptr, FILE* f, const c
         }
     }
     while(0);
+    archive_read_close(a);
+    archive_read_free(a);
 #endif
 }
 
@@ -582,7 +593,7 @@ void packfs_init(const char* path, const char* packfs_config)
                                 {
                                     packfs_enabled = 1;
                                     // something below seems to trigger again packfs_init();
-                                    struct archive *a = archive_read_new(); packfs_archive_read_new(a); packfs_scan_archive(fileptr, a, _path_normalized, prefix); archive_read_close(a); archive_read_free(a);
+                                    packfs_scan_archive(fileptr, _path_normalized, prefix);
                                     __real_fclose(fileptr);
                                 }
 
@@ -599,7 +610,7 @@ void packfs_init(const char* path, const char* packfs_config)
                     {
                         packfs_enabled = 1;
                         // something below seems to trigger again packfs_init();
-                        struct archive *a = archive_read_new(); packfs_archive_read_new(a); packfs_scan_archive(fileptr, a, path_normalized, prefix); archive_read_close(a); archive_read_free(a);
+                        packfs_scan_archive(fileptr, path_normalized, prefix);
                         __real_fclose(fileptr);
                     }
                 }
@@ -621,7 +632,7 @@ void packfs_init(const char* path, const char* packfs_config)
                 {
                     packfs_enabled = 1;
                     // something below seems to trigger again packfs_init();
-                    struct archive *a = archive_read_new(); packfs_archive_read_new(a); packfs_scan_archive(fileptr, a, path_normalized, prefix); archive_read_close(a); archive_read_free(a);
+                    packfs_scan_archive(fileptr, path_normalized, prefix);
                     __real_fclose(fileptr);
                 }
             }
@@ -984,11 +995,7 @@ void* packfs_open(const char* path, int flags)
                 FILE* packfs_archive_fileptr = __real_fopen(archivepath, "rb");//packfs_archive_fileptr;
                 if(packfs_archive_fileptr != NULL)
                 {
-                    struct archive *a = archive_read_new();
-                    packfs_archive_read_new(a);
-                    packfs_extract_archive_entry_from_FILE_to_FILE(a, packfs_archive_fileptr, entrypath, (FILE*)fileptr);
-                    archive_read_close(a);
-                    archive_read_free(a);
+                    packfs_extract_archive_entry_from_FILE_to_FILE(packfs_archive_fileptr, entrypath, (FILE*)fileptr);
                     __real_fclose(packfs_archive_fileptr);
                 }
                 fseek((FILE*)fileptr, 0, SEEK_SET);
