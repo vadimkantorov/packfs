@@ -6,11 +6,19 @@
 // TODO: support working with zip static-linked in the binary (two cases: compressed, uncompressed and maybe even just appended?), e.g. PACKFS_CONFIG=/packfs/my.zip
 // TODO: can support something json static-linked in the binary like PACKFS_CONFIG=/packfs/listings/@/mnt/packfs/@/mnt/http/ )
 
-// TODO: add define disabling archive (still keep functions in ABI?)
+// XXX: dir_entry->d_ino is abused to mean shifted index in dynamic/static, then in corresponding dir-list, then in file-list
+// XXX: dir_entry->d_off is abused to mean shifted offset in dynamic dirpath (NULL-terminated strings which are concatenated)
+// TODO: do something about checking d_name length: https://unix.stackexchange.com/questions/619625/to-what-extent-does-linux-support-file-names-longer-than-255-bytes
 
+
+#ifdef PACKFS_ARCHIVE
+#ifndef PACKFS_ARCHIVEREADSUPPORTSUFFIX
 #define PACKFS_ARCHIVEREADSUPPORTSUFFIX .iso:.zip:.tar:.tar.gz:.tar.xz
+#endif
+#ifndef PACKFS_ARCHIVEREADSUPPORTFORMAT
 #define PACKFS_ARCHIVEREADSUPPORTFORMAT(a) archive_read_support_format_iso9660(a);archive_read_support_format_zip(a);archive_read_support_format_tar(a);archive_read_support_filter_gzip(a);archive_read_support_filter_xz(a);
-
+#endif
+#endif
 
 #define _GNU_SOURCE
 #include <string.h>
@@ -26,7 +34,7 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 
-#ifdef PACKFS_ARCHIVEREADSUPPORTSUFFIX
+#ifdef PACKFS_ARCHIVE
 #include <archive.h>
 #include <archive_entry.h>
 #endif
@@ -312,7 +320,7 @@ size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
 //////////////////////////////////////////////////////////////////////////////
 
 char packfs_archives_suffixes[] =
-#ifdef PACKFS_ARCHIVEREADSUPPORTSUFFIX
+#ifdef PACKFS_ARCHIVE
 PACKFS_STRING_VALUE(PACKFS_ARCHIVEREADSUPPORTSUFFIX)
 #else
 ""
@@ -321,7 +329,7 @@ PACKFS_STRING_VALUE(PACKFS_ARCHIVEREADSUPPORTSUFFIX)
 
 void packfs_archive_read_new(void* aptr)
 {
-#ifdef PACKFS_ARCHIVEREADSUPPORTSUFFIX
+#ifdef PACKFS_ARCHIVE
     struct archive* a = aptr;
     PACKFS_ARCHIVEREADSUPPORTFORMAT(a);
 #endif
@@ -329,7 +337,7 @@ void packfs_archive_read_new(void* aptr)
 
 void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const char* prefix)
 {
-#ifdef PACKFS_ARCHIVEREADSUPPORTSUFFIX
+#ifdef PACKFS_ARCHIVE
     struct archive *a = archive_read_new();
     packfs_archive_read_new(a);
     
@@ -795,10 +803,10 @@ void* packfs_readdir(void* stream)
                 strcpy(dir_entry->d_name, entryabspath);
                 dir_entry->d_name[entryabspath_len - 1] = '\0';
                 const char* last_slash = strrchr(dir_entry->d_name, packfs_sep); 
-                size_t ind = last_slash != NULL ? (last_slash - dir_entry->d_name + 1) : 0;
-                size_t cnt = entryabspath_len - 1 - ind;
-                strncpy(dir_entry->d_name, entryabspath + ind, cnt);
-                dir_entry->d_name[cnt] = '\0';
+                size_t basename_offset = last_slash != NULL ? (last_slash - dir_entry->d_name + 1) : 0;
+                size_t basename_cnt = entryabspath_len - 1 - basename_offset;
+                strncpy(dir_entry->d_name, entryabspath + basename_offset, basename_cnt);
+                dir_entry->d_name[basename_cnt] = '\0';
                 dir_entry->d_type = DT_DIR; 
                 dir_entry->d_ino = (ino_t)(packfs_dynamic_ino_offset + packfs_dirs_ino_offset + i);
                 return dir_entry;
