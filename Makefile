@@ -9,3 +9,6 @@ zlib/libz.a:
 
 xz/src/liblzma/.libs/liblzma.a:
 	cd xz && sh ./autogen.sh && CFLAGS=-fPIC sh ./configure --disable-shared && $(MAKE)
+
+clean:
+	-rm libpackfs.so
