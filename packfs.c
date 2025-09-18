@@ -13,6 +13,7 @@
 // TODO: entry counters for concatenated path lists are not needed?
 // TODO: unify the concatenated path lists formats - ':'-concatenated?
 // TODO: support mmap-reads from uncompressed archives
+// TODO: check and handle various limits. if dir or prefix is considered without trailing slash - specify in varname
 
 
 #ifdef PACKFS_ARCHIVE
