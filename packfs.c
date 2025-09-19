@@ -314,16 +314,16 @@ const char* packfs_dir_add(const char* entrypath, size_t entrypath_len, const ch
     return full_path;
 }
 
-const char* packfs_file_add(const char* entrypath, size_t entrypath_len, const char* prefix, size_t prefix_len_without_trailing_slash)
+const char* packfs_file_add(const char* entrypath, size_t entrypath_len, const char* prefix, size_t prefix_len_m1)
 {
     const char* full_path = packfs_dynamic_paths + packfs_dynamic_paths_total;
-    if(prefix_len_without_trailing_slash == 0 && entrypath_len == 0)
+    if(prefix_len_m1 == 0 && entrypath_len == 0)
         return "";
 
-    if(prefix_len_without_trailing_slash > 0)
+    if(prefix_len_m1 > 0)
     {
-        strncpy(packfs_dynamic_paths + packfs_dynamic_paths_total, prefix, prefix_len_without_trailing_slash);
-        packfs_dynamic_paths_total += prefix_len_without_trailing_slash;
+        strncpy(packfs_dynamic_paths + packfs_dynamic_paths_total, prefix, prefix_len_m1);
+        packfs_dynamic_paths_total += prefix_len_m1;
         packfs_dynamic_paths[packfs_dynamic_paths_total] = packfs_sep;
         packfs_dynamic_paths_total++;
     }
@@ -345,11 +345,11 @@ void packfs_dir_add_dirname(const char* prefixes, const char* path)
     if(path == NULL || path[0] == '\0')
         return;
     
-    size_t prefix_len_without_trailing_slash = packfs_path_in_range(prefixes, path);
-    if(prefix_len_without_trailing_slash > 0 && path[prefix_len_without_trailing_slash] == packfs_sep) prefix_len_without_trailing_slash++;
-    //fprintf(stderr, "packfs_dir_add_dirname prefix '%s': '%s' '%.*s'\n", prefixes, path, (int)prefix_len_without_trailing_slash, path);
+    size_t prefix_len_m1 = packfs_path_in_range(prefixes, path);
+    if(prefix_len_m1 > 0 && path[prefix_len_m1] == packfs_sep) prefix_len_m1++;
+    //fprintf(stderr, "packfs_dir_add_dirname prefix '%s': '%s' '%.*s'\n", prefixes, path, (int)prefix_len_m1, path);
 
-    for(const char* res = strchr(prefix_len_without_trailing_slash > 0 ? (path + prefix_len_without_trailing_slash + 1) : path, packfs_sep), *prevres = path; prevres != NULL; prevres = res, res = (res != NULL ? strchr(res + 1, packfs_sep) : NULL))
+    for(const char* res = strchr(prefix_len_m1 > 0 ? (path + prefix_len_m1 + 1) : path, packfs_sep), *prevres = path; prevres != NULL; prevres = res, res = (res != NULL ? strchr(res + 1, packfs_sep) : NULL))
     {
         size_t dirname_len = res == NULL ? strlen(path) : (res - path + 1);
         size_t entryisdir = dirname_len > 0 && path[dirname_len - 1] == packfs_sep;
@@ -380,11 +380,11 @@ void packfs_dir_add_with_dirname(const char* prefixes, const char* entrypath, si
     if(entrypath_len_ == 0 || prefix_len_ == 0)
         return;
     
-    size_t prefix_len_without_trailing_slash = packfs_path_in_range(prefixes, path);
-    if(prefix_len_without_trailing_slash > 0 && path[prefix_len_without_trailing_slash] == packfs_sep) prefix_len_without_trailing_slash++;
-    //fprintf(stderr, "packfs_dir_add_dirname prefix '%s': '%s' '%.*s'\n", prefixes, path, (int)prefix_len_without_trailing_slash, path);
+    size_t prefix_len_m1 = packfs_path_in_range(prefixes, path);
+    if(prefix_len_m1 > 0 && path[prefix_len_m1] == packfs_sep) prefix_len_m1++;
+    //fprintf(stderr, "packfs_dir_add_dirname prefix '%s': '%s' '%.*s'\n", prefixes, path, (int)prefix_len_m1, path);
 
-    for(const char* res = strchr(prefix_len_without_trailing_slash > 0 ? (path + prefix_len_without_trailing_slash + 1) : path, packfs_sep), *prevres = path; prevres != NULL; prevres = res, res = (res != NULL ? strchr(res + 1, packfs_sep) : NULL))
+    for(const char* res = strchr(prefix_len_m1 > 0 ? (path + prefix_len_m1 + 1) : path, packfs_sep), *prevres = path; prevres != NULL; prevres = res, res = (res != NULL ? strchr(res + 1, packfs_sep) : NULL))
     {
         size_t dirname_len = res == NULL ? strlen(path) : (res - path + 1);
         size_t entryisdir = dirname_len > 0 && path[dirname_len - 1] == packfs_sep;
@@ -436,8 +436,8 @@ void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const cha
     struct archive *a = archive_read_new();
     packfs_archive_read_new(a);
     
-    size_t prefix_len_without_trailing_slash = prefix != NULL ? strlen(prefix) : 0;
-    if(prefix_len_without_trailing_slash > 0 && prefix[prefix_len_without_trailing_slash - 1] == packfs_sep) prefix_len_without_trailing_slash--;
+    size_t prefix_len_m1 = prefix != NULL ? strlen(prefix) : 0;
+    if(prefix_len_m1 > 0 && prefix[prefix_len_m1 - 1] == packfs_sep) prefix_len_m1--;
     size_t packfs_archive_filename_len = strlen(packfs_archive_filename);
 
     //FIXME: adds prefix even if input archive cannot be opened | do not scan the same archive second time
@@ -455,8 +455,9 @@ void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const cha
         
         if(!packfs_dir_exists(prefix, "", 0))
         {
-            packfs_dir_add("", 0, prefix, prefix_len_without_trailing_slash);
-            packfs_dynamic_dirs_num++;
+            packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
+            //packfs_dir_add("", 0, prefix, prefix_len_m1);
+            //packfs_dynamic_dirs_num++;
         }
         
         while(1)
@@ -477,18 +478,19 @@ void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const cha
 
             if(entryisdir && !packfs_dir_exists(prefix, entrypath, entrypath_len)) // TODO: execute after entrypath has trailing slash
             {
-                packfs_dir_add_with_dirname(packfs_dynamic_prefix, entrypath, entrypath_len, prefix, prefix_len_without_trailing_slash); 
+                packfs_dir_add_with_dirname(packfs_dynamic_prefix, entrypath, entrypath_len, prefix, prefix_len_m1); 
             }
             else if(entryisfile) // TODO: execute after entrypath has trailing slash
             {
-                packfs_dynamic_paths_prefixlen[packfs_dynamic_files_num] = prefix_len_without_trailing_slash + 1;
-                const char* full_path = packfs_file_add(entrypath, entrypath_len, prefix, prefix_len_without_trailing_slash);
-                //fprintf(stderr, "packfs_scan_archive: packfs_file_add '%s'\n", full_path);
-                packfs_dir_add_dirname(packfs_dynamic_prefix, full_path);
-            
+                packfs_dynamic_paths_prefixlen[packfs_dynamic_files_num] = prefix_len_m1 + 1;
                 packfs_dynamic_files_sizes[packfs_dynamic_files_num] = entrysize;
                 packfs_dynamic_files_archiveoffset[packfs_dynamic_files_num] = archive_offset;
                 
+                packfs_dir_add_with_dirname(packfs_dynamic_prefix, entrypath, entrypath_len, prefix, prefix_len_m1); 
+                const char* full_path = packfs_file_add(entrypath, entrypath_len, prefix, prefix_len_m1);
+                //fprintf(stderr, "packfs_scan_archive: packfs_file_add '%s'\n", full_path);
+                //packfs_dir_add_dirname(packfs_dynamic_prefix, full_path);
+            
                 packfs_dynamic_files_num++;
             }
                 
@@ -569,8 +571,8 @@ void packfs_extract_archive_entry_from_FILE_to_FILE(FILE* f, const char* entrypa
 
 void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, const char* prefix, const char* prefix_archive)
 {
-    size_t prefix_len_without_trailing_slash = prefix != NULL ? strlen(prefix) : 0;
-    if(prefix_len_without_trailing_slash > 0 && prefix[prefix_len_without_trailing_slash - 1] == packfs_sep) prefix_len_without_trailing_slash--;
+    size_t prefix_len_m1 = prefix != NULL ? strlen(prefix) : 0;
+    if(prefix_len_m1 > 0 && prefix[prefix_len_m1 - 1] == packfs_sep) prefix_len_m1--;
     // prefix now has no trailing slash
 
     const char* packfs_archive_filename = packfs_listing_filename;
@@ -587,9 +589,9 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
     {
         if(!packfs_dir_exists(prefix, "", 0))
         {
-            const char* full_path = packfs_dir_add("", 0, prefix, prefix_len_without_trailing_slash);
-            //fprintf(stderr, "packfs_scan_listing: packfs_dir_add '%s'\n", full_path);
-            packfs_dynamic_dirs_num++;
+            packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
+            //const char* full_path = packfs_dir_add("", 0, prefix, prefix_len_m1);
+            //packfs_dynamic_dirs_num++;
         }
     
         char entrypath[packfs_files_name_maxlen];
@@ -615,18 +617,18 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
     
             if(entryisdir && !packfs_dir_exists(prefix, entrypath, entrypath_len))
             {
-                packfs_dir_add_with_dirname(packfs_dynamic_prefix, entrypath, entrypath_len, prefix, prefix_len_without_trailing_slash); 
+                packfs_dir_add_with_dirname(packfs_dynamic_prefix, entrypath, entrypath_len, prefix, prefix_len_m1); 
             }
             else if(entryisfile)
             {
-                packfs_dynamic_paths_prefixlen[packfs_dynamic_files_num] = prefix_len_without_trailing_slash + 1;
-                
-                const char* full_path = packfs_file_add(entrypath, entrypath_len, prefix, prefix_len_without_trailing_slash);
-                packfs_dir_add_dirname(packfs_dynamic_prefix, full_path);
-                //fprintf(stderr, "packfs_scan_listing: packfs_file_add '%s'\n", full_path);
-            
+                packfs_dynamic_paths_prefixlen[packfs_dynamic_files_num] = prefix_len_m1 + 1;
                 packfs_dynamic_files_sizes[packfs_dynamic_files_num] = entrysize;
                 packfs_dynamic_files_archiveoffset[packfs_dynamic_files_num] = archive_offset;
+
+                const char* full_path = packfs_file_add(entrypath, entrypath_len, prefix, prefix_len_m1);
+                //fprintf(stderr, "packfs_scan_listing: packfs_file_add '%s'\n", full_path);
+                packfs_dir_add_with_dirname(packfs_dynamic_prefix, entrypath, entrypath_len, prefix, prefix_len_m1); 
+                //packfs_dir_add_dirname(packfs_dynamic_prefix, full_path);
                 
                 packfs_dynamic_files_num++;
             }
