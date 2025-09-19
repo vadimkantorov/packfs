@@ -383,7 +383,7 @@ void packfs_dir_add_with_dirname(const char* prefixes, const char* entrypath, si
     size_t prefix_len_m1 = packfs_path_in_range(prefixes, path);
     if(prefix_len_m1 > 0 && path[prefix_len_m1] == packfs_sep) prefix_len_m1++;
 
-    for(const char* res = strchr(prefix_len_m1 > 0 ? (path + prefix_len_m1 + 1) : path, packfs_sep), *prevres = path; prevres != NULL; prevres = res, res = (res != NULL ? strchr(res + 1, packfs_sep) : NULL))
+    for(const char* res = strchr(prefix_len_m1 > 0 ? (path + prefix_len_m1 + 1) : path, packfs_sep), *prevres = path; prevres != NULL && res != NULL; prevres = res, res = (res != NULL ? strchr(res + 1, packfs_sep) : NULL))
     {
         size_t dirname_len = res == NULL ? strlen(path) : (res - path + 1);
         size_t entryisdir = dirname_len > 0 && path[dirname_len - 1] == packfs_sep;
