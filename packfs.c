@@ -453,12 +453,15 @@ void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const cha
         if(archive_read_open_FILE(a, f) != ARCHIVE_OK) //if(archive_read_open1(a) != ARCHIVE_OK)
             break;
         
+        packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
+        /*
         if(!packfs_dir_exists(prefix, "", 0))
         {
             packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
             //packfs_dir_add("", 0, prefix, prefix_len_m1);
             //packfs_dynamic_dirs_num++;
         }
+        */
         
         while(1)
         {
@@ -587,12 +590,15 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
     packfs_dynamic_archivepaths_total += packfs_archive_filename_len + 1;
         
     {
+        packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
+        /*
         if(!packfs_dir_exists(prefix, "", 0))
         {
             packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
             //const char* full_path = packfs_dir_add("", 0, prefix, prefix_len_m1);
             //packfs_dynamic_dirs_num++;
         }
+        */
     
         char entrypath[packfs_files_name_maxlen];
         size_t entrysize, entryoffset, entrypath_len;
