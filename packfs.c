@@ -374,7 +374,7 @@ void packfs_dir_add_with_dirname(const char* prefixes, const char* entrypath, si
     path[prefix_len_] = packfs_sep;
     strncpy(path + prefix_len_ + 1, entrypath, entrypath_len_);
     path[prefix_len_ + 1 + entrypath_len_] = '\0';
-    fprintf(stderr, "packfs_dir_add_dirname_2: '%s' BEGIN\n", path);
+    //fprintf(stderr, "packfs_dir_add_dirname_2: '%s' BEGIN\n", path);
 
      //TODO: 1) extract dirname, 2) test if dir exists, 3) if not exists, invoke dir_add_all which should iterate all dirs and if not exists, register them
     if(entrypath_len_ == 0 || prefix_len_ == 0)
@@ -390,16 +390,16 @@ void packfs_dir_add_with_dirname(const char* prefixes, const char* entrypath, si
 
         size_t exists = entryisdir ? packfs_dir_exists("", path, dirname_len) : 1;
         
-        fprintf(stderr, "packfs_dir_add_dirname_2: '%.*s' isdir=%zu exists=%zu\n", (int)dirname_len, path, entryisdir, entryisdir ? exists : 0);
+        //fprintf(stderr, "packfs_dir_add_dirname_2: '%.*s' isdir=%zu exists=%zu\n", (int)dirname_len, path, entryisdir, entryisdir ? exists : 0);
         
         if(!exists)
         {
             const char* full_path = packfs_dir_add(path, dirname_len, "", 0);
-            fprintf(stderr, "packfs_dir_add_dirname_2: dir '%.*s', added: '%s'\n", (int)dirname_len, path, full_path);
+            //fprintf(stderr, "packfs_dir_add_dirname_2: dir '%.*s', added: '%s'\n", (int)dirname_len, path, full_path);
             packfs_dynamic_dirs_num++;
         }
     }
-    fprintf(stderr, "packfs_dir_add_dirname_2: '%s' END\n", path);
+    //fprintf(stderr, "packfs_dir_add_dirname_2: '%s' END\n", path);
 }
 
 int packfs_indir(const char* dirpath, const char* path)
@@ -481,6 +481,7 @@ void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const cha
             if(entryisdir && !packfs_dir_exists(prefix, entrypath, entrypath_len)) // TODO: execute after entrypath has trailing slash
             {
                 packfs_dir_add_with_dirname(packfs_dynamic_prefix, entrypath, entrypath_len, prefix, prefix_len_m1); 
+                //fprintf(stderr, "packfs_scan_archive: packfs_dir_add '%s'\n", entrypath);
             }
             else if(entryisfile) // TODO: execute after entrypath has trailing slash
             {
@@ -491,7 +492,6 @@ void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const cha
                 packfs_dir_add_with_dirname(packfs_dynamic_prefix, entrypath, entrypath_len, prefix, prefix_len_m1); 
                 const char* full_path = packfs_file_add(entrypath, entrypath_len, prefix, prefix_len_m1);
                 //fprintf(stderr, "packfs_scan_archive: packfs_file_add '%s'\n", full_path);
-                //packfs_dir_add_dirname(packfs_dynamic_prefix, full_path);
             
                 packfs_dynamic_files_num++;
             }
@@ -623,6 +623,7 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
             if(entryisdir && !packfs_dir_exists(prefix, entrypath, entrypath_len))
             {
                 packfs_dir_add_with_dirname(packfs_dynamic_prefix, entrypath, entrypath_len, prefix, prefix_len_m1); 
+                //fprintf(stderr, "packfs_scan_listing: dir '%s'\n", entrypath);
             }
             else if(entryisfile)
             {
@@ -633,7 +634,6 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
                 packfs_dir_add_with_dirname(packfs_dynamic_prefix, entrypath, entrypath_len, prefix, prefix_len_m1); 
                 const char* full_path = packfs_file_add(entrypath, entrypath_len, prefix, prefix_len_m1);
                 //fprintf(stderr, "packfs_scan_listing: packfs_file_add '%s'\n", full_path);
-                //packfs_dir_add_dirname(packfs_dynamic_prefix, full_path);
                 
                 packfs_dynamic_files_num++;
             }
