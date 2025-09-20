@@ -75,6 +75,10 @@ PACKFS_STRING_VALUE(PACKFS_ARCHIVEREADSUPPORTSUFFIX)
 ;
 
 char packfs_listing_ext[] = ".json";
+char packfs_sep = '/';
+char packfs_pathsep = ':';
+char packfs_extsep = '.';
+char packfs_atsep = '@';
 
 enum
 {
@@ -85,14 +89,6 @@ enum
     packfs_static_ino_offset = 1000000000,
     packfs_dynamic_ino_offset = 2000000000,
     packfs_dirs_ino_offset = 1000000,
-};
-
-enum
-{
-    packfs_sep = '/',
-    packfs_pathsep = ':',
-    packfs_extsep = '.',
-    packfs_atsep = '@'
 };
 
 
@@ -440,6 +436,7 @@ void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const cha
     size_t packfs_archive_filename_len = strlen(packfs_archive_filename);
 
     //FIXME: adds prefix even if input archive cannot be opened | do not scan the same archive second time
+    packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
     packfs_add_prefix(packfs_dynamic_prefix, prefix);
                 
     size_t archive_offset = packfs_dynamic_archivepaths_total;
@@ -454,12 +451,13 @@ void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const cha
         
         //packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
         
+        /*
         if(!packfs_dir_exists(prefix, "", 0))
         {
-            //packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
             packfs_dir_add("", 0, prefix, prefix_len_m1);
             packfs_dynamic_dirs_num++;
         }
+        */
         
         
         while(1)
@@ -581,6 +579,7 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
     size_t packfs_archive_filename_len = strlen(packfs_listing_filename) - strlen(packfs_listing_ext);
     
     //FIXME: adds prefix even if input archive cannot be opened | do not scan the same archive second time
+    packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
     packfs_add_prefix(packfs_dynamic_prefix, prefix);
     
     size_t archive_offset = packfs_dynamic_archivepaths_total;
@@ -590,13 +589,14 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
         
     {
         //packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
-        
+        /*
         if(!packfs_dir_exists(prefix, "", 0))
         {
             //packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
             const char* full_path = packfs_dir_add("", 0, prefix, prefix_len_m1);
             packfs_dynamic_dirs_num++;
         }
+        */
         
     
         char entrypath[packfs_files_name_maxlen];
