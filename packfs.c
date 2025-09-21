@@ -80,17 +80,6 @@ char packfs_pathsep = ':';
 char packfs_extsep = '.';
 char packfs_atsep = '@';
 
-enum
-{
-    packfs_files_name_maxlen = 128, 
-    packfs_filefd_min = 1000000000, 
-    packfs_filefd_max = 1000065536, 
-    packfs_dynamic_files_nummax = 65536,
-    packfs_static_ino_offset = 1000000000,
-    packfs_dynamic_ino_offset = 2000000000,
-    packfs_dirs_ino_offset = 1000000,
-};
-
 
 int                  PACKFS_EXTERN(__real_open)         (const char *path, int flags, ...);
 int                  PACKFS_EXTERN(__real_openat)       (int dirfd, const char *path, int flags, ...);
@@ -135,6 +124,17 @@ void packfs_init__real()
     __real_readdir   = dlsym(RTLD_NEXT, "readdir"   );
 #endif
 }
+
+enum
+{
+    packfs_files_name_maxlen = 128, 
+    packfs_filefd_min = 1000000000, 
+    packfs_filefd_max = 1000065536, 
+    packfs_dynamic_files_nummax = 65536,
+    packfs_static_ino_offset = 1000000000,
+    packfs_dynamic_ino_offset = 2000000000,
+    packfs_dirs_ino_offset = 1000000,
+};
 
 #ifdef PACKFS_STATIC
 #include "packfs.h"
@@ -335,34 +335,6 @@ const char* packfs_file_add(const char* entrypath, size_t entrypath_len, const c
     return full_path;
 }
 
-void packfs_dir_add_dirname(const char* prefixes, const char* path)
-{
-     //TODO: 1) extract dirname, 2) test if dir exists, 3) if not exists, invoke dir_add_all which should iterate all dirs and if not exists, register them
-    if(path == NULL || path[0] == '\0')
-        return;
-    
-    size_t prefix_len_m1 = packfs_path_in_range(prefixes, path);
-    if(prefix_len_m1 > 0 && path[prefix_len_m1] == packfs_sep) prefix_len_m1++;
-    //fprintf(stderr, "packfs_dir_add_dirname prefix '%s': '%s' '%.*s'\n", prefixes, path, (int)prefix_len_m1, path);
-
-    for(const char* res = strchr(prefix_len_m1 > 0 ? (path + prefix_len_m1 + 1) : path, packfs_sep), *prevres = path; prevres != NULL; prevres = res, res = (res != NULL ? strchr(res + 1, packfs_sep) : NULL))
-    {
-        size_t dirname_len = res == NULL ? strlen(path) : (res - path + 1);
-        size_t entryisdir = dirname_len > 0 && path[dirname_len - 1] == packfs_sep;
-
-        size_t exists = entryisdir ? packfs_dir_exists("", path, dirname_len) : 1;
-        
-        //fprintf(stderr, "packfs_dir_add_dirname: '%.*s' isdir=%zu exists=%zu\n", (int)dirname_len, path, entryisdir, entryisdir ? exists : 0);
-        
-        if(!exists)
-        {
-            const char* full_path = packfs_dir_add(path, dirname_len, "", 0);
-            //fprintf(stderr, "packfs_dir_add_dirname dir: '%.*s', added: '%s'\n", (int)dirname_len, path, full_path);
-            packfs_dynamic_dirs_num++;
-        }
-    }
-}
-
 void packfs_dir_add_with_dirname(const char* prefixes, const char* entrypath, size_t entrypath_len_, const char* prefix, size_t prefix_len_)
 {
     char path[packfs_files_name_maxlen];
@@ -373,7 +345,7 @@ void packfs_dir_add_with_dirname(const char* prefixes, const char* entrypath, si
     //fprintf(stderr, "packfs_dir_add_dirname_2: '%s' BEGIN\n", path);
 
      //TODO: 1) extract dirname, 2) test if dir exists, 3) if not exists, invoke dir_add_all which should iterate all dirs and if not exists, register them
-    if(entrypath_len_ == 0 || prefix_len_ == 0)
+    if(entrypath_len_ == 0 && prefix_len_ == 0)
         return;
     
     size_t prefix_len_m1 = packfs_path_in_range(prefixes, path);
@@ -435,7 +407,6 @@ void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const cha
     if(prefix_len_m1 > 0 && prefix[prefix_len_m1 - 1] == packfs_sep) prefix_len_m1--;
     size_t packfs_archive_filename_len = strlen(packfs_archive_filename);
 
-    //FIXME: adds prefix even if input archive cannot be opened | do not scan the same archive second time
     packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
     packfs_add_prefix(packfs_dynamic_prefix, prefix);
                 
@@ -448,17 +419,6 @@ void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const cha
     {
         if(archive_read_open_FILE(a, f) != ARCHIVE_OK) //if(archive_read_open1(a) != ARCHIVE_OK)
             break;
-        
-        //packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
-        
-        /*
-        if(!packfs_dir_exists(prefix, "", 0))
-        {
-            packfs_dir_add("", 0, prefix, prefix_len_m1);
-            packfs_dynamic_dirs_num++;
-        }
-        */
-        
         
         while(1)
         {
@@ -476,18 +436,13 @@ void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const cha
             int entryisdir = entrytype == AE_IFDIR;
             int entryisfile = entrytype == AE_IFREG;
 
-            if(entryisdir && !packfs_dir_exists(prefix, entrypath, entrypath_len)) // TODO: execute after entrypath has trailing slash
-            {
-                packfs_dir_add_with_dirname(packfs_dynamic_prefix, entrypath, entrypath_len, prefix, prefix_len_m1); 
-                //fprintf(stderr, "packfs_scan_archive: packfs_dir_add '%s'\n", entrypath);
-            }
-            else if(entryisfile) // TODO: execute after entrypath has trailing slash
+            packfs_dir_add_with_dirname(packfs_dynamic_prefix, entrypath, entrypath_len, prefix, prefix_len_m1); 
+            if(entryisfile) // TODO: execute after entrypath has trailing slash
             {
                 packfs_dynamic_paths_prefixlen[packfs_dynamic_files_num] = prefix_len_m1 + 1;
                 packfs_dynamic_files_sizes[packfs_dynamic_files_num] = entrysize;
                 packfs_dynamic_files_archiveoffset[packfs_dynamic_files_num] = archive_offset;
                 
-                packfs_dir_add_with_dirname(packfs_dynamic_prefix, entrypath, entrypath_len, prefix, prefix_len_m1); 
                 const char* full_path = packfs_file_add(entrypath, entrypath_len, prefix, prefix_len_m1);
                 //fprintf(stderr, "packfs_scan_archive: packfs_file_add '%s'\n", full_path);
             
@@ -565,83 +520,6 @@ void packfs_extract_archive_entry_from_FILE_to_FILE(FILE* f, const char* entrypa
 #endif
 }
 
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, const char* prefix, const char* prefix_archive)
-{
-    size_t prefix_len_m1 = prefix != NULL ? strlen(prefix) : 0;
-    if(prefix_len_m1 > 0 && prefix[prefix_len_m1 - 1] == packfs_sep) prefix_len_m1--;
-    // prefix now has no trailing slash
-
-    const char* packfs_archive_filename = packfs_listing_filename;
-    size_t packfs_archive_filename_len = strlen(packfs_listing_filename) - strlen(packfs_listing_ext);
-    
-    //FIXME: adds prefix even if input archive cannot be opened | do not scan the same archive second time
-    packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
-    packfs_add_prefix(packfs_dynamic_prefix, prefix);
-    
-    size_t archive_offset = packfs_dynamic_archivepaths_total;
-    strncpy(packfs_dynamic_archivepaths + packfs_dynamic_archivepaths_total, packfs_archive_filename, packfs_archive_filename_len);
-    
-    packfs_dynamic_archivepaths_total += packfs_archive_filename_len + 1;
-        
-    {
-        //packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
-        /*
-        if(!packfs_dir_exists(prefix, "", 0))
-        {
-            //packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
-            const char* full_path = packfs_dir_add("", 0, prefix, prefix_len_m1);
-            packfs_dynamic_dirs_num++;
-        }
-        */
-        
-    
-        char entrypath[packfs_files_name_maxlen];
-        size_t entrysize, entryoffset, entrypath_len;
-        fscanf(fileptr, "[\n");
-        while(1)
-        {
-            entrysize = entryoffset = 0;
-
-            fscanf(fileptr, "{\n");
-            int ret = fscanf(fileptr, "\"path\"\n:\n\"%[^\"]\"", entrypath);
-            if(ret != 1) break;
-            entrypath_len = strlen(entrypath);
-            fscanf(fileptr, ",\n");
-            fscanf(fileptr, "\"size\"\n:\n%zu", &entrysize);
-            fscanf(fileptr, ",\n");
-            fscanf(fileptr, "\"offset\"\n:\n%zu", &entryoffset);
-            fscanf(fileptr, "}\n");
-            fscanf(fileptr, ",\n");
-
-            int entryisdir = entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep;
-            int entryisfile = !entryisdir;
-    
-            if(entryisdir && !packfs_dir_exists(prefix, entrypath, entrypath_len))
-            {
-                packfs_dir_add_with_dirname(packfs_dynamic_prefix, entrypath, entrypath_len, prefix, prefix_len_m1); 
-                //fprintf(stderr, "packfs_scan_listing: dir '%s'\n", entrypath);
-            }
-            else if(entryisfile)
-            {
-                packfs_dynamic_paths_prefixlen[packfs_dynamic_files_num] = prefix_len_m1 + 1;
-                packfs_dynamic_files_sizes[packfs_dynamic_files_num] = entrysize;
-                packfs_dynamic_files_archiveoffset[packfs_dynamic_files_num] = archive_offset;
-
-                packfs_dir_add_with_dirname(packfs_dynamic_prefix, entrypath, entrypath_len, prefix, prefix_len_m1); 
-                const char* full_path = packfs_file_add(entrypath, entrypath_len, prefix, prefix_len_m1);
-                //fprintf(stderr, "packfs_scan_listing: packfs_file_add '%s'\n", full_path);
-                
-                packfs_dynamic_files_num++;
-            }
-        }
-        fscanf(fileptr, "]\n");
-    }
-}
-
 void packfs_scan_dir(DIR* dirptr, const char* path_normalized, size_t len, const char* prefix)
 {
     char _path_normalized[packfs_files_name_maxlen];
@@ -669,6 +547,65 @@ void packfs_scan_dir(DIR* dirptr, const char* path_normalized, size_t len, const
     }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, const char* prefix, const char* prefix_archive)
+{
+    size_t prefix_len_m1 = prefix != NULL ? strlen(prefix) : 0;
+    if(prefix_len_m1 > 0 && prefix[prefix_len_m1 - 1] == packfs_sep) prefix_len_m1--;
+
+    const char* packfs_archive_filename = packfs_listing_filename;
+    size_t packfs_archive_filename_len = strlen(packfs_listing_filename) - strlen(packfs_listing_ext);
+    
+    packfs_dir_add_with_dirname(packfs_dynamic_prefix, "", 0, prefix, prefix_len_m1); 
+    packfs_add_prefix(packfs_dynamic_prefix, prefix);
+    
+    size_t archive_offset = packfs_dynamic_archivepaths_total;
+    strncpy(packfs_dynamic_archivepaths + packfs_dynamic_archivepaths_total, packfs_archive_filename, packfs_archive_filename_len);
+    
+    packfs_dynamic_archivepaths_total += packfs_archive_filename_len + 1;
+        
+    {
+        char entrypath[packfs_files_name_maxlen];
+        size_t entrysize, entryoffset, entrypath_len;
+        fscanf(fileptr, "[\n");
+        while(1)
+        {
+            entrysize = entryoffset = 0;
+
+            fscanf(fileptr, "{\n");
+            int ret = fscanf(fileptr, "\"path\"\n:\n\"%[^\"]\"", entrypath);
+            if(ret != 1) break;
+            entrypath_len = strlen(entrypath);
+            fscanf(fileptr, ",\n");
+            fscanf(fileptr, "\"size\"\n:\n%zu", &entrysize);
+            fscanf(fileptr, ",\n");
+            fscanf(fileptr, "\"offset\"\n:\n%zu", &entryoffset);
+            fscanf(fileptr, "}\n");
+            fscanf(fileptr, ",\n");
+
+            int entryisdir = entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep;
+            int entryisfile = !entryisdir;
+            
+            packfs_dir_add_with_dirname(packfs_dynamic_prefix, entrypath, entrypath_len, prefix, prefix_len_m1); 
+            if(entryisfile)
+            {
+                packfs_dynamic_paths_prefixlen[packfs_dynamic_files_num] = prefix_len_m1 + 1;
+                packfs_dynamic_files_sizes[packfs_dynamic_files_num] = entrysize;
+                packfs_dynamic_files_archiveoffset[packfs_dynamic_files_num] = archive_offset;
+
+                const char* full_path = packfs_file_add(entrypath, entrypath_len, prefix, prefix_len_m1);
+                //fprintf(stderr, "packfs_scan_listing: packfs_file_add '%s'\n", full_path);
+                
+                packfs_dynamic_files_num++;
+            }
+        }
+        fscanf(fileptr, "]\n");
+    }
+}
+
 void packfs_init(const char* path, const char* packfs_config)
 { 
     if(packfs_initialized != 1)
@@ -676,6 +613,13 @@ void packfs_init(const char* path, const char* packfs_config)
         packfs_init__real();
         packfs_initialized = 1;
         packfs_enabled = 0;
+    }
+    
+    if(packfs_initialized == 1 && packfs_enabled == 0)
+    {
+        const char* packfs_disabled = getenv("PACKFS_DISABLED");
+        if(packfs_disabled != NULL && 0 == strcmp(packfs_disabled, "1"))
+            packfs_enabled = 1;
     }
 
     if(packfs_initialized == 1 && packfs_enabled == 0)
