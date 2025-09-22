@@ -54,7 +54,7 @@
 #define PACKFS_EXTERN(x)       (*x)
 #define PACKFS_WRAP(x)         ( x)
 #else
-#define PACKFS_EXTERN(x) extern( x)
+#define PACKFS_EXTERN(x) extern (x)
 #define PACKFS_WRAP(x) PACKFS_CONCAT(__wrap_, x)
 #endif
 
@@ -91,14 +91,22 @@ int                  PACKFS_EXTERN(__real_stat)         (const char *restrict pa
 int                  PACKFS_EXTERN(__real_fstat)        (int fd, struct stat * statbuf);
 int                  PACKFS_EXTERN(__real_fstatat)      (int dirfd, const char* path, struct stat * statbuf, int flags);
 int                  PACKFS_EXTERN(__real_statx)        (int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statbuf);
-FILE*                PACKFS_EXTERN(__real_fopen)        (const char *path, const char *mode);
 int                  PACKFS_EXTERN(__real_fclose)       (FILE* stream);
 int                  PACKFS_EXTERN(__real_fileno)       (FILE* stream);
 int                  PACKFS_EXTERN(__real_fcntl)        (int fd, int action, ...);
+int                  PACKFS_EXTERN(__real_closedir)     (DIR *dirp);
+
+#ifdef PACKFS_DYNAMIC_LINKING
+FILE*                PACKFS_EXTERN(__real_fopen)        (const char *path, const char *mode);
 DIR*                 PACKFS_EXTERN(__real_opendir)      (const char *path);
 DIR*                 PACKFS_EXTERN(__real_fdopendir)    (int dirfd);
-int                  PACKFS_EXTERN(__real_closedir)     (DIR *dirp);
 struct dirent*       PACKFS_EXTERN(__real_readdir)      (DIR *dirp);
+#else
+extern FILE*                       __real_fopen         (const char *path, const char *mode);
+extern DIR*                        __real_opendir       (const char *path);
+extern DIR*                        __real_fdopendir     (int dirfd);
+extern struct dirent*              __real_readdir       (DIR *dirp);
+#endif
 
 void packfs_init__real()
 {
