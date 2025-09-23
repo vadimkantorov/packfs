@@ -51,10 +51,12 @@
 #define PACKFS_CONCAT(X, Y) PACKFS_CONCAT_(X, Y)
 
 #ifdef  PACKFS_DYNAMIC_LINKING
-#define PACKFS_EXTERN(x)       (*x)
-#define PACKFS_WRAP(x)         ( x)
+#define PACKFS_EXTERN_MOD
+#define PACKFS_EXTERN_PTR(x)       (*x)
+#define PACKFS_WRAP(x)          ( x)
 #else
-#define PACKFS_EXTERN(x) extern (x)
+#define PACKFS_EXTERN_MOD extern
+#define PACKFS_EXTERN_PTR(x)        (x)
 #define PACKFS_WRAP(x) PACKFS_CONCAT(__wrap_, x)
 #endif
 
@@ -81,32 +83,24 @@ char packfs_extsep = '.';
 char packfs_atsep = '@';
 
 
-int                  PACKFS_EXTERN(__real_open)         (const char *path, int flags, ...);
-int                  PACKFS_EXTERN(__real_openat)       (int dirfd, const char *path, int flags, ...);
-int                  PACKFS_EXTERN(__real_close)        (int fd);
-ssize_t              PACKFS_EXTERN(__real_read)         (int fd, void* buf, size_t count);
-int                  PACKFS_EXTERN(__real_access)       (const char *path, int flags);
-off_t                PACKFS_EXTERN(__real_lseek)        (int fd, off_t offset, int whence);
-int                  PACKFS_EXTERN(__real_stat)         (const char *restrict path, struct stat *restrict statbuf);
-int                  PACKFS_EXTERN(__real_fstat)        (int fd, struct stat * statbuf);
-int                  PACKFS_EXTERN(__real_fstatat)      (int dirfd, const char* path, struct stat * statbuf, int flags);
-int                  PACKFS_EXTERN(__real_statx)        (int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statbuf);
-int                  PACKFS_EXTERN(__real_fclose)       (FILE* stream);
-int                  PACKFS_EXTERN(__real_fileno)       (FILE* stream);
-int                  PACKFS_EXTERN(__real_fcntl)        (int fd, int action, ...);
-int                  PACKFS_EXTERN(__real_closedir)     (DIR *dirp);
-
-#ifdef PACKFS_DYNAMIC_LINKING
-FILE*                PACKFS_EXTERN(__real_fopen)        (const char *path, const char *mode);
-DIR*                 PACKFS_EXTERN(__real_opendir)      (const char *path);
-DIR*                 PACKFS_EXTERN(__real_fdopendir)    (int dirfd);
-struct dirent*       PACKFS_EXTERN(__real_readdir)      (DIR *dirp);
-#else
-extern FILE*                       __real_fopen         (const char *path, const char *mode);
-extern DIR*                        __real_opendir       (const char *path);
-extern DIR*                        __real_fdopendir     (int dirfd);
-extern struct dirent*              __real_readdir       (DIR *dirp);
-#endif
+PACKFS_EXTERN_MOD int                  PACKFS_EXTERN_PTR(__real_open)         (const char *path, int flags, ...);
+PACKFS_EXTERN_MOD int                  PACKFS_EXTERN_PTR(__real_openat)       (int dirfd, const char *path, int flags, ...);
+PACKFS_EXTERN_MOD int                  PACKFS_EXTERN_PTR(__real_close)        (int fd);
+PACKFS_EXTERN_MOD ssize_t              PACKFS_EXTERN_PTR(__real_read)         (int fd, void* buf, size_t count);
+PACKFS_EXTERN_MOD int                  PACKFS_EXTERN_PTR(__real_access)       (const char *path, int flags);
+PACKFS_EXTERN_MOD off_t                PACKFS_EXTERN_PTR(__real_lseek)        (int fd, off_t offset, int whence);
+PACKFS_EXTERN_MOD int                  PACKFS_EXTERN_PTR(__real_stat)         (const char *restrict path, struct stat *restrict statbuf);
+PACKFS_EXTERN_MOD int                  PACKFS_EXTERN_PTR(__real_fstat)        (int fd, struct stat * statbuf);
+PACKFS_EXTERN_MOD int                  PACKFS_EXTERN_PTR(__real_fstatat)      (int dirfd, const char* path, struct stat * statbuf, int flags);
+PACKFS_EXTERN_MOD int                  PACKFS_EXTERN_PTR(__real_statx)        (int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statbuf);
+PACKFS_EXTERN_MOD FILE*                PACKFS_EXTERN_PTR(__real_fopen)        (const char *path, const char *mode);
+PACKFS_EXTERN_MOD int                  PACKFS_EXTERN_PTR(__real_fclose)       (FILE* stream);
+PACKFS_EXTERN_MOD int                  PACKFS_EXTERN_PTR(__real_fileno)       (FILE* stream);
+PACKFS_EXTERN_MOD int                  PACKFS_EXTERN_PTR(__real_fcntl)        (int fd, int action, ...);
+PACKFS_EXTERN_MOD DIR*                 PACKFS_EXTERN_PTR(__real_opendir)      (const char *path);
+PACKFS_EXTERN_MOD DIR*                 PACKFS_EXTERN_PTR(__real_fdopendir)    (int dirfd);
+PACKFS_EXTERN_MOD int                  PACKFS_EXTERN_PTR(__real_closedir)     (DIR *dirp);
+PACKFS_EXTERN_MOD struct dirent*       PACKFS_EXTERN_PTR(__real_readdir)      (DIR *dirp);
 
 void packfs_init__real()
 {
@@ -135,10 +129,11 @@ void packfs_init__real()
 
 enum
 {
-    packfs_files_name_maxlen = 128, 
-    packfs_filefd_min = 1000000000, 
-    packfs_filefd_max = 1000065536, 
+    packfs_files_name_maxlen = 128,
+    packfs_filefd_min = 1000000000,
+    packfs_filefd_max = 1000065536,
     packfs_dynamic_files_nummax = 65536,
+
     packfs_static_ino_offset = 1000000000,
     packfs_dynamic_ino_offset = 2000000000,
     packfs_dirs_ino_offset = 1000000,
@@ -292,33 +287,7 @@ int packfs_dir_exists(const char* prefix, const char* path, size_t path_len)
     return 0;
 }
 
-const char* packfs_dir_add(const char* entrypath, size_t entrypath_len, const char* prefix, size_t prefix_len)
-{
-    const char* full_path = packfs_dynamic_dirpaths + packfs_dynamic_dirpaths_total;
-    if(prefix_len == 0 && entrypath_len == 0)
-        return "";
-
-    if(prefix_len > 0)
-    {
-        strncpy(packfs_dynamic_dirpaths + packfs_dynamic_dirpaths_total, prefix, prefix_len);
-        packfs_dynamic_dirpaths_total += prefix_len;
-        packfs_dynamic_dirpaths[packfs_dynamic_dirpaths_total] = packfs_sep;
-        packfs_dynamic_dirpaths_total++;
-    }
-
-    if(entrypath_len > 0)
-    {
-        strncpy(packfs_dynamic_dirpaths + packfs_dynamic_dirpaths_total, entrypath, entrypath_len);
-        if(entrypath_len == 0 || entrypath[entrypath_len - 1] != packfs_sep) entrypath_len++;
-        packfs_dynamic_dirpaths[packfs_dynamic_dirpaths_total + (entrypath_len - 1)] = packfs_sep;
-        packfs_dynamic_dirpaths_total += entrypath_len;
-    }
-    
-    packfs_dynamic_dirpaths_total++;
-    return full_path;
-}
-
-const char* packfs_file_add(const char* prefix, size_t prefix_len_m1, const char* entrypath, size_t entrypath_len)
+const char* packfs_file_add(const char* prefix, size_t prefix_len_m1, const char* entrypath, size_t entrypath_len, size_t entrysize, size_t archive_offset)
 {
     const char* full_path = packfs_dynamic_paths + packfs_dynamic_paths_total;
     if(prefix_len_m1 == 0 && entrypath_len == 0)
@@ -340,6 +309,12 @@ const char* packfs_file_add(const char* prefix, size_t prefix_len_m1, const char
     }
     
     packfs_dynamic_paths_total++;
+                
+    packfs_dynamic_paths_prefixlen[packfs_dynamic_files_num] = prefix_len_m1 + 1;
+    packfs_dynamic_files_sizes[packfs_dynamic_files_num] = entrysize;
+    packfs_dynamic_files_archiveoffset[packfs_dynamic_files_num] = archive_offset;
+    packfs_dynamic_files_num++;
+
     return full_path;
 }
 
@@ -370,9 +345,20 @@ void packfs_dir_add_with_dirname(const char* prefixes, const char* prefix, size_
         
         if(!exists)
         {
-            const char* full_path = packfs_dir_add(path, dirname_len, "", 0);
+            const char* full_path = dirname_len == 0 ? "" : (packfs_dynamic_dirpaths + packfs_dynamic_dirpaths_total);
+
+            if(dirname_len > 0)
+            {
+                strncpy(packfs_dynamic_dirpaths + packfs_dynamic_dirpaths_total, path, dirname_len);
+                if(dirname_len == 0 || path[dirname_len - 1] != packfs_sep) dirname_len++;
+                packfs_dynamic_dirpaths[packfs_dynamic_dirpaths_total + (dirname_len - 1)] = packfs_sep;
+                packfs_dynamic_dirpaths_total += dirname_len;
+                packfs_dynamic_dirpaths_total++;
+                packfs_dynamic_dirs_num++;
+            }
+
+            //const char* full_path = packfs_dir_add("", 0, path, dirname_len);
             //fprintf(stderr, "packfs_dir_add_dirname_2: dir '%.*s', added: '%s'\n", (int)dirname_len, path, full_path);
-            packfs_dynamic_dirs_num++;
         }
     }
     //fprintf(stderr, "packfs_dir_add_dirname_2: '%s' END\n", path);
@@ -447,14 +433,9 @@ void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const cha
             packfs_dir_add_with_dirname(packfs_dynamic_prefix, prefix, prefix_len_m1, entrypath, entrypath_len); 
             if(entryisfile) // TODO: execute after entrypath has trailing slash
             {
-                packfs_dynamic_paths_prefixlen[packfs_dynamic_files_num] = prefix_len_m1 + 1;
-                packfs_dynamic_files_sizes[packfs_dynamic_files_num] = entrysize;
-                packfs_dynamic_files_archiveoffset[packfs_dynamic_files_num] = archive_offset;
-                
-                const char* full_path = packfs_file_add(prefix, prefix_len_m1, entrypath, entrypath_len);
+                const char* full_path = packfs_file_add(prefix, prefix_len_m1, entrypath, entrypath_len, entrysize, archive_offset);
                 //fprintf(stderr, "packfs_scan_archive: packfs_file_add '%s'\n", full_path);
             
-                packfs_dynamic_files_num++;
             }
                 
             r = archive_read_data_skip(a);
@@ -599,14 +580,8 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
             packfs_dir_add_with_dirname(packfs_dynamic_prefix, prefix, prefix_len_m1, entrypath, entrypath_len); 
             if(entryisfile)
             {
-                packfs_dynamic_paths_prefixlen[packfs_dynamic_files_num] = prefix_len_m1 + 1;
-                packfs_dynamic_files_sizes[packfs_dynamic_files_num] = entrysize;
-                packfs_dynamic_files_archiveoffset[packfs_dynamic_files_num] = archive_offset;
-
-                const char* full_path = packfs_file_add(prefix, prefix_len_m1, entrypath, entrypath_len);
+                const char* full_path = packfs_file_add(prefix, prefix_len_m1, entrypath, entrypath_len, entrysize, archive_offset);
                 //fprintf(stderr, "packfs_scan_listing: packfs_file_add '%s'\n", full_path);
-                
-                packfs_dynamic_files_num++;
             }
         }
         fscanf(fileptr, "]\n");
