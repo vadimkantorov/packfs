@@ -14,6 +14,7 @@
 // TODO: unify the concatenated path lists formats - ':'-concatenated?
 // TODO: support mmap-reads from uncompressed archives
 // TODO: check and handle various limits. if dir or prefix is considered without trailing slash - specify in varname
+// TODO: packfs_add_prefix, pass in prefix_len_m1?
 
 
 #ifdef PACKFS_ARCHIVE
@@ -197,7 +198,7 @@ void packfs_normalize_path(char* path_normalized, const char* path)
     }
 }
 
-int packfs_path_in_range(const char* prefixes, const char* path)
+size_t packfs_path_in_range(const char* prefixes, const char* path)
 {
     if(prefixes == NULL || prefixes[0] == '\0' || path == NULL || path[0] == '\0')
         return 0;
@@ -216,16 +217,27 @@ int packfs_path_in_range(const char* prefixes, const char* path)
     return 0;
 }
 
-void packfs_add_prefix(char* prefixes, const char* prefix)
+void packfs_add_prefix(char* prefixes, const char* prefix, size_t prefix_len_m1)
 {
+    for(const char* begin = prefixes, *end = strchr(prefixes, packfs_pathsep), *prevend  = prefixes; prevend != NULL; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_pathsep) : NULL)
+    {
+        size_t prefix_len = end == NULL ? strlen(begin) : (end - begin);
+        if(0 == strncmp(begin, prefix, prefix_len_m1))
+            return;
+    }
+
     size_t prefixes_len = strlen(prefixes);
-    if(prefixes[0] == '\0')
-        strcpy(prefixes, prefix);
+
+    if(prefixes_len == 0)
+    {
+        strncpy(prefixes, prefix, prefix_len_m1);
+        prefixes[prefix_len_m1] = packfs_sep;
+    }
     else
     {
         prefixes[prefixes_len] = packfs_pathsep;
-        prefixes[prefixes_len + 1] = '\0';
-        strcat(prefixes, prefix);
+        strncpy(prefixes + prefixes_len + 1, prefix, prefix_len_m1);
+        prefixes[prefixes_len + 1 + prefix_len_m1] = packfs_sep;
     }
 }
 
@@ -402,7 +414,7 @@ void packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const cha
     size_t packfs_archive_filename_len = strlen(packfs_archive_filename);
 
     packfs_dir_add_with_dirname(packfs_dynamic_prefix, prefix, prefix_len_m1, "", 0); 
-    packfs_add_prefix(packfs_dynamic_prefix, prefix);
+    packfs_add_prefix(packfs_dynamic_prefix, prefix, prefix_len_m1);
                 
     size_t archive_offset = packfs_dynamic_archivepaths_total;
     strncpy(packfs_dynamic_archivepaths + packfs_dynamic_archivepaths_total, packfs_archive_filename, packfs_archive_filename_len);
@@ -548,7 +560,7 @@ void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, con
     size_t packfs_archive_filename_len = strlen(packfs_listing_filename) - strlen(packfs_listing_ext);
     
     packfs_dir_add_with_dirname(packfs_dynamic_prefix, prefix, prefix_len_m1, "", 0); 
-    packfs_add_prefix(packfs_dynamic_prefix, prefix);
+    packfs_add_prefix(packfs_dynamic_prefix, prefix, prefix_len_m1);
     
     size_t archive_offset = packfs_dynamic_archivepaths_total;
     strncpy(packfs_dynamic_archivepaths + packfs_dynamic_archivepaths_total, packfs_archive_filename, packfs_archive_filename_len);
