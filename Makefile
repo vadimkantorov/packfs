@@ -13,7 +13,7 @@ libpackfs.a : packfs.c libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/
 	$(CC) -c -o $(basename $@).o $< $(STATICLDFLAGS) $(ARCHIVECFLAGS) && $(AR) r $@ $(basename $@).o
 
 packfs: packfs.c
-	$(CC) -o $@ $^ $(STATICLDFLAGS) -DPACKFS_STATIC_PACKER
+	$(CC) -o $@ $^ -DPACKFS_STATIC_PACKER
 
 cat: cat.c libpackfs.a libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a
 	$(CC) -o $@ $^ $(STATICLDFLAGS) 
@@ -30,4 +30,4 @@ xz/src/liblzma/.libs/liblzma.a:
 	cd xz && sh ./autogen.sh && CFLAGS=-fPIC sh ./configure --disable-shared && $(MAKE)
 
 clean:
-	-rm libpackfs.so libpackfs.a libpackfs.o
+	-rm libpackfs.so libpackfs.a libpackfs.o packfs
