@@ -234,6 +234,23 @@ size_t packfs_len(const char* smth)
     return sep - smth;
 }
 
+size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
+{
+    if(path == NULL || suffixes == NULL || suffixes[0] == '\0')
+        return 0;
+    for(const char* slash = strchr(path, packfs_sep), *prevslash = path; prevslash != NULL; prevslash = slash, slash = (slash != NULL ? strchr(slash + 1, packfs_sep) : NULL))
+    {
+        size_t prefix_len = slash == NULL ? strlen(path) : (slash - path);
+        for(const char* begin = suffixes, *end = strchr(suffixes, packfs_pathsep), *prevend  = suffixes; prevend != NULL; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_pathsep) : NULL)
+        {
+            size_t suffix_len = end == NULL ? strlen(begin) : (end - begin);
+            if(suffix_len > 0 && prefix_len >= suffix_len && 0 == strncmp(begin, path + prefix_len - suffix_len, suffix_len))
+                return prefix_len;
+        }
+    }
+    return 0;
+}
+
 size_t packfs_match(const char* null_terminated, const char* smth, size_t smth_len)
 {
     return (0 == strncmp(null_terminated, smth, smth_len)) && (null_terminated[smth_len] == '\0' || null_terminated[smth_len] == packfs_pathsep);
@@ -273,63 +290,6 @@ size_t packfs_path_in_range(const char* prefixes, const char* path)
         size_t prefix_len_m1 = prefix_len - prefix_trailing_slash;
         if(prefix_ok && ((path_len == prefix_len_m1) || (path_len >= prefix_len && path[prefix_len_m1] == packfs_sep)))
             return prefix_len;
-    }
-    return 0;
-}
-
-int packfs_dir_exists(const char* prefix, const char* path, size_t path_len)
-{
-    /*
-    for(size_t i = (packfs_path_in_range(packfs_static_prefix, prefix) ? 0 : packfs_static_files_num); i < packfs_static_files_num; i++)
-    {
-        const char* entrypath = packfs_static_paths[i];
-        int entryisdir = entrypath[0] != '\0' && entrypath[strlen(entrypath) - 1] == packfs_sep;
-        if(entryisdir && 0 == strcmp(path, entrypath))
-            return 1;
-    }
-    */
-    
-    size_t prefix_len = strlen(prefix);
-    
-    if(prefix_len > 0 && !packfs_path_in_range(packfs_dynamic_prefix, prefix))
-        return 0;
-
-    for(size_t i = 0, offset = 0, entryabspath_len = packfs_len(packfs_dynamic_dirpaths); i < packfs_dynamic_dirs_num; offset += (entryabspath_len + 1), i++, entryabspath_len = packfs_len(packfs_dynamic_dirpaths + offset))
-    {
-        const char* entryabspath = packfs_dynamic_dirpaths + offset;
-
-        if(prefix_len > 0)
-        {
-            if(0 == strncmp(prefix, entryabspath, prefix_len) && entryabspath[prefix_len] == packfs_sep && 0 == strncmp(entryabspath + prefix_len + 1, path, path_len) && (entryabspath[prefix_len + 1 + path_len] == '\0' || entryabspath[prefix_len + 1 + path_len] == packfs_pathsep) )
-            {
-                return 1;
-            }
-        }
-        else
-        {
-            if(0 == strncmp(path, entryabspath, path_len) && (entryabspath[path_len] == '\0' || entryabspath[path_len] == packfs_pathsep))
-            {
-                return 1;
-            }
-        }
-    }
-
-    return 0;
-}
-
-size_t packfs_archive_prefix_extract(const char* path, const char* suffixes)
-{
-    if(path == NULL || suffixes == NULL || suffixes[0] == '\0')
-        return 0;
-    for(const char* res = strchr(path, packfs_sep), *prevres = path; prevres != NULL; prevres = res, res = (res != NULL ? strchr(res + 1, packfs_sep) : NULL))
-    {
-        size_t prefix_len = res == NULL ? strlen(path) : (res - path);
-        for(const char* begin = suffixes, *end = strchr(suffixes, packfs_pathsep), *prevend  = suffixes; prevend != NULL; prevend = end, begin = (end + 1), end = end != NULL ? strchr(end + 1, packfs_pathsep) : NULL)
-        {
-            size_t suffix_len = end == NULL ? strlen(begin) : (end - begin);
-            if(suffix_len > 0 && prefix_len >= suffix_len && 0 == strncmp(begin, path + prefix_len - suffix_len, suffix_len))
-                return prefix_len;
-        }
     }
     return 0;
 }
@@ -387,9 +347,21 @@ void packfs_add_dirname(const char* prefix, size_t prefix_len, const char* entry
         size_t dirname_len = slash == NULL ? strlen(path) : (slash - path + 1);
         entryisdir = dirname_len > 0 && path[dirname_len - 1] == packfs_sep;
 
-        size_t exists = entryisdir ? packfs_dir_exists("", path, dirname_len) : 1;
+        if(!entryisdir || dirname_len == 0)
+            continue;
 
-        if(exists || dirname_len == 0)
+        size_t direxists = 0;
+        for(size_t i = 0, offset = 0, entryabspath_len = packfs_len(packfs_dynamic_dirpaths); i < packfs_dynamic_dirs_num; offset += (entryabspath_len + 1), i++, entryabspath_len = packfs_len(packfs_dynamic_dirpaths + offset))
+        {
+            const char* entryabspath = packfs_dynamic_dirpaths + offset;
+            if(0 == strncmp(entryabspath, path, dirname_len) && (entryabspath[dirname_len] == '\0' || entryabspath[dirname_len] == packfs_pathsep))
+            {
+                direxists = 1;
+                break;
+            }
+        }
+
+        if(direxists)
             continue;
         
         if(packfs_dynamic_paths_total > 0)
