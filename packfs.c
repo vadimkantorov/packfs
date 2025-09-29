@@ -354,7 +354,7 @@ void packfs_add_dirname(const char* prefix, size_t prefix_len, const char* entry
         for(size_t i = 0, offset = 0, entryabspath_len = packfs_len(packfs_dynamic_dirpaths); i < packfs_dynamic_dirs_num; offset += (entryabspath_len + 1), i++, entryabspath_len = packfs_len(packfs_dynamic_dirpaths + offset))
         {
             const char* entryabspath = packfs_dynamic_dirpaths + offset;
-            if(0 == strncmp(entryabspath, path, dirname_len) && (entryabspath[dirname_len] == '\0' || entryabspath[dirname_len] == packfs_pathsep))
+            if(packfs_match(entryabspath, path, dirname_len))
             {
                 direxists = 1;
                 break;
@@ -625,8 +625,6 @@ void packfs_init(const char* path, const char* packfs_config)
 
     if(packfs_initialized == 1 && packfs_enabled == 0)
     {
-        char path_normalized[packfs_files_name_maxlen]; 
-        
         if(packfs_config == NULL)
             packfs_config = getenv("PACKFS_CONFIG");
         
@@ -635,8 +633,7 @@ void packfs_init(const char* path, const char* packfs_config)
             for(const char* begin = packfs_config, *end = strchr(packfs_config, packfs_pathsep), *prevend  = packfs_config; prevend != NULL && begin[0] != '\0'; prevend = end, begin = (end + 1), end = (end != NULL ? strchr(end + 1, packfs_pathsep) : NULL))
             {
                 size_t len = end == NULL ? strlen(begin) : (end - begin);
-                strncpy(path_normalized, begin, len);
-                path_normalized[len] = '\0';
+                char path_normalized[packfs_files_name_maxlen] = {0}; strncpy(path_normalized, begin, len);
 
                 char* at_prefix = strchr(path_normalized, packfs_atsep);
                 const char* prefix = at_prefix != NULL ? (at_prefix + 1) : packfs_default_prefix;
@@ -686,7 +683,7 @@ void packfs_init(const char* path, const char* packfs_config)
         
         if(path != NULL && path[0] != '\0')
         {
-            packfs_normalize_path(path_normalized, path);
+            char path_normalized[packfs_files_name_maxlen] = {0}; packfs_normalize_path(path_normalized, path);
             size_t path_prefix_len = packfs_archive_prefix_extract(path_normalized, packfs_archives_suffixes);
             if(path_prefix_len > 0)
             {
