@@ -6,24 +6,7 @@ Demo of abusing https://github.com/libarchive/libarchive to make `LD_PRELOAD`-ba
 
 **Limitations:** This demo does not optimize for iterative entry reads or iterative seeks, https://github.com/google/fuse-archive/ makes an attempt in that direction; also see https://github.com/libarchive/libarchive/issues/2306 for future support of fast seeks in ZIP / TAR / CPIO in libarchive
 
-```shell
-cc -shared -fPIC libarchivepreload.c -o libarchivepreload.so -ldl libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a -Ilibarchive -Ilibarchive/libarchive
-
-zip -r   libarchivepreload.zip    libarchivepreload.c .git
-tar -cJf libarchivepreload.tar.xz libarchivepreload.c .git
-
-LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/
-LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip
-LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.zip/libarchivepreload.c
-LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.zip/libarchivepreload.c
-LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.zip
-          
-LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.tar.xz/
-LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.tar.xz
-LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/ls -lah libarchivepreload.tar.xz/libarchivepreload.c
-LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/cat libarchivepreload.tar.xz/libarchivepreload.c
-LD_PRELOAD=$PWD/libarchivepreload.so /usr/bin/find libarchivepreload.tar.xz
-```
+**Note:** for now only single-threaded support
 
 # Syntax of PACKFS
 `PACKFS` is a colon-separated list of parts:
