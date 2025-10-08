@@ -394,19 +394,9 @@ void packfs_dynamic_add_dirname(const char* prefix, size_t prefix_len, const cha
         if(!entryisdir || dirname_len == 0)
             continue;
 
-        size_t direxists = 0;
-        const char* entryabspath = NULL;
-        PACKFS_FOR_PATH(entryabspath, entryabspath_len, packfs_dynamic_dirs_paths, packfs_dynamic_dirs_num)
-        {
-            if(packfs_match_path(entryabspath, entryabspath_len, path, dirname_len, packfs_dir_matches))
-            {
-                direxists = 1;
-                break;
-            }
-        }
-
-        if(direxists)
+        if(packfs_match_path(packfs_dynamic_dirs_path, packfs_dynamic_dirs_paths_total, path, dirname_len, packfs_dir_exists))
             continue;
+
         
         if(packfs_dynamic_files_paths_total > 0)
         {
