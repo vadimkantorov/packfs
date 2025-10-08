@@ -909,7 +909,6 @@ void* packfs_readdir(void* stream)
         PACKFS_FOR2(entryabspath, entryabspath_len, packfs_dynamic_files_paths, packfs_dynamic_files_num)
         {
             int match = packfs_match_path(dirabspath, dirabspath_len, entryabspath, entryabspath_len, -1);
-            
             if((i > (d_ino - packfs_dynamic_ino_offset) || (i == 0 && check_dirs)) && match)
             {
                 size_t basename_offset = entryabspath_len;
