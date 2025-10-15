@@ -63,7 +63,7 @@
 #define PACKFS_WRAP(x) PACKFS_CONCAT(__wrap_, x)
 #endif
 
-#define PACKFS_EMPTY(s) ((s) == NULL || *(s) == '\0')
+#define PACKFS_EMPTY(s) ((s) == NULL || (s)[0] == '\0')
 
 #define PACKFS_FOR_PATH(entryabspath, entryabspath_len, paths, num) (entryabspath) = (paths); for(size_t i = 0, offset = 0, (entryabspath_len) = packfs_path_len((paths)); i < (num); offset += ((entryabspath_len) + 1), i++, (entryabspath) = (paths) + offset, (entryabspath_len) = packfs_path_len((paths) + offset))
 
@@ -241,7 +241,7 @@ void packfs_normalize_path(char* path_normalized, const char* path)
 
 size_t packfs_path_len(const char* path)
 {
-    if(path == NULL || path[0] == '\0' || path[0] == packfs_pathsep)
+    if(PACKFS_EMPTY(path) || path[0] == packfs_pathsep)
         return 0;
 
     const char* sep = strchr(path, packfs_pathsep);
@@ -252,7 +252,7 @@ size_t packfs_path_len(const char* path)
 
 int packfs_match_ext(const char* path, size_t path_len, const char* exts)
 {
-    if(path == NULL || path[0] == '\0' || path_len == 0 || exts == NULL || exts[0] == '\0')
+    if(PACKFS_EMPTY(path) || path_len == 0 || PACKFS_EMPTY(exts))
         return 0;
 
     const char* path_ext = strrchr(path, packfs_extsep);
@@ -270,7 +270,7 @@ int packfs_match_ext(const char* path, size_t path_len, const char* exts)
 
 size_t packfs_calc_archive_prefixlen(const char* path, const char* exts)
 {
-    if(path == NULL || path[0] == '\0' || exts == NULL || exts[0] == '\0')
+    if(PACKFS_EMPTY(path) || PACKFS_EMPTY(exts))
         return 0;
 
     PACKFS_SPLIT_PATH(path, packfs_sep)
@@ -327,7 +327,7 @@ size_t packfs_match_path(const char* haystack, size_t haystack_len, const char* 
     }
     else if(mode == PACKFS_ENTRY_IN_DIR_RECURSIVELY)
     {
-        if(haystack == NULL || haystack[0] == '\0' || needle == NULL || needle[0] == '\0')
+        if(PACKFS_EMPTY(haystack) || PACKFS_EMPTY(needle))
             return 0;
         size_t needle_len = strlen(needle);
         
@@ -361,7 +361,7 @@ size_t packfs_match_path(const char* haystack, size_t haystack_len, const char* 
 
 void packfs_dynamic_add_file(const char* prefix, size_t prefix_len, const char* entrypath, size_t entrypath_len, size_t entrysize, size_t entryoffset, size_t archivepaths_offset)
 {
-    if(prefix_len == 0 || prefix == NULL || prefix[0] == '\0' || entrypath_len == 0) return;
+    if(prefix_len == 0 || PACKFS_EMPTY(prefix) || entrypath_len == 0) return;
     size_t prefix_len_m1 = (prefix[prefix_len - 1] == packfs_sep) ? (prefix_len - 1) : prefix_len;
 
     if(packfs_dynamic_files_paths_len > 0)
@@ -395,7 +395,7 @@ void packfs_dynamic_add_file(const char* prefix, size_t prefix_len, const char* 
 void packfs_dynamic_add_dirname(const char* prefix, size_t prefix_len, const char* entrypath, size_t entrypath_len, size_t entryisdir)
 {
     // TODO: do not add trailing colon?
-    if(prefix_len == 0 || prefix == NULL || prefix[0] == '\0') return;
+    if(prefix_len == 0 || PACKFS_EMPTY(prefix)) return;
     size_t prefix_len_m1 = (prefix[prefix_len - 1] == packfs_sep) ? (prefix_len - 1) : prefix_len;
 
     char path[packfs_path_max] = {0};
@@ -430,7 +430,7 @@ void packfs_dynamic_add_dirname(const char* prefix, size_t prefix_len, const cha
 void packfs_dynamic_add_prefix(const char* prefix, size_t prefix_len)
 {
     // TODO: do not add trailing colon?
-    if(prefix_len == 0 || prefix == NULL || prefix[0] == '\0') return;
+    if(prefix_len == 0 || PACKFS_EMPTY(prefix)) return;
     size_t prefix_len_m1 = (prefix[prefix_len - 1] == packfs_sep) ? (prefix_len - 1) : prefix_len;
     
     size_t prefixes_len = strlen(packfs_dynamic_prefix);
@@ -956,7 +956,7 @@ int packfs_stat(const char* path, int fd, size_t* isdir, size_t* size, size_t* d
     char path_normalized[packfs_path_max] = {0}; packfs_normalize_path(path_normalized, path); size_t path_normalized_len = strlen(path_normalized);
     const char* entryabspath = NULL;
     int path_in_range = 0;
-    int path_is_empty = path == NULL || path[0] == '\0';
+    int path_is_empty = PACKFS_EMPTY(path);
     
     if(packfs_path_in_range(packfs_static_prefix, path_normalized))
     {
