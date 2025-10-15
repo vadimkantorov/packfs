@@ -12,8 +12,8 @@ libpackfs.so: packfs.c libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/
 libpackfs.a : packfs.c libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a
 	$(CC) -c -o $(basename $@).o $< $(STATICLDFLAGS) $(ARCHIVECFLAGS) && $(AR) r $@ $(basename $@).o
 
-packfs: packfs.c
-	$(CC) -o $@ $^ -DPACKFS_STATIC_PACKER
+packfs: packfs.c libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a
+	$(CC) -o $@ $^ $(ARCHIVECFLAGS) -DPACKFS_STATIC_PACKER
 
 cat: cat.c libpackfs.a libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a
 	$(CC) -o $@ $^ $(STATICLDFLAGS) 

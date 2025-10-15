@@ -294,15 +294,17 @@ enum packfs_match_path_mode
 size_t packfs_match_path(const char* haystack, size_t haystack_len, const char* needle, size_t needle_len, int mode)
 {
     //TODO: use switch
+    //TODO: unite PACKFS_DIR_EXISTS and PACKFS_DIR_MATCHES, normalize trailing slash for dirs
     if(mode == PACKFS_DIR_EXISTS)
     {
         //TODO: must only accept prefix which ends with /
         PACKFS_SPLIT_PATH(haystack, packfs_pathsep)
         {
+            size_t len = safeend - begin;
+            
             if(0 != strncmp(begin, needle, needle_len))
                 continue;
 
-            size_t len = safeend - begin;
             if(((len == needle_len) || (len == needle_len + 1 && begin[len - 1] == packfs_sep)))
                 return 1;
         }
@@ -333,12 +335,12 @@ size_t packfs_match_path(const char* haystack, size_t haystack_len, const char* 
         
         PACKFS_SPLIT_PATH(haystack, packfs_pathsep)
         {
-            size_t prefix_len = safeend - begin;
-            int prefix_trailing_slash = begin[prefix_len - 1] == packfs_sep;
-            int prefix_ok = 0 == strncmp(begin, needle, prefix_len - prefix_trailing_slash);
-            size_t prefix_len_m1 = prefix_len - prefix_trailing_slash;
-            if(prefix_ok && ((needle_len == prefix_len_m1) || (needle_len >= prefix_len && needle[prefix_len_m1] == packfs_sep)))
-                return prefix_len;
+            size_t len = safeend - begin;
+            int prefix_trailing_slash = begin[len - 1] == packfs_sep;
+            int prefix_ok = 0 == strncmp(begin, needle, len - prefix_trailing_slash);
+            size_t len_m1 = len - prefix_trailing_slash;
+            if(prefix_ok && ((needle_len == len_m1) || (needle_len >= len && needle[len_m1] == packfs_sep)))
+                return len;
         }
         return 0;
         
@@ -412,15 +414,15 @@ void packfs_dynamic_add_dirname(const char* prefix, size_t prefix_len, const cha
     {
         if(end != NULL)
         {
-            size_t dirname_len = safeend - path + 1;
-            if(packfs_match_path(packfs_dynamic_dirs_paths, packfs_dynamic_dirs_paths_len, path, dirname_len, PACKFS_DIR_EXISTS))
+            size_t prefix_len = safeend - path + 1;
+            if(packfs_match_path(packfs_dynamic_dirs_paths, packfs_dynamic_dirs_paths_len, path, prefix_len, PACKFS_DIR_EXISTS))
                 continue;
 
             if(packfs_dynamic_dirs_paths_len > 0)
                 packfs_dynamic_dirs_paths[packfs_dynamic_dirs_paths_len++] = packfs_pathsep;
                 
-            strncpy(packfs_dynamic_dirs_paths + packfs_dynamic_dirs_paths_len, path, dirname_len);
-            packfs_dynamic_dirs_paths_len += dirname_len;
+            strncpy(packfs_dynamic_dirs_paths + packfs_dynamic_dirs_paths_len, path, prefix_len);
+            packfs_dynamic_dirs_paths_len += prefix_len;
             
             packfs_dynamic_dirs_num++;
         }
@@ -1565,9 +1567,6 @@ int PACKFS_WRAP(fcntl)(int fd, int action, ...)
 }
 
 #ifdef PACKFS_STATIC_PACKER
-int main(int argc, const char* argv[])
-{
-    printf("Hello world\n");
 /*
 #python packfs.py -i .git -o packfs.h --prefix=/packfs/dotgit --ld=ld
 
@@ -1637,127 +1636,135 @@ print("const char* packfs_static_files_starts[] = {\n", "\n".join(f"_binary_{_}_
 print("const char* packfs_static_files_ends[] = {\n", "\n".join(f"_binary_{_}_end," if _ else "NULL," for _ in safepaths), "\n};\n\n", file = f)
 */
 
-}
-#endif
-
-// https://github.com/libarchive/libarchive/issues/2283 :
-
-/*
-struct my_data {
-  int fd;
-  size_t block_size;
-  void *buffer;
-};
-
-ssize_t my_read_callback(struct archive *a,
-                            void *_my_data, const void **_buffer) {
-   struct my_data *my_data = _my_data;
-   ...  read ...
-}
-
-int64_t  my_seek_callback(struct archive *a,
-                          void *_my_data, int64_t offset, int whence) {
-   struct my_data *my_data = _my_data;
-   ... seek ...
-}
-
-int main() {
-    struct my_data my_data;
-    my_data.fd = open(...);
-
-    struct archive *a = archive_read_new();
-    archive_read_support_format_tar(a);
-    archive_read_set_read_callback(a, my_file_read);
-    archive_read_set_seek_callback(a, my_file_seek);
-    archive_read_set_callback_data(a, my_data);
-    r = archive_read_open1(a);
-
-    while (true) {
-        ... read entries ...
-    }
-
-    close(my_data.fd);
-}
-*/
-
-/*
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <assert.h>
-
-#include <archive.h>
-#include <archive_entry.h>
-
 // define required for #include <archive_read_private.h>
-#define __LIBARCHIVE_BUILD
-#include <archive_read_private.h>
+//#define __LIBARCHIVE_BUILD
+//#include <archive_read_private.h>
+
+struct my_data
+{
+    int fd;
+    size_t block_size;
+    uint8_t buffer[1024 * 4];
+};
 
 void* last_file_buff;
 size_t last_file_block_size;
 size_t last_file_offset;
 
-archive_read_callback* old_file_read;
-archive_seek_callback* old_file_seek;
+typedef int64_t la_seek_t;
 
-static ssize_t
-new_file_read(struct archive *a, void *client_data, const void **buff)
+int64_t my_seek_callback(struct archive *a, void *client_data, int64_t request, int whence)
 {
-    // struct read_file_data copied from https://github.com/libarchive/libarchive/blob/master/libarchive/archive_read_open_filename.c
-    struct read_file_data {
-            int	 fd;
-            size_t	 block_size;
-            void	*buffer;
-            //mode_t	 st_mode;  // Mode bits for opened file. 
-            //char	 use_lseek;
-            //enum fnt_e { FNT_STDIN, FNT_MBS, FNT_WCS } filename_type;
-            //union {
-            //	char	 m[1];// MBS filename. 
-            //	wchar_t	 w[1];// WCS filename. 
-            //} filename; // Must be last! 
-    } *mine = client_data;
-    last_file_buff = mine->buffer;
-    last_file_block_size = mine->block_size;
-    last_file_offset = old_file_seek(a, client_data, 0, SEEK_CUR);
-    
-    return old_file_read(a, client_data, buff);
+    // https://github.com/libarchive/libarchive/blob/master/libarchive/archive_read_open_fd.c
+    struct my_data *mine = (struct my_data *)client_data;
+    la_seek_t seek = (la_seek_t)request;
+    int64_t r;
+    int seek_bits = sizeof(seek) * 8 - 1;  /* off_t is a signed type. */
+
+    /* We use off_t here because lseek() is declared that way. */
+
+    /* Do not perform a seek which cannot be fulfilled. */
+    if (sizeof(request) > sizeof(seek)) {
+            const int64_t max_seek =
+                (((int64_t)1 << (seek_bits - 1)) - 1) * 2 + 1;
+            const int64_t min_seek = ~max_seek;
+            if (request < min_seek || request > max_seek) {
+                    errno = EOVERFLOW;
+                    goto err;
+            }
+    }
+
+    r = lseek(mine->fd, seek, whence);
+    if (r >= 0)
+            return r;
+
+err:
+    if (errno == ESPIPE) {
+            archive_set_error(a, errno,
+                "A file descriptor(%d) is not seekable(PIPE)", mine->fd);
+            return (ARCHIVE_FAILED);
+    } else {
+            /* If the input is corrupted or truncated, fail. */
+            archive_set_error(a, errno,
+                "Error seeking in a file descriptor(%d)", mine->fd);
+            return (ARCHIVE_FATAL);
+    }
 }
 
-int
-main(int argc, const char **argv)
+
+ssize_t my_read_callback(struct archive *a, void *client_data, const void **buff)
 {
+    // https://github.com/libarchive/libarchive/blob/master/libarchive/archive_read_open_fd.c
+    struct my_data *mine = (struct my_data *)client_data;
+    ssize_t bytes_read;
+    
+    last_file_buff = mine->buffer;
+    last_file_block_size = mine->block_size;
+    last_file_offset = my_seek_callback(a, client_data, 0, SEEK_CUR);
+
+    *buff = mine->buffer;
+
+    for (;;)
+    {
+            bytes_read = read(mine->fd, mine->buffer, mine->block_size);
+            if (bytes_read < 0)
+            {
+                    if (errno == EINTR)
+                            continue;
+                    archive_set_error(a, errno, "Error reading fd %d",
+                        mine->fd);
+            }
+            return (bytes_read);
+    }
+    return 0;
+}
+
+int main(int argc, const char **argv)
+{
+    // https://github.com/libarchive/libarchive/issues/2283
+
     if(argc < 2)
         return 1;
 
     const char *filename = argv[1];
+    char filename_out[packfs_path_max];
+    strcpy(filename_out, filename);
+    strcat(filename_out, ".json");
+    FILE* fout = fopen(filename_out, "w");
 
     struct archive *a = archive_read_new();
     archive_read_support_format_tar(a);
     archive_read_support_format_iso9660(a);
     archive_read_support_format_zip(a);
     
-    assert(ARCHIVE_OK == archive_read_open_filename(a, filename, 10240));
-    
+    struct my_data mydata;
+    mydata.fd = open(filename, O_RDONLY | O_CLOEXEC);
+    mydata.block_size = sizeof(mydata.buffer);
+
+    archive_read_set_seek_callback(a, my_seek_callback);
+    archive_read_set_read_callback(a, my_read_callback);
+    archive_read_set_callback_data(a, &mydata);
+
+    //assert(ARCHIVE_OK == archive_read_open_filename(a, filename, 10240));
     // struct archive_read in https://github.com/libarchive/libarchive/blob/master/libarchive/archive_read_private.h
-    struct archive_read *_a = ((struct archive_read *)a);
-    old_file_read = _a->client.reader;
-    old_file_seek = _a->client.seeker;
+    //struct archive_read *_a = ((struct archive_read *)a);
+    //old_file_read = _a->client.reader;
+    //old_file_seek = _a->client.seeker;
+    //#define ARCHIVE_STATE_NEW 1U
+    //a->state = ARCHIVE_STATE_NEW;
+    //archive_read_set_read_callback(a, new_file_read);
+    int r = archive_read_open1(a);
+    if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
     
-    a->state = ARCHIVE_STATE_NEW;
-    archive_read_set_read_callback(a, new_file_read);
-    assert(ARCHIVE_OK ==  archive_read_open1(a));
-    
+    fprintf(stderr, "#%s\n", filename_out);
+    fprintf(fout, "[\n");
+    int first = 1;
     for(;;)
     {
         struct archive_entry *entry;
         int r = archive_read_next_header(a, &entry);
         if (r == ARCHIVE_EOF) break;
-        if (r != ARCHIVE_OK) { fprintf(stderr, "%s\n", archive_error_string(a)); return r; }
+        if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
 
         const void* firstblock_buff;
         size_t firstblock_len;
@@ -1769,17 +1776,26 @@ main(int argc, const char **argv)
         {
             size_t byte_size = (size_t)archive_entry_size(entry);
             size_t byte_offset = last_file_offset + (size_t)(firstblock_buff - last_file_buff);
-            printf("#dd if=\"%s\" of=\"%s\" bs=1 skip=%zu count=%zu\n", filename, archive_entry_pathname(entry), byte_offset, byte_size);
+            //fprintf(stderr, "#dd if=\"%s\" of=\"%s\" bs=1 skip=%zu count=%zu\n", filename, archive_entry_pathname(entry), byte_offset, byte_size);
+            fprintf(fout, "%c {\"path\": \"%s\", \"offset\": %zu, \"size\": %zu}\n", first ? ' ' : ',', archive_entry_pathname(entry), byte_offset, byte_size);
+            first = 0;
         }
         else
-            printf("#false #%s %d = %s\n", archive_entry_pathname(entry), filetype, filetype == AE_IFMT ? "AE_IFMT" : filetype == AE_IFREG ? "AE_IFREG" : filetype == AE_IFLNK ? "AE_IFLNK" : filetype == AE_IFSOCK ? "AE_IFSOCK" : filetype == AE_IFCHR ? "AE_IFCHR" : filetype == AE_IFBLK ? "AE_IFBLK" : filetype == AE_IFDIR ? "AE_IFDIR" : filetype == AE_IFIFO ? "AE_IFIFO" : "archive_entry_pathname(entry) value is unknown");
+        {
+            //fprintf(stderr, "#false #%s %d = %s\n", archive_entry_pathname(entry), filetype, filetype == AE_IFMT ? "AE_IFMT" : filetype == AE_IFREG ? "AE_IFREG" : filetype == AE_IFLNK ? "AE_IFLNK" : filetype == AE_IFSOCK ? "AE_IFSOCK" : filetype == AE_IFCHR ? "AE_IFCHR" : filetype == AE_IFBLK ? "AE_IFBLK" : filetype == AE_IFDIR ? "AE_IFDIR" : filetype == AE_IFIFO ? "AE_IFIFO" : "archive_entry_pathname(entry) value is unknown");
+        }
         
         r = archive_read_data_skip(a);
         if (r == ARCHIVE_EOF) break;
-        if (r != ARCHIVE_OK) { fprintf(stderr, "%s\n", archive_error_string(a)); return r; }
+        if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
     }
-    assert(ARCHIVE_OK == archive_read_close(a));
-    assert(ARCHIVE_OK == archive_read_free(a));
+    fprintf(fout, "]\n");
+    fprintf(stderr, "#%s\n", filename_out);
+    r = archive_read_close(a);
+    if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
+    r = archive_read_free(a);
+    if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
     return 0;
 }
-*/
+
+#endif
