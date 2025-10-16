@@ -79,3 +79,5 @@ If `listingresolutiondir` is not empty, `mountpoint` can be empty
 - https://git.savannah.gnu.org/gitweb/?p=gnulib.git;a=blob;f=lib/fcntl.c
 - https://git.savannah.gnu.org/gitweb/?p=gnulib.git;a=blob;f=lib/cloexec.c
 - https://man7.org/linux/man-pages/man2/fcntl.2.html
+- https://github.com/emscripten-core/emscripten/blob/main/tools/file_packager.py
+- https://github.com/6over3/zeroperl/blob/main/tools/sfs.js
