@@ -1570,11 +1570,9 @@ struct my_data
     size_t block_size;
     uint8_t buffer[1024 * 4];
 };
-
 void* last_file_buff;
 size_t last_file_block_size;
 size_t last_file_offset;
-
 typedef int64_t la_seek_t;
 
 int64_t my_seek_callback(struct archive *a, void *client_data, int64_t request, int whence)
@@ -1588,30 +1586,32 @@ int64_t my_seek_callback(struct archive *a, void *client_data, int64_t request, 
     /* We use off_t here because lseek() is declared that way. */
 
     /* Do not perform a seek which cannot be fulfilled. */
-    if (sizeof(request) > sizeof(seek)) {
-            const int64_t max_seek =
-                (((int64_t)1 << (seek_bits - 1)) - 1) * 2 + 1;
-            const int64_t min_seek = ~max_seek;
-            if (request < min_seek || request > max_seek) {
-                    errno = EOVERFLOW;
-                    goto err;
-            }
+    if (sizeof(request) > sizeof(seek))
+    {
+        const int64_t max_seek = (((int64_t)1 << (seek_bits - 1)) - 1) * 2 + 1;
+        const int64_t min_seek = ~max_seek;
+        if (request < min_seek || request > max_seek)
+        {
+            errno = EOVERFLOW;
+            goto err;
+        }
     }
 
     r = lseek(mine->fd, seek, whence);
     if (r >= 0)
-            return r;
+        return r;
 
 err:
-    if (errno == ESPIPE) {
-            archive_set_error(a, errno,
-                "A file descriptor(%d) is not seekable(PIPE)", mine->fd);
-            return (ARCHIVE_FAILED);
-    } else {
-            /* If the input is corrupted or truncated, fail. */
-            archive_set_error(a, errno,
-                "Error seeking in a file descriptor(%d)", mine->fd);
-            return (ARCHIVE_FATAL);
+    if (errno == ESPIPE)
+    {
+        archive_set_error(a, errno, "A file descriptor(%d) is not seekable(PIPE)", mine->fd);
+        return (ARCHIVE_FAILED);
+    }
+    else
+    {
+        /* If the input is corrupted or truncated, fail. */
+        archive_set_error(a, errno, "Error seeking in a file descriptor(%d)", mine->fd);
+        return (ARCHIVE_FATAL);
     }
 }
 
@@ -1630,100 +1630,24 @@ ssize_t my_read_callback(struct archive *a, void *client_data, const void **buff
 
     for (;;)
     {
-            bytes_read = read(mine->fd, mine->buffer, mine->block_size);
-            if (bytes_read < 0)
-            {
-                    if (errno == EINTR)
-                            continue;
-                    archive_set_error(a, errno, "Error reading fd %d",
-                        mine->fd);
-            }
-            return (bytes_read);
+        bytes_read = read(mine->fd, mine->buffer, mine->block_size);
+        if (bytes_read < 0)
+        {
+            if (errno == EINTR)
+                continue;
+            archive_set_error(a, errno, "Error reading fd %d", mine->fd);
+        }
+        return (bytes_read);
     }
     return 0;
 }
 
-int main(int argc, const char **argv)
+int generate_archive_listing(const char* input_path, const char* output_path)
 {
-/*
-#python packfs.py -i .git -o packfs.h --prefix=/packfs/dotgit --ld=ld
-
-import os
-import re
-import argparse
-import subprocess
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--input-path', '-i')
-parser.add_argument('--output-path', '-o')
-parser.add_argument('--prefix')
-parser.add_argument('--ld', default = 'ld')
-parser.add_argument('--include', default = '')
-parser.add_argument('--exclude', default = '')
-args = parser.parse_args()
-
-assert args.input_path and os.path.exists(args.input_path) and os.path.isdir(args.input_path), "Input path does not exist or is not a directory"
-assert args.output_path, "Output path not specified"
-
-# problem: can produce the same symbol name because of this mapping, ld maps only to _, so may need to rename the file before invoking ld
-translate = {ord('.') : '_', ord('-') : '__', ord('_') : '__', ord('/') : '_'}
-
-output_path_o = args.output_path + '.o'
-os.makedirs(output_path_o, exist_ok = True)
-objects, safepaths, relpaths  = [], [], []
-
-cwd = os.getcwd()
-for (dirpath, dirnames, filenames) in os.walk(args.input_path):
-    #relpaths_dirs.extend(os.path.join(dirpath, basename).removeprefix(args.input_path).lstrip(os.path.sep) for basename in dirnames)
-    
-    relpaths.append(dirpath.removeprefix(args.input_path).strip(os.path.sep) + os.path.sep)
-    safepaths.append('')
-    for basename in filenames:
-        p = os.path.join(dirpath, basename)
-        relpath = p.removeprefix(args.input_path).lstrip(os.path.sep)
-        safepath = relpath.translate(translate)
-
-        include_file = True
-        if args.include and re.match('.+(' + args.include + ')$', p):
-            include_file = True
-        elif args.exclude and re.match('.+(' + args.exclude + ')$', p):
-            include_file = False
-        elif relpath.endswith('.o'):
-            include_file = False
-        
-        if include_file:
-            safepaths.append(safepath)
-            relpaths.append(relpath)
-            objects.append(os.path.join(output_path_o, safepath + '.o'))
-            abspath_o = os.path.join(os.path.abspath(output_path_o), safepath + '.o')
-            output_path_o_safepath = os.path.join(output_path_o, safepath)
-            
-            os.symlink(os.path.abspath(p), output_path_o_safepath)
-            subprocess.check_call([args.ld, '-r', '-b', 'binary', '-o', abspath_o, safepath], cwd = output_path_o)
-            os.unlink(output_path_o_safepath)
-
-g = open(args.output_path + '.txt', 'w')
-print('\n'.join(objects), file = g)
-f = open(args.output_path, 'w')
-
-print('char packfs_static_prefix[] = "', args.prefix.rstrip(os.path.sep) + os.path.sep, '";', sep = '', file = f)
-print("size_t packfs_static_entries_num = ", len(relpaths), ";\n\n", file = f)
-print("const char* packfs_static_entries_names[] = {\n\"" , "\",\n\"".join(relpaths), "\"\n};\n\n", sep = '', file = f)
-print("\n".join(f"extern char _binary_{_}_start[], _binary_{_}_end[];" if _ else "" for _ in safepaths), "\n\n", file = f)
-print("const char* packfs_static_files_starts[] = {\n", "\n".join(f"_binary_{_}_start," if _ else "NULL," for _ in safepaths), "\n};\n\n", file = f)
-print("const char* packfs_static_files_ends[] = {\n", "\n".join(f"_binary_{_}_end," if _ else "NULL," for _ in safepaths), "\n};\n\n", file = f)
-*/
-
-    // https://github.com/libarchive/libarchive/issues/2283
-
-    if(argc < 2)
-        return 1;
-
-    const char *filename = argv[1];
-    char filename_out[packfs_path_max];
-    strcpy(filename_out, filename);
-    strcpy(filename_out + strlen(filename), ".json");
-    FILE* fout = fopen(filename_out, "w");
+    // TODO: replace by using open/write or fopen/fprintf explicitly to unify
+    int r = 0;
+    FILE* fout = fopen(output_path, "w");
+    if(!fout) { r = 1; fprintf(stderr, "#could not open output file: %s\n", output_path); return r; }
 
     struct archive *a = archive_read_new();
     archive_read_support_format_tar(a);
@@ -1731,16 +1655,16 @@ print("const char* packfs_static_files_ends[] = {\n", "\n".join(f"_binary_{_}_en
     archive_read_support_format_zip(a);
     
     struct my_data mydata;
-    mydata.fd = open(filename, O_RDONLY);
+    mydata.fd = open(input_path, O_RDONLY);
     mydata.block_size = sizeof(mydata.buffer);
     archive_read_set_seek_callback(a, my_seek_callback);
     archive_read_set_read_callback(a, my_read_callback);
     archive_read_set_callback_data(a, &mydata);
 
-    int r = archive_read_open1(a);
+    r = archive_read_open1(a);
     if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
     
-    fprintf(stderr, "#%s\n", filename_out);
+    fprintf(stderr, "#%s\n", output_path);
     fprintf(fout, "[\n");
     int first = 1;
     for(;;)
@@ -1760,7 +1684,7 @@ print("const char* packfs_static_files_ends[] = {\n", "\n".join(f"_binary_{_}_en
         {
             size_t byte_size = (size_t)archive_entry_size(entry);
             size_t byte_offset = last_file_offset + (size_t)(firstblock_buff - last_file_buff);
-            //fprintf(stderr, "#dd if=\"%s\" of=\"%s\" bs=1 skip=%zu count=%zu\n", filename, archive_entry_pathname(entry), byte_offset, byte_size);
+            //fprintf(stderr, "#dd if=\"%s\" of=\"%s\" bs=1 skip=%zu count=%zu\n", input_path, archive_entry_pathname(entry), byte_offset, byte_size);
             fprintf(fout, "%c {\"path\": \"%s\", \"offset\": %zu, \"size\": %zu}\n", first ? ' ' : ',', archive_entry_pathname(entry), byte_offset, byte_size);
             first = 0;
         }
@@ -1774,12 +1698,110 @@ print("const char* packfs_static_files_ends[] = {\n", "\n".join(f"_binary_{_}_en
         if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
     }
     fprintf(fout, "]\n");
-    fprintf(stderr, "#%s\n", filename_out);
+    fprintf(stderr, "#%s\n", output_path);
     r = archive_read_close(a);
     if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
     r = archive_read_free(a);
     if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
     return 0;
+}
+
+int pack_static_lib(const char* input_path, const char* output_path)
+{
+    FILE* fout = fopen(output_path, "w");
+    if(!fout) { r = 1; fprintf(stderr, "#could not open output file: %s\n", output_path); return r; }
+
+    //#python packfs.py -i .git -o packfs.h --prefix=/packfs/dotgit --ld=ld
+
+    // assert args.input_path and os.path.exists(args.input_path) and os.path.isdir(args.input_path), "Input path does not exist or is not a directory"
+    // assert args.output_path, "Output path not specified"
+    // 
+    // # problem: can produce the same symbol name because of this mapping, ld maps only to _, so may need to rename the file before invoking ld
+    // translate = {ord('.') : '_', ord('-') : '__', ord('_') : '__', ord('/') : '_'}
+    // 
+    // output_path_o = args.output_path + '.o'
+    // os.makedirs(output_path_o, exist_ok = True)
+    // objects, safepaths, relpaths  = [], [], []
+    // 
+    // cwd = os.getcwd()
+    // for (dirpath, dirnames, filenames) in os.walk(args.input_path):
+    //     #relpaths_dirs.extend(os.path.join(dirpath, basename).removeprefix(args.input_path).lstrip(os.path.sep) for basename in dirnames)
+    //     
+    //     relpaths.append(dirpath.removeprefix(args.input_path).strip(os.path.sep) + os.path.sep)
+    //     safepaths.append('')
+    //     for basename in filenames:
+    //         p = os.path.join(dirpath, basename)
+    //         relpath = p.removeprefix(args.input_path).lstrip(os.path.sep)
+    //         safepath = relpath.translate(translate)
+    // 
+    //         include_file = True
+    //         if args.include and re.match('.+(' + args.include + ')$', p):
+    //             include_file = True
+    //         elif args.exclude and re.match('.+(' + args.exclude + ')$', p):
+    //             include_file = False
+    //         elif relpath.endswith('.o'):
+    //             include_file = False
+    //         
+    //         if include_file:
+    //             safepaths.append(safepath)
+    //             relpaths.append(relpath)
+    //             objects.append(os.path.join(output_path_o, safepath + '.o'))
+    //             abspath_o = os.path.join(os.path.abspath(output_path_o), safepath + '.o')
+    //             output_path_o_safepath = os.path.join(output_path_o, safepath)
+    //             
+    //             os.symlink(os.path.abspath(p), output_path_o_safepath)
+    //             subprocess.check_call([args.ld, '-r', '-b', 'binary', '-o', abspath_o, safepath], cwd = output_path_o)
+    //             os.unlink(output_path_o_safepath)
+    // 
+    // g = open(args.output_path + '.txt', 'w')
+    // print('\n'.join(objects), file = g)
+    // f = open(args.output_path, 'w')
+    // 
+    // print('char packfs_static_prefix[] = "', args.prefix.rstrip(os.path.sep) + os.path.sep, '";', sep = '', file = f)
+    // print("size_t packfs_static_entries_num = ", len(relpaths), ";\n\n", file = f)
+    // print("const char* packfs_static_entries_names[] = {\n\"" , "\",\n\"".join(relpaths), "\"\n};\n\n", sep = '', file = f)
+    // print("\n".join(f"extern char _binary_{_}_start[], _binary_{_}_end[];" if _ else "" for _ in safepaths), "\n\n", file = f)
+    // print("const char* packfs_static_files_starts[] = {\n", "\n".join(f"_binary_{_}_start," if _ else "NULL," for _ in safepaths), "\n};\n\n", file = f)
+    // print("const char* packfs_static_files_ends[] = {\n", "\n".join(f"_binary_{_}_end," if _ else "NULL," for _ in safepaths), "\n};\n\n", file = f)
+    return 0;
+}
+
+int main(int argc, const char **argv)
+{
+    // https://github.com/libarchive/libarchive/issues/2283
+    // parser = argparse.ArgumentParser()
+    // parser.add_argument('--input-path', '-i')
+    // parser.add_argument('--output-path', '-o')
+    // parser.add_argument('--prefix')
+    // parser.add_argument('--ld', default = 'ld')
+    // parser.add_argument('--include', default = '')
+    // parser.add_argument('--exclude', default = '')
+    // args = parser.parse_args()
+    
+    const char* input_path = NULL;
+    const char* output_path = NULL;
+    int index = 0;
+
+    for(int i = 1; i < argc; i++)
+    {
+        if(0 == strcmp("--input-path", argv[i]))
+        {
+            input_path = argv[i++];
+        }
+        else if(0 == strcmp("--output-path", argv[i]))
+        {
+            output_path = argv[i++];
+        }
+        else if(0 == strcmp("--index", argv[i]))
+        {
+            index = 1;
+        }
+    }
+
+    if(index && input_path != NULL && output_path != NULL)
+        return generate_archive_listing(input_path, output_path);
+    else if(input_path != NULL && output_path != NULL)
+        return pack_static_lib(input_path, output_path);
 }
 
 #endif
