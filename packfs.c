@@ -13,7 +13,6 @@
 // TODO: support mmap-reads from uncompressed archives
 // TODO: support Emscripten-like concatenated list of lzma-encoded files
 // TODO: check and handle various limits. if dir or prefix is considered without trailing slash - specify in varname, check path lens fit in packfs limit, check d_name length: https://unix.stackexchange.com/questions/619625/to-what-extent-does-linux-support-file-names-longer-than-255-bytes
-// TODO: packfs_path_in_range: should return max-len prefix?
 
 // TODO: maybe use #include <stdbool.h> / bool / true / false - write wrapper in ctypes
 // TODO: report error via a global errno / geterrno string
@@ -1762,6 +1761,7 @@ int pack_static_lib(const char* input_path, const char* output_path, const char*
     size_t i = 0;
     PACKFS_SPLIT(packfs_dynamic_files_paths, packfs_pathsep, begin, end, safeend)
     {
+        fprintf(stderr, "packing file %zu / %zu\n", i, packfs_dynamic_files_num);
         size_t len = safeend - begin;
         fprintf(f, "\"%.*s\" \":\"\n", (int)len, begin);
 
