@@ -1629,12 +1629,12 @@ int list_files_dirs(const char *path, const struct stat *statptr, int fileflags,
     return 0;
 }
 
-int packfs_dump_static_package(const char* prefix, const char* output_path, const char* ld, const char* packfs_static_package)
+int packfs_dump_static_package(const char* prefix, const char* output_path, const char* ld, const char* input_path)
 {
     int r = 0;
     
     char tmp[1024];
-    sprintf(tmp, "\"%s\" -r -b binary -o \"%s.o\" \"%s\"", ld, output_path, packfs_static_package);
+    sprintf(tmp, "\"%s\" -r -b binary -o \"%s.o\" \"%s\"", ld, output_path, input_path);
     r = system(tmp);
     if(r != 0) { fprintf(stderr, "#could not open invoke ld: %s.o\n", output_path); return r; }
 
@@ -1740,8 +1740,17 @@ int generate_archive_listing(const char* input_path, const char* output_path, co
         if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
         r = archive_read_free(a);
         if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
+
+        if(object)
+        {
+            char header_path[packfs_path_max];
+            sprintf(header_path, "%s.h", output_path);
+            r = packfs_dump_static_package(prefix, header_path, ld, input_path);
+            fprintf(stderr, "%s\n", header_path);
+            fprintf(stderr, "%s.o\n", header_path);
+        }
     }
-    if(object)
+    else if(object)
     {
         int r = 0;
         int fd_limit = 20;
