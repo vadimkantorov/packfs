@@ -64,9 +64,9 @@
 
 #define PACKFS_EMPTY(s) ((s) == NULL || (s)[0] == '\0')
 
-#define PACKFS_SPLIT(path, sep, begin, end, safeend) for(const char* (begin) = (path), *end = strchr((path), (sep)), *prevend = (path), *(safeend) = ((end) != NULL ? (end) : ((begin) + strlen((begin)))); prevend != NULL; prevend = (end), (begin) = (((end) != NULL && *(end) != '\0') ? ((end) + 1) : NULL), (end) = (((end) != NULL && *(end) != '\0') ? strchr((end) + 1, (sep)) : NULL), (safeend) = ((end) != NULL ? (end) : ((begin) != NULL ? ((begin) + strlen((begin))) : NULL))) if((safeend) != (begin))
+#define PACKFS_SPLIT(path, sep, begin, end, safeend) for(size_t packfs_split_k = 0; packfs_split_k < 1; packfs_split_k++) for(const char* (begin) = (path), *end = strchr((path), (sep)), *prevend = (path), *(safeend) = ((end) != NULL ? (end) : ((begin) + strlen((begin)))); prevend != NULL; prevend = (end), (begin) = (((end) != NULL && *(end) != '\0') ? ((end) + 1) : NULL), (end) = (((end) != NULL && *(end) != '\0') ? strchr((end) + 1, (sep)) : NULL), (safeend) = ((end) != NULL ? (end) : ((begin) != NULL ? ((begin) + strlen((begin))) : NULL))) if((safeend) != (begin))
 
-#define PACKFS_ITER_PATH(i, entryabspath, entryabspath_len, paths, num) (entryabspath) = (paths); for(size_t (i) = 0, offset = 0, (entryabspath_len) = packfs_path_len((paths)); (i) < (num); offset += ((entryabspath_len) + 1), (i)++, (entryabspath) = (paths) + offset, (entryabspath_len) = packfs_path_len((paths) + offset))
+#define PACKFS_ITER_PATH(i, entryabspath, entryabspath_len, paths, num) for(const char* (entryabspath) = (paths); (entryabspath) != NULL; (entryabspath) = NULL) for(size_t (i) = 0, offset = 0, (entryabspath_len) = packfs_path_len((paths)); (i) < (num); offset += ((entryabspath_len) + 1), (i)++, (entryabspath) = (paths) + offset, (entryabspath_len) = packfs_path_len((paths) + offset))
 
 #define PACKFS_APPEND_PATH(paths, paths_len, path, path_len)  { if(packfs_dynamic_dirs_paths_len > 0) {(paths)[(paths_len)++] = packfs_pathsep; } strncpy((paths) + (paths_len), (path), (path_len)); (paths_len) += (path_len); }
             
@@ -92,6 +92,7 @@ char packfs_sep = '/';
 char packfs_pathsep = ':';
 char packfs_extsep = '.';
 char packfs_atsep = '@';
+const char packfs_static_package[] = "packfs_static_package";
     
 enum
 {
@@ -183,8 +184,10 @@ size_t packfs_static_files_num;
 size_t packfs_static_dirs_num;
 const char* packfs_static_files_paths; 
 const char* packfs_static_dirs_paths; 
-const char** packfs_static_files_starts; 
-const char** packfs_static_files_ends;
+const size_t packfs_static_files_offsets[0]; 
+const size_t packfs_static_files_sizes[0];
+const char* _binary_packfs_static_package_start;
+const char* _binary_packfs_static_package_end;
 #endif
 
 int packfs_initialized;
@@ -773,7 +776,6 @@ void packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
         }
     }
     
-    const char* entryabspath = NULL;
     PACKFS_ITER_PATH(i, entryabspath, entryabspath_len, packfs_static_dirs_paths, packfs_static_dirs_num)
     {
         if(i == d_ino - packfs_static_ino_offset)
@@ -814,7 +816,6 @@ void* packfs_readdir(void* stream)
     
     struct dirent* dir_entry = stream;
     size_t d_ino = (size_t)dir_entry->d_ino;
-    const char* entryabspath = NULL; 
 
     if(d_ino >= packfs_static_ino_offset && d_ino < packfs_dynamic_ino_offset)
     {
@@ -893,7 +894,6 @@ void* packfs_readdir(void* stream)
 int packfs_access(const char* path)
 {
     char path_normalized[packfs_path_max] = {0}; packfs_normalize_path(path_normalized, path); size_t path_normalized_len = strlen(path_normalized);
-    const char* entryabspath = NULL;
     int path_in_range = 0;
     
     if(packfs_path_in_range(packfs_static_prefix, path_normalized))
@@ -923,7 +923,6 @@ int packfs_stat(const char* path, int fd, size_t* isdir, size_t* size, size_t* d
 {
     // TODO: null path?
     char path_normalized[packfs_path_max] = {0}; packfs_normalize_path(path_normalized, path); size_t path_normalized_len = strlen(path_normalized);
-    const char* entryabspath = NULL;
     int path_in_range = 0;
     int path_is_empty = PACKFS_EMPTY(path);
     
@@ -947,7 +946,7 @@ int packfs_stat(const char* path, int fd, size_t* isdir, size_t* size, size_t* d
             int match = packfs_match_path(path_normalized, path_normalized_len, entryabspath, entryabspath_len, PACKFS_FILE_MATCHES);
             if(match)
             {
-                *size = packfs_static_files_ends[i] - packfs_static_files_starts[i];
+                *size = packfs_static_files_sizes[i]; 
                 *isdir = 0;
                 *d_ino = packfs_static_ino_offset + i;
                 return 0;
@@ -1008,7 +1007,6 @@ int packfs_stat(const char* path, int fd, size_t* isdir, size_t* size, size_t* d
 void* packfs_open(const char* path, int flags)
 {
     char path_normalized[packfs_path_max] = {0}; packfs_normalize_path(path_normalized, path); size_t path_normalized_len = strlen(path_normalized);
-    const char* entryabspath = NULL;
     int path_in_range = 0;
 
     void* fileptr = NULL; size_t filesize = 0, d_ino = 0, d_off = 0;
@@ -1036,8 +1034,8 @@ void* packfs_open(const char* path, int flags)
                 d_ino = packfs_static_ino_offset + i;
                 d_off = 0;
                 
-                filesize = (size_t)(packfs_static_files_ends[i] - packfs_static_files_starts[i]);
-                fileptr = fmemopen((void*)packfs_static_files_starts[i], filesize, "r");
+                filesize = packfs_static_files_sizes[i];
+                fileptr = fmemopen((void*)_binary_packfs_static_package_end, filesize, "r");
             }
         }
     }
@@ -1612,98 +1610,7 @@ ssize_t my_read_callback(struct archive *a, void *client_data, const void **buff
     return 0;
 }
 
-int generate_archive_listing(const char* input_path, const char* output_path)
-{
-    int r = 0;
-    // TODO: replace by using open/write or fopen/fprintf explicitly to unify
-    FILE* f = fopen(output_path, "w");
-    if(!f) { r = 1; fprintf(stderr, "#could not open output file: %s\n", output_path); return r; }
-
-    struct archive *a = archive_read_new();
-    archive_read_support_format_tar(a);
-    archive_read_support_format_iso9660(a);
-    archive_read_support_format_zip(a);
-    
-    struct my_data mydata;
-    mydata.fd = open(input_path, O_RDONLY);
-    mydata.block_size = sizeof(mydata.buffer);
-    archive_read_set_seek_callback(a, my_seek_callback);
-    archive_read_set_read_callback(a, my_read_callback);
-    archive_read_set_callback_data(a, &mydata);
-
-    r = archive_read_open1(a);
-    if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
-    
-    fprintf(stderr, "#%s\n", output_path);
-    fprintf(f, "[\n");
-    int first = 1;
-    for(;;)
-    {
-        struct archive_entry *entry;
-        int r = archive_read_next_header(a, &entry);
-        if (r == ARCHIVE_EOF) break;
-        if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
-
-        const void* firstblock_buff;
-        size_t firstblock_len;
-        int64_t firstblock_offset;
-        r = archive_read_data_block(a, &firstblock_buff, &firstblock_len, &firstblock_offset);
-        
-        int filetype = archive_entry_filetype(entry);
-        if(filetype == AE_IFREG && archive_entry_size_is_set(entry) != 0 && last_file_buff != NULL && last_file_buff <= firstblock_buff && firstblock_buff < last_file_buff + last_file_block_size)
-        {
-            size_t byte_size = (size_t)archive_entry_size(entry);
-            size_t byte_offset = last_file_offset + (size_t)(firstblock_buff - last_file_buff);
-            //fprintf(stderr, "#dd if=\"%s\" of=\"%s\" bs=1 skip=%zu count=%zu\n", input_path, archive_entry_pathname(entry), byte_offset, byte_size);
-            fprintf(f, "%c {\"path\": \"%s\", \"offset\": %zu, \"size\": %zu}\n", first ? ' ' : ',', archive_entry_pathname(entry), byte_offset, byte_size);
-            first = 0;
-        }
-        else
-        {
-            //fprintf(stderr, "#false #%s %d = %s\n", archive_entry_pathname(entry), filetype, filetype == AE_IFMT ? "AE_IFMT" : filetype == AE_IFREG ? "AE_IFREG" : filetype == AE_IFLNK ? "AE_IFLNK" : filetype == AE_IFSOCK ? "AE_IFSOCK" : filetype == AE_IFCHR ? "AE_IFCHR" : filetype == AE_IFBLK ? "AE_IFBLK" : filetype == AE_IFDIR ? "AE_IFDIR" : filetype == AE_IFIFO ? "AE_IFIFO" : "archive_entry_pathname(entry) value is unknown");
-        }
-        
-        r = archive_read_data_skip(a);
-        if (r == ARCHIVE_EOF) break;
-        if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
-    }
-    fprintf(f, "]\n");
-    fprintf(stderr, "#%s\n", output_path);
-    r = archive_read_close(a);
-    if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
-    r = archive_read_free(a);
-    if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
-    return r;
-}
-
-/*
-void pack_static_lib_sanitize_path(char* newpath, const char* path, size_t path_len)
-{
-    for(size_t i = 0, j = 0; i < path_len; i++)
-    {
-        if(path[i] == '.' || path[i] == '/')
-        {
-            newpath[j++] = '_';
-            newpath[j] = '\0';
-        }
-        else if(path[i] == '-' || path[i] == '_')
-        {
-            newpath[j++] = '_';
-            newpath[j++] = '_';
-            newpath[j] = '\0';
-        }
-        else
-        {
-            newpath[j++] = path[i];
-            newpath[j] = '\0';
-        }
-            
-    }
-}
-*/
-
 #include <ftw.h>
-
 
 int list_files_dirs(const char *path, const struct stat *statptr, int fileflags, struct FTW *pftw)
 {
@@ -1722,31 +1629,24 @@ int list_files_dirs(const char *path, const struct stat *statptr, int fileflags,
     return 0;
 }
 
-int pack_static_lib(const char* input_path, const char* output_path, const char* prefix, const char* ld, const char* ar)
+int packfs_dump_static_package(const char* prefix, const char* output_path, const char* ld, const char* packfs_static_package)
 {
-    const char packfs_static_dir[] = "packfs_static";
-
     int r = 0;
-    char tmp0[1024], tmp1[1024], tmp2[1024];
-    getcwd(tmp0, sizeof(tmp0));
     
-    sprintf(tmp1, "%s.a", output_path);
-    unlink(tmp1);
-    sprintf(tmp1, "\"%s\" -r \"%s.a\"", ar, output_path);
-    r = system(tmp1);
-    if(r != 0) { fprintf(stderr, "#could not create output archive: %s.a\n", output_path); return r; }
+    char tmp[1024];
+    sprintf(tmp, "\"%s\" -r -b binary -o \"%s.o\" \"%s\"", ld, output_path, packfs_static_package);
+    r = system(tmp);
+    if(r != 0) { fprintf(stderr, "#could not open invoke ld: %s.o\n", output_path); return r; }
 
+    size_t prefix_len = strlen(prefix);
+    size_t prefix_len_m1 = prefix[prefix_len - 1] == packfs_sep ? (prefix_len - 1) : prefix_len;
+        
     FILE* f = fopen(output_path, "w");
     if(!f) { r = 1; fprintf(stderr, "#could not open output file: %s\n", output_path); return r; }
+
     fprintf(f, "#include <stddef.h>\n\n");
-    
-    fprintf(f, "char packfs_static_prefix[] = \"%s\";\n\n", prefix);
-    
-    int fd_limit = 20;
-    int flags = 0;
-    r = nftw(input_path, list_files_dirs, fd_limit, flags);
-    if(r != 0) {fprintf(stderr, "#could not list: %s\n", input_path); return r; }
-    
+    fprintf(f, "char packfs_static_prefix[] = \"%.*s%c\";\n\n", (int)prefix_len_m1, prefix, packfs_sep);
+    fprintf(f, "extern char _binary_%s_start[], _binary_%s_end[];\n\n", packfs_static_package, packfs_static_package);
     fprintf(f, "const char packfs_static_dirs_paths[] =\n");
     PACKFS_SPLIT(packfs_dynamic_dirs_paths, packfs_pathsep, begin, end, safeend)
     {
@@ -1756,58 +1656,137 @@ int pack_static_lib(const char* input_path, const char* output_path, const char*
     fprintf(f, ";\n\n");
     fprintf(f, "size_t packfs_static_dirs_num = %zu, packfs_static_files_num = %zu;\n\n", packfs_dynamic_dirs_num, packfs_dynamic_files_num);
     
-    mkdir(packfs_static_dir, 0755);
     fprintf(f, "const char packfs_static_files_paths[] =\n");
-    size_t i = 0;
     PACKFS_SPLIT(packfs_dynamic_files_paths, packfs_pathsep, begin, end, safeend)
     {
-        fprintf(stderr, "packing file %zu / %zu\n", i, packfs_dynamic_files_num);
         size_t len = safeend - begin;
-        fprintf(f, "\"%.*s\" \":\"\n", (int)len, begin);
-
-        sprintf(tmp1, "%s/%zu", packfs_static_dir, i);
-        sprintf(tmp2, "%s/%.*s", tmp0, (int)len, begin);
-        symlink(tmp2, tmp1);
-        
-        sprintf(tmp1, "\"%s\" -r -b binary -o \"%s/%zu.o\" \"%s/%zu\"", ld, packfs_static_dir, i, packfs_static_dir, i);
-        system(tmp1);
-        sprintf(tmp2, "\"%s\" -r \"%s.a\" \"%s/%zu.o\"", ar, output_path, packfs_static_dir, i);
-        system(tmp2);
-        
-        sprintf(tmp1, "%s/%zu", packfs_static_dir, i);
-        unlink(tmp1);
-        sprintf(tmp2, "%s/%zu.o", packfs_static_dir, i);
-        unlink(tmp2);
-        i++;
+        fprintf(f, "\"%.*s%c%.*s\" \":\"\n", (int)prefix_len_m1, prefix, packfs_sep, (int)len, begin);
     }
     fprintf(f, ";\n\n");
-    rmdir(packfs_static_dir);
     
-    i = 0;
-    PACKFS_SPLIT(packfs_dynamic_files_paths, packfs_pathsep, begin, end, safeend)
-    {
-        fprintf(f, "extern char _binary_%s_%zu_start[], _binary_%s_%zu_end[];\n", packfs_static_dir, i, packfs_static_dir, i);
-        i++;
-    }
+    fprintf(f, "\n\nconst size_t packfs_static_files_offsets[] = {\n");
+    for(size_t i = 0; i < packfs_dynamic_files_num; i++)
+        fprintf(f, "%zu,\n", packfs_dynamic_files_offsets[i]); 
+    fprintf(f, "};\n\n");
     
-    i = 0;
-    fprintf(f, "\n\nconst char* packfs_static_files_starts[] = {\n");
-    PACKFS_SPLIT(packfs_dynamic_files_paths, packfs_pathsep, begin, end, safeend)
-    {
-        fprintf(f, "_binary_%s_%zu_start,\n", packfs_static_dir, i); 
-        i++;
-    }
+    fprintf(f, "\n\nconst size_t packfs_static_files_sizes[] = {\n");
+    for(size_t i = 0; i < packfs_dynamic_files_num; i++)
+        fprintf(f, "%zu,\n", packfs_dynamic_files_sizes[i]); 
     fprintf(f, "};\n\n");
 
-    i = 0;
-    fprintf(f, "\n\nconst char* packfs_static_files_ends[] = {\n");
-    PACKFS_SPLIT(packfs_dynamic_files_paths, packfs_pathsep, begin, end, safeend)
+    fclose(f);
+}
+
+int generate_archive_listing(const char* input_path, const char* output_path, const char* prefix, const char* ld, int index, int object)
+{
+    int r = 0;
+    if(index)
     {
-        fprintf(f, "_binary_%s_%zu_end,\n", packfs_static_dir, i); 
-        i++;
+        // TODO: replace by using open/write or fopen/fprintf explicitly to unify
+        FILE* f = fopen(output_path, "w");
+        if(!f) { r = 1; fprintf(stderr, "#could not open output file: %s\n", output_path); return r; }
+
+        struct archive *a = archive_read_new();
+        archive_read_support_format_tar(a);
+        archive_read_support_format_iso9660(a);
+        archive_read_support_format_zip(a);
+        
+        struct my_data mydata;
+        mydata.fd = open(input_path, O_RDONLY);
+        mydata.block_size = sizeof(mydata.buffer);
+        archive_read_set_seek_callback(a, my_seek_callback);
+        archive_read_set_read_callback(a, my_read_callback);
+        archive_read_set_callback_data(a, &mydata);
+
+        r = archive_read_open1(a);
+        if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
+        
+        fprintf(stderr, "#%s\n", output_path);
+        fprintf(f, "[\n");
+        int first = 1;
+        for(;;)
+        {
+            struct archive_entry *entry;
+            int r = archive_read_next_header(a, &entry);
+            if (r == ARCHIVE_EOF) break;
+            if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
+
+            const void* firstblock_buff;
+            size_t firstblock_len;
+            int64_t firstblock_offset;
+            r = archive_read_data_block(a, &firstblock_buff, &firstblock_len, &firstblock_offset);
+            
+            int filetype = archive_entry_filetype(entry);
+            if(filetype == AE_IFREG && archive_entry_size_is_set(entry) != 0 && last_file_buff != NULL && last_file_buff <= firstblock_buff && firstblock_buff < last_file_buff + last_file_block_size)
+            {
+                size_t byte_size = (size_t)archive_entry_size(entry);
+                size_t byte_offset = last_file_offset + (size_t)(firstblock_buff - last_file_buff);
+                //fprintf(stderr, "#dd if=\"%s\" of=\"%s\" bs=1 skip=%zu count=%zu\n", input_path, archive_entry_pathname(entry), byte_offset, byte_size);
+                fprintf(f, "%c {\"path\": \"%s\", \"offset\": %zu, \"size\": %zu}\n", first ? ' ' : ',', archive_entry_pathname(entry), byte_offset, byte_size);
+                first = 0;
+            }
+            else
+            {
+                //fprintf(stderr, "#false #%s %d = %s\n", archive_entry_pathname(entry), filetype, filetype == AE_IFMT ? "AE_IFMT" : filetype == AE_IFREG ? "AE_IFREG" : filetype == AE_IFLNK ? "AE_IFLNK" : filetype == AE_IFSOCK ? "AE_IFSOCK" : filetype == AE_IFCHR ? "AE_IFCHR" : filetype == AE_IFBLK ? "AE_IFBLK" : filetype == AE_IFDIR ? "AE_IFDIR" : filetype == AE_IFIFO ? "AE_IFIFO" : "archive_entry_pathname(entry) value is unknown");
+            }
+            
+            r = archive_read_data_skip(a);
+            if (r == ARCHIVE_EOF) break;
+            if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
+        }
+        fprintf(f, "]\n");
+        fprintf(stderr, "#%s\n", output_path);
+        r = archive_read_close(a);
+        if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
+        r = archive_read_free(a);
+        if (r != ARCHIVE_OK) { fprintf(stderr, "#%s\n", archive_error_string(a)); return r; }
     }
-    fprintf(f, "};\n\n");
+    if(object)
+    {
+        int r = 0;
+        int fd_limit = 20;
+        int flags = 0;
+        r = nftw(input_path, list_files_dirs, fd_limit, flags);
+        if(r != 0) {fprintf(stderr, "#could not list: %s\n", input_path); return r; }
+        char tmp[packfs_path_max];
+
+        FILE* g = fopen(packfs_static_package, "w");
+        if(!g) { r = 1; fprintf(stderr, "#could not open output file: %s\n", packfs_static_package); return r; }
+
+        size_t i = 0, offset = 0, size = 0;
+        PACKFS_SPLIT(packfs_dynamic_files_paths, packfs_pathsep, begin, end, safeend)
+        {
+            fprintf(stderr, "packing file %zu / %zu\n", i, packfs_dynamic_files_num);
+            size_t len = safeend - begin;
+            sprintf(tmp, "%.*s", (int)len, begin);
+
+            size = 0;
+            FILE* h = fopen(tmp, "r");
+            for(;;)
+            {
+                size_t bytes_read = fread(tmp, 1, sizeof(tmp), h);
+                if(bytes_read == 0)
+                    break;
+                size += bytes_read;
+                fwrite(tmp, 1, bytes_read, g);
+            }
+            fclose(h);
+
+            packfs_dynamic_files_offsets[i] = offset;
+            packfs_dynamic_files_sizes[i] = size;
+            offset += size;
+            i++;
+        }
+        
+        fclose(g);
+        
+        r = packfs_dump_static_package(prefix, output_path, ld, packfs_static_package);
+        fprintf(stderr, "%s.o\n", packfs_static_package);
+        fprintf(stderr, "%s\n", output_path);
     
+        r = unlink(packfs_static_package);
+        if(r != 0) { fprintf(stderr, "#could not delete: %s\n", packfs_static_package); return r; }
+    }
     return r;
 }
 
@@ -1828,8 +1807,7 @@ int main(int argc, const char **argv)
     const char* output_path = NULL;
     const char* prefix = "/packfs/";
     const char* ld = "ld";
-    const char* ar = "ar";
-    int index = 0;
+    int index = 0, object = 0;
 
     for(int i = 1; i < argc; i++)
     {
@@ -1841,10 +1819,10 @@ int main(int argc, const char **argv)
             prefix = argv[++i];
         else if(0 == strcmp("--ld", argv[i]))
             ld = argv[++i];
-        else if(0 == strcmp("--ar", argv[i]))
-            ar = argv[++i];
         else if(0 == strcmp("--index", argv[i]))
             index = 1;
+        else if(0 == strcmp("--object", argv[i]))
+            object = 1;
     }
     
     struct stat path_stat;
@@ -1869,14 +1847,7 @@ int main(int argc, const char **argv)
         return 1;
     }
     
-    if(index == 1 && input_path != NULL && output_path != NULL)
-    {
-        return generate_archive_listing(input_path, output_path);
-    }
-    else if(index == 0 && input_path != NULL && output_path != NULL)
-    {
-        return pack_static_lib(input_path, output_path, prefix, ld, ar);
-    }
+    return generate_archive_listing(input_path, output_path, prefix, ld, index, object);
 }
 
 #endif
