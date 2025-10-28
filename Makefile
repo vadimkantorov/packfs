@@ -13,12 +13,12 @@ libpackfs.a : packfs.c libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/
 	$(CC) -c -o $(basename $@).o $< $(STATICLDFLAGS) $(ARCHIVECFLAGS) && $(AR) r $@ $(basename $@).o
 
 packfs: packfs.c libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a
-	$(CC) -o $@ $^ $(ARCHIVECFLAGS) -DPACKFS_STATIC_PACKER
+	$(CC) -o $@ $^ $(ARCHIVECFLAGS) -DPACKFS_STATIC_PACKER -D'PACKFS_ARCHIVEREADSUPPORTFORMAT(a)=archive_read_support_format_tar(a);archive_read_support_format_iso9660(a);archive_read_support_format_zip(a);'
 
 cat: cat.c libpackfs.a libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a
 	$(CC) -o $@ $^ $(STATICLDFLAGS) 
 
-all: libpackfs.so libpackfs.a
+all: libpackfs.so libpackfs.a packfs
 
 libarchive/.libs/libarchive.a: zlib/libz.a xz/src/liblzma/.libs/liblzma.a
 	cd libarchive && sh ./build/autogen.sh && LDFLAGS="-L../zlib -L../xz/src/liblzma/.libs" CFLAGS="-I../zlib -I../xz/src/liblzma/ -I../xz/src/liblzma/api" sh configure --without-bz2lib --without-libb2 --without-iconv --without-lz4 --without-zstd --without-cng --without-xml2 --without-expat --without-openssl && $(MAKE)
