@@ -251,6 +251,37 @@ void packfs_normalize_path(char* path_normalized, const char* path)
     }
 }
 
+int packfs_dump_listing(const char* removeprefix, const char* output_path)
+{
+    int r = 0;
+    FILE* f = fopen(output_path, "w");
+    if(!f) { r = 1; fprintf(stderr, "#could not open output file: %s\n", output_path); return r; }
+    
+    size_t removeprefix_len = strlen(removeprefix);
+
+    fprintf(f, "[\n");
+    size_t i = 0, first = 1;
+    PACKFS_SPLIT(packfs_dynamic_dirs_paths, packfs_pathsep, begin, end)
+    {
+        const char* relative_path = begin + removeprefix_len;
+        size_t relative_len = len - removeprefix_len;
+        fprintf(f, "%c {\"path\": \"%.*s\"}\n", first ? ' ' : ',', (int)relative_len, relative_path);
+        first = 0;
+    }
+    PACKFS_SPLIT(packfs_dynamic_files_paths, packfs_pathsep, begin, end)
+    {
+        const char* relative_path = begin + removeprefix_len;
+        size_t relative_len = len - removeprefix_len;
+        fprintf(f, "%c {\"path\": \"%.*s\", \"size\": %zu, \"offset\": %zu}\n", first ? ' ' : ',', (int)relative_len, relative_path, packfs_dynamic_files_sizes[i], packfs_dynamic_files_offsets[i]);
+        i++;
+        first = 0;
+    }
+    fprintf(f, "]\n\n");
+
+    fclose(f);
+    return r;
+}
+
 int packfs_dump_static_package(const char* prefix, const char* removeprefix, const char* output_path, const char* ld, const char* input_path)
 {
     // TODO: in addition to .h, output .json
@@ -1811,26 +1842,26 @@ int main(int argc, const char **argv)
     {
         FILE* fileptr = fopen(output_path, "w");
         if(!fileptr) { r = 1; fprintf(stderr, "#could not open output file: %s\n", output_path); return r; }
-        r = packfs_scan_archive(fileptr, input_path, prefix);
+        r = packfs_scan_archive(fileptr, input_path, prefix); removeprefix = input_path;
         fclose(fileptr);
+
+        packfs_dump_listing(removeprefix, output_path);
 
         if(object)
         {
             sprintf(tmp, "%s.h", output_path);
 
             removepackage = 0;
-            removeprefix = input_path;
             package_path = input_path;
             header_path = tmp;
         }
     }
     else if(object)
     {
-        r = packfs_scan_path(input_path, isfile);
+        r = packfs_scan_path(input_path, isfile); removeprefix = isdir ? input_path : "";
         r = packfs_pack_files_and_fill_offsets(packfs_static_package);
 
         removepackage = 1;
-        removeprefix = isdir ? input_path : "";
         package_path = packfs_static_package;
         header_path = output_path;
     }
