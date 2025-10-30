@@ -1801,7 +1801,7 @@ int main(int argc, const char **argv)
     const char* ld = "ld";
     const char* include = NULL;
     const char* exclude = NULL;
-    int index = 0, object = 0;
+    int listing = 0, object = 0;
 
     for(int i = 1; i < argc; i++)
     {
@@ -1817,8 +1817,8 @@ int main(int argc, const char **argv)
             include = argv[++i];
         else if(0 == strcmp("--exclude", argv[i]))
             exclude = argv[++i];
-        else if(0 == strcmp("--index", argv[i]))
-            index = 1;
+        else if(0 == strcmp("--listing", argv[i]))
+            listing = 1;
         else if(0 == strcmp("--object", argv[i]))
             object = 1;
     }
@@ -1836,7 +1836,7 @@ int main(int argc, const char **argv)
     const char* header_path = NULL;
     const char* package_path = NULL;
     
-    if(index)
+    if(listing)
     {
         FILE* fileptr = fopen(output_path, "w");
         if(!fileptr) { r = 1; fprintf(stderr, "#could not open output file: %s\n", output_path); return r; }
