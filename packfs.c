@@ -32,14 +32,11 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <dirent.h>
+#include <ftw.h>
 
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/types.h>
-
-#ifdef PACKFS_STATIC_PACKER
-#include <ftw.h>
-#endif
 
 #ifdef PACKFS_ARCHIVE
 #include <archive.h>
@@ -110,7 +107,7 @@ const char packfs_static[] = "packfs_static";
 #include "packfs_static.h"
 #else
 const char   packfs_static_prefix[] = "";
-const size_t packfs_statc_files_num;
+const size_t packfs_static_files_num;
 const size_t packfs_static_dirs_num;
 const char  packfs_static_files_paths[] = ""; 
 const char  packfs_static_dirs_paths[] = ""; 
@@ -739,7 +736,7 @@ void packfs_extract_archive_entry_from_FILE_to_FILE(FILE* f, const char* entrypa
 #endif
 }
 
-void packfs_scan_dir(DIR* dirptr, const char* path_normalized, size_t len, const char* prefix)
+void packfs_scan_archive_dir(DIR* dirptr, const char* path_normalized, size_t len, const char* prefix)
 {
     for(struct dirent* entry = __real_readdir(dirptr); entry != NULL; entry = __real_readdir(dirptr))
     {
@@ -767,6 +764,35 @@ void packfs_scan_dir(DIR* dirptr, const char* path_normalized, size_t len, const
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
+
+int packfs_list_files_dirs(const char *path, const struct stat *statptr, int fileflags, struct FTW *pftw)
+{
+    size_t path_len = strlen(path);
+    if(fileflags == FTW_F)
+        packfs_dynamic_add_file("", 0, path, path_len, 0, 0, 0); // TODO: calc entrysize
+    else if(fileflags == FTW_D)
+        packfs_dynamic_add_dirname("", 0, path, path_len, 1);
+    return 0;
+}
+
+int packfs_scan_path(const char* input_path, size_t entryisdir)
+{
+    int r = 0;
+    if(entryisdir)
+    {
+        int fd_limit = 20;
+        int flags = 0;
+        r = nftw(input_path, packfs_list_files_dirs, fd_limit, flags);
+    }
+    else
+    {
+        const char* last_slash = strrchr(input_path, packfs_sep);
+        size_t basename_offset = last_slash != NULL ? (last_slash - input_path + 1) : 0;
+        size_t basename_len = strlen(input_path) - basename_offset;
+        packfs_dynamic_add_file("", 0, input_path + basename_offset, basename_len, 0, 0, 0); // TODO: calc entrysize
+    }
+    return r;
+}
 
 void packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, const char* prefix, const char* prefix_archive)
 {
@@ -868,7 +894,7 @@ void packfs_init(const char* path, const char* packfs_config)
                     if(dirptr != NULL)
                     {
                         packfs_enabled = 1;
-                        packfs_scan_dir(dirptr, path_normalized, len, prefix);
+                        packfs_scan_archive_dir(dirptr, path_normalized, len, prefix);
                         __real_closedir(dirptr);
                     }
                 }
@@ -1752,37 +1778,6 @@ int packfs_pack_files_and_fill_offsets(const char* output_path)
 
 #ifdef PACKFS_STATIC_PACKER
 
-int packfs_list_files_dirs(const char *path, const struct stat *statptr, int fileflags, struct FTW *pftw)
-{
-    size_t path_len = strlen(path);
-    if(fileflags == FTW_F)
-        packfs_dynamic_add_file("", 0, path, path_len, 0, 0, 0);
-    else if(fileflags == FTW_D)
-        packfs_dynamic_add_dirname("", 0, path, path_len, 1);
-    return 0;
-}
-
-int packfs_scan_path(const char* input_path, size_t isfile)
-{
-    int r = 0;
-    if(isfile)
-    {
-        const char* last_slash = strrchr(input_path, packfs_sep);
-        size_t basename_offset = last_slash != NULL ? (last_slash - input_path + 1) : 0;
-        size_t basename_len = strlen(input_path) - basename_offset;
-        PACKFS_APPEND_PATH(packfs_dynamic_files_paths, packfs_dynamic_files_paths_len, input_path + basename_offset, basename_len)
-        packfs_dynamic_files_num++;
-    }
-    else
-    {
-        int fd_limit = 20;
-        int flags = 0;
-        r = nftw(input_path, packfs_list_files_dirs, fd_limit, flags);
-        if(r != 0) { fprintf(stderr, "#could not list: %s\n", input_path); return r; }
-    }
-    return r;
-}
-
 int main(int argc, const char **argv)
 {
     // https://github.com/libarchive/libarchive/issues/2283
@@ -1852,7 +1847,7 @@ int main(int argc, const char **argv)
     {
         fprintf(stderr, "%s\n", input_path);
 
-        r = packfs_scan_path(input_path, isfile); removeprefix = isdir ? input_path : "";
+        r = packfs_scan_path(input_path, isdir); removeprefix = isdir ? input_path : "";
         r = packfs_pack_files_and_fill_offsets(packfs_static);
 
         removepackage = 1;
