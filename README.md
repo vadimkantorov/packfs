@@ -23,6 +23,8 @@ If `listingresolutiondir` is not empty, `mountpoint` can be empty
 ## Examples:
 - `/myarchivesdir@/packfsarchives`
 - `/mylistingsdir@/packfslistings@/myarchivesdir`
+- `PACKFS_CONFIG=texlive.iso:/packfs/archive/@/packfs/texlive-archive/` (mount ISO file to /packfs/, and mount all package archives as TDS without installation) ?
+- zip static-linked in the binary (two cases: compressed, uncompressed and maybe even just appended?), e.g. `PACKFS_CONFIG=/packfs/my.zip`
 
 
 # Overridden libc / posix functions

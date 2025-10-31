@@ -1,17 +1,13 @@
 // TODO: where do path normalization? add comment for every function on path string constraints
 // TODO: use safe string functions everywhere
 // TODO: prevent re-entrant packfs_init: happens when reading archive mentioned in PACKFS_CONFIG
-// TODO: can support doing something like PACKFS_CONFIG=texlive.iso:/packfs/archive/@/packfs/texlive-archive/ ?
-// TODO: support working with zip static-linked in the binary (two cases: compressed, uncompressed and maybe even just appended?), e.g. PACKFS_CONFIG=/packfs/my.zip
 // TODO: can support something json static-linked in the binary like PACKFS_CONFIG=/packfs/listings/@/mnt/packfs/@/mnt/http/ )
 
 // XXX: dir_entry->d_ino is abused to mean shifted index in dynamic/static, then in corresponding dir-list, then in file-list
 // XXX: dir_entry->d_off is abused to mean shifted offset in dynamic dirpath (NULL-terminated strings which are concatenated)
 
 // TODO: counters _num or _len for concatenated path lists are not needed?
-// TODO: support reading from decompressed zip/tar-entries by offsets
-// TODO: support mmap-reads from uncompressed archives
-// TODO: support Emscripten-like concatenated list of lzma-encoded files
+// TODO: support reading from decompressed entries by offsets and support mmap-reads 
 // TODO: check and handle various limits. if dir or prefix is considered without trailing slash - specify in varname, check path lens fit in packfs limit, check d_name length: https://unix.stackexchange.com/questions/619625/to-what-extent-does-linux-support-file-names-longer-than-255-bytes
 
 // TODO: maybe use #include <stdbool.h> / bool / true / false - write wrapper in ctypes
@@ -110,9 +106,8 @@ enum
 };
 
 const char packfs_static_package[] = "packfs_static_package";
-
 #ifdef PACKFS_STATIC
-#include "packfs.h"
+#include "packfs_static_package.h"
 #else
 const char   packfs_static_prefix[1];
 const size_t packfs_static_files_num;
@@ -456,20 +451,24 @@ size_t packfs_match_path(const char* haystack, size_t haystack_len, const char* 
 
 void packfs_dynamic_add_file(const char* prefix, size_t prefix_len, const char* entrypath, size_t entrypath_len, size_t entrysize, size_t entryoffset, size_t archivepaths_offset)
 {
-    if(entrypath_len == 0 || prefix_len == 0 || PACKFS_EMPTY(prefix)) return;
-    size_t prefix_len_m1 = (prefix[prefix_len - 1] == packfs_sep) ? (prefix_len - 1) : prefix_len;
+    if(entrypath_len == 0 || PACKFS_EMPTY(entrypath)) return;
+    size_t prefix_len_m1 = (prefix_len > 0 && prefix[prefix_len - 1] == packfs_sep) ? (prefix_len - 1) : prefix_len;
+    prefix_len = prefix_len_m1 > 0 ? (prefix_len_m1 + 1) : prefix_len_m1;
 
-    PACKFS_APPEND_PATH(packfs_dynamic_files_paths, packfs_dynamic_files_paths_len, prefix, prefix_len_m1)
-    packfs_dynamic_files_paths[packfs_dynamic_files_paths_len++] = packfs_sep;
-
-    if(entrypath_len > 0)
+    if(prefix_len_m1 > 0)
     {
+        PACKFS_APPEND_PATH(packfs_dynamic_files_paths, packfs_dynamic_files_paths_len, prefix, prefix_len_m1)
+        packfs_dynamic_files_paths[packfs_dynamic_files_paths_len++] = packfs_sep;
         strncpy(packfs_dynamic_files_paths + packfs_dynamic_files_paths_len, entrypath, entrypath_len);
-        if(entrypath_len > 0 && entrypath[entrypath_len - 1] == packfs_sep) entrypath_len--;
+        if(entrypath[entrypath_len - 1] == packfs_sep) entrypath_len--; // FIXME: needed?
         packfs_dynamic_files_paths_len += entrypath_len;
     }
+    else
+    {
+        PACKFS_APPEND_PATH(packfs_dynamic_files_paths, packfs_dynamic_files_paths_len, entrypath, entrypath_len)
+    }
                 
-    packfs_dynamic_files_paths_prefixlen[packfs_dynamic_files_num] = prefix_len_m1 + 1;
+    packfs_dynamic_files_paths_prefixlen[packfs_dynamic_files_num] = prefix_len;
     packfs_dynamic_files_sizes[packfs_dynamic_files_num] = entrysize;
     packfs_dynamic_files_offsets[packfs_dynamic_files_num] = entryoffset;
     packfs_dynamic_archive_paths_offset[packfs_dynamic_files_num] = archivepaths_offset;
@@ -478,18 +477,21 @@ void packfs_dynamic_add_file(const char* prefix, size_t prefix_len, const char* 
 
 void packfs_dynamic_add_dirname(const char* prefix, size_t prefix_len, const char* entrypath, size_t entrypath_len, size_t entryisdir)
 {
-    if(prefix_len == 0 || PACKFS_EMPTY(prefix)) return;
-    size_t prefix_len_m1 = (prefix[prefix_len - 1] == packfs_sep) ? (prefix_len - 1) : prefix_len;
+    if((prefix_len == 0 || PACKFS_EMPTY(prefix)) && (entrypath_len == 0 || PACKFS_EMPTY(entrypath))) return;
+    size_t prefix_len_m1 = (prefix_len > 0 && prefix[prefix_len - 1] == packfs_sep) ? (prefix_len - 1) : prefix_len;
+    prefix_len = prefix_len_m1 > 0 ? (prefix_len_m1 + 1) : prefix_len_m1;
 
     char path[packfs_path_max] = {0};
-    strncpy(path, prefix, prefix_len_m1);
-    path[prefix_len_m1] = packfs_sep;
-    strncpy(path + prefix_len_m1 + 1, entrypath, entrypath_len);
-    if(entryisdir && path[prefix_len_m1 + 1 + entrypath_len - 1] != packfs_sep)
-        path[prefix_len_m1 + 1 + entrypath_len] = packfs_sep;
-
-     //TODO: 1) extract dirname, 2) test if dir exists, 3) if not exists, invoke dir_add_all which should iterate all dirs and if not exists, register them
+    if(prefix_len_m1 > 0)
+    {
+        strncpy(path, prefix, prefix_len_m1);
+        path[prefix_len_m1] = packfs_sep;
+    }
     
+    strncpy(path + prefix_len, entrypath, entrypath_len);
+    if(entryisdir && path[prefix_len + entrypath_len - 1] != packfs_sep)
+        path[prefix_len + entrypath_len] = packfs_sep;
+
     PACKFS_SPLIT(path + prefix_len_m1 - 1, packfs_sep, begin, i, islast)
     {
         if(!islast)
@@ -498,7 +500,6 @@ void packfs_dynamic_add_dirname(const char* prefix, size_t prefix_len, const cha
                 continue;
 
             PACKFS_APPEND_PATH(packfs_dynamic_dirs_paths, packfs_dynamic_dirs_paths_len, path, prefix_len)
-            
             packfs_dynamic_dirs_num++;
         }
     }
@@ -1754,19 +1755,10 @@ int packfs_pack_files_and_fill_offsets(const char* output_path)
 int packfs_list_files_dirs(const char *path, const struct stat *statptr, int fileflags, struct FTW *pftw)
 {
     size_t path_len = strlen(path);
-
     if(fileflags == FTW_F)
-    {
-        PACKFS_APPEND_PATH(packfs_dynamic_files_paths, packfs_dynamic_files_paths_len, path, path_len)
-        packfs_dynamic_files_num++;
-    }
+        packfs_dynamic_add_file("", 0, path, path_len, 0, 0, 0);
     else if(fileflags == FTW_D)
-    {
-        PACKFS_APPEND_PATH(packfs_dynamic_dirs_paths, packfs_dynamic_dirs_paths_len, path, path_len)
-        if(packfs_dynamic_dirs_paths[packfs_dynamic_dirs_paths_len - 1] != packfs_sep)
-            packfs_dynamic_dirs_paths[packfs_dynamic_dirs_paths_len++] = packfs_sep;
-        packfs_dynamic_dirs_num++;
-    }
+        packfs_dynamic_add_dirname("", 0, path, path_len, 1);
     return 0;
 }
 
@@ -1796,7 +1788,7 @@ int main(int argc, const char **argv)
     // https://github.com/libarchive/libarchive/issues/2283
     
     const char* input_path = NULL;
-    const char* output_path = "packfs.h";
+    const char* output_path = "packfs_static_package.h";
     const char* prefix = packfs_default_prefix;
     const char* ld = "ld";
     const char* include = NULL;
