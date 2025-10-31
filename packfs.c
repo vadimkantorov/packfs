@@ -4,7 +4,7 @@
 // TODO: can support something json static-linked in the binary like PACKFS_CONFIG=/packfs/listings/@/mnt/packfs/@/mnt/http/ )
 
 // XXX: dir_entry->d_ino is abused to mean shifted index in dynamic/static, then in corresponding dir-list, then in file-list
-// XXX: dir_entry->d_off is abused to mean shifted offset in dynamic dirpath (NULL-terminated strings which are concatenated)
+// XXX: dir_entry->d_off is abused to mean shifted offset in dynamic dirpath
 
 // TODO: counters _num or _len for concatenated path lists are not needed?
 // TODO: support reading from decompressed entries by offsets and support mmap-reads 
@@ -68,7 +68,7 @@
 
 #define PACKFS_ITER_PATH(i, entryabspath, entryabspath_len, paths, num) for(const char* (entryabspath) = (paths); (entryabspath) != NULL; (entryabspath) = NULL) for(size_t (i) = 0, offset = 0, (entryabspath_len) = packfs_path_len((paths)); (i) < (num); offset += ((entryabspath_len) + 1), (i)++, (entryabspath) = (paths) + offset, (entryabspath_len) = packfs_path_len((paths) + offset))
 
-#define PACKFS_APPEND_PATH(paths, paths_len, path, path_len)  { if(packfs_dynamic_dirs_paths_len > 0) {(paths)[(paths_len)++] = packfs_pathsep; } strncpy((paths) + (paths_len), (path), (path_len)); (paths_len) += (path_len); }
+#define PACKFS_APPEND_PATH(paths, paths_len, path, path_len)  { if((paths_len) > 0) {(paths)[(paths_len)++] = packfs_pathsep; } strncpy((paths) + (paths_len), (path), (path_len)); (paths_len) += (path_len); }
             
 
 char packfs_default_prefix[] = 
@@ -105,19 +105,19 @@ enum
     packfs_fd_cnt = packfs_fd_max - packfs_fd_min
 };
 
-const char packfs_static_package[] = "packfs_static_package";
+const char packfs_static[] = "packfs_static";
 #ifdef PACKFS_STATIC
-#include "packfs_static_package.h"
+#include "packfs_static.h"
 #else
 const char   packfs_static_prefix[1];
 const size_t packfs_static_files_num;
 const size_t packfs_static_dirs_num;
-const char* packfs_static_files_paths; 
-const char* packfs_static_dirs_paths; 
+const char*  packfs_static_files_paths; 
+const char*  packfs_static_dirs_paths; 
 const size_t packfs_static_files_offsets[0]; 
 const size_t packfs_static_files_sizes[0];
-const char* _binary_packfs_static_package_start;
-const char* _binary_packfs_static_package_end;
+const char* _binary_packfs_static_start;
+const char* _binary_packfs_static_end;
 #endif
 
 
@@ -304,7 +304,7 @@ int packfs_dump_static_package(const char* prefix, const char* removeprefix, con
     fprintf(f, "#include <stddef.h>\n\n");
     fprintf(f, "const char packfs_static_prefix[] = \"%.*s%c\";\n\n", (int)prefix_len_m1, prefix, packfs_sep);
     fprintf(f, "const size_t packfs_static_dirs_num = %zu, packfs_static_files_num = %zu;\n\n", packfs_dynamic_dirs_num, packfs_dynamic_files_num);
-    fprintf(f, "extern char _binary_%s_start[], _binary_%s_end[];\n\n", packfs_static_package, packfs_static_package);
+    fprintf(f, "extern char _binary_%s_start[], _binary_%s_end[];\n\n", packfs_static, packfs_static);
     fprintf(f, "const char packfs_static_dirs_paths[] =\n");
     PACKFS_SPLIT(packfs_dynamic_dirs_paths, packfs_pathsep, begin, i, islast)
     {
@@ -1224,7 +1224,7 @@ void* packfs_open(const char* path, int flags)
                 d_off = 0;
                 
                 filesize = packfs_static_files_sizes[i];
-                fileptr = fmemopen((void*)_binary_packfs_static_package_end, filesize, "r");
+                fileptr = fmemopen((void*)_binary_packfs_static_end, filesize, "r");
             }
         }
     }
@@ -1724,7 +1724,7 @@ int packfs_pack_files_and_fill_offsets(const char* output_path)
 {
     int r = 0; 
     FILE* fileptr = fopen(output_path, "w");
-    if(!fileptr) { r = 1; fprintf(stderr, "#could not open output file: %s\n", packfs_static_package); return r; }
+    if(!fileptr) { r = 1; fprintf(stderr, "#could not open output file: %s\n", packfs_static); return r; }
     size_t offset = 0, size = 0;
     PACKFS_SPLIT(packfs_dynamic_files_paths, packfs_pathsep, begin, i, islast)
     {
@@ -1788,7 +1788,7 @@ int main(int argc, const char **argv)
     // https://github.com/libarchive/libarchive/issues/2283
     
     const char* input_path = NULL;
-    const char* output_path = "packfs_static_package.h";
+    const char* output_path = "packfs_static.h";
     const char* prefix = packfs_default_prefix;
     const char* ld = "ld";
     const char* include = NULL;
@@ -1830,6 +1830,8 @@ int main(int argc, const char **argv)
     
     if(listing)
     {
+        fprintf(stderr, "%s\n", input_path);
+
         FILE* fileptr = fopen(output_path, "w");
         if(!fileptr) { r = 1; fprintf(stderr, "#could not open output file: %s\n", output_path); return r; }
         r = packfs_scan_archive(fileptr, input_path, prefix); removeprefix = input_path;
@@ -1848,18 +1850,20 @@ int main(int argc, const char **argv)
     }
     else if(object)
     {
+        fprintf(stderr, "%s\n", input_path);
+
         r = packfs_scan_path(input_path, isfile); removeprefix = isdir ? input_path : "";
-        r = packfs_pack_files_and_fill_offsets(packfs_static_package);
+        r = packfs_pack_files_and_fill_offsets(packfs_static);
 
         removepackage = 1;
-        package_path = packfs_static_package;
+        package_path = packfs_static;
         header_path = output_path;
     }
 
     if(object)
     {
         r = packfs_dump_static_package(prefix, removeprefix, header_path, ld, package_path);
-        fprintf(stderr, "%s\n", package_path);
+        fprintf(stderr, "%s\n", header_path);
         fprintf(stderr, "%s.o\n", header_path);
 
         if(removepackage)
