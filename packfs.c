@@ -109,11 +109,11 @@ const char packfs_static[] = "packfs_static";
 #ifdef PACKFS_STATIC
 #include "packfs_static.h"
 #else
-const char   packfs_static_prefix[1];
-const size_t packfs_static_files_num;
+const char   packfs_static_prefix[] = "";
+const size_t packfs_statc_files_num;
 const size_t packfs_static_dirs_num;
-const char*  packfs_static_files_paths; 
-const char*  packfs_static_dirs_paths; 
+const char  packfs_static_files_paths[] = ""; 
+const char  packfs_static_dirs_paths[] = ""; 
 const size_t packfs_static_files_offsets[0]; 
 const size_t packfs_static_files_sizes[0];
 const char* _binary_packfs_static_start;
