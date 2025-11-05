@@ -13,7 +13,7 @@ libpackfs.a : packfs.c libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/
 	$(CC) -c -o $(basename $@).o $< $(STATICLDFLAGS) $(ARCHIVECFLAGS) && $(AR) r $@ $(basename $@).o
 
 packfs: packfs.c libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a
-	$(CC) -o $@ $^ $(ARCHIVECFLAGS) -D'PACKFS_ARCHIVEREADSUPPORTEXT=.tar:.iso:.zip' -DPACKFS_STATIC_PACKER -D'PACKFS_ARCHIVEREADSUPPORTFORMAT(a)=archive_read_support_format_tar(a);archive_read_support_format_iso9660(a);archive_read_support_format_zip(a);'
+	$(CC) -o $@ $^ $(ARCHIVECFLAGS) -D'PACKFS_ARCHIVEREADSUPPORTEXT=.tar:.iso:.zip' -DPACKFS_STATIC_PACKER -D'PACKFS_ARCHIVEREADSUPPORTFORMAT(a)={archive_read_support_format_tar(a);archive_read_support_format_iso9660(a);archive_read_support_format_zip(a);}'
 
 cat: cat.c libpackfs.a libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a
 	$(CC) -o $@ $^ $(STATICLDFLAGS) 
