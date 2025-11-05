@@ -533,7 +533,7 @@ int64_t packfs_archive_seek_callback(struct archive *a, void *client_data, int64
     const struct packfs_archive_data *mine = (struct packfs_archive_data *)client_data;
     const int64_t seek = request;
     int64_t r;
-    int seek_bits = sizeof(seek) * 8 - 1;  /* off_t is a signed type. */
+    const int seek_bits = sizeof(seek) * 8 - 1;  /* off_t is a signed type. */
 
     /* We use off_t here because lseek() is declared that way. */
 
@@ -572,7 +572,6 @@ ssize_t packfs_archive_read_callback(struct archive *a, void *client_data, const
 {
     // https://github.com/libarchive/libarchive/blob/master/libarchive/archive_read_open_fd.c
     struct packfs_archive_data *mine = (struct packfs_archive_data *)client_data;
-    ssize_t bytes_read;
     
     mine->last_file_offset = packfs_archive_seek_callback(a, client_data, 0, SEEK_CUR);
 
@@ -580,7 +579,7 @@ ssize_t packfs_archive_read_callback(struct archive *a, void *client_data, const
 
     for (;;)
     {
-        bytes_read = read(mine->fd, mine->buffer, sizeof(mine->buffer));
+        const ssize_t bytes_read = read(mine->fd, mine->buffer, sizeof(mine->buffer));
         if (bytes_read < 0)
         {
             if (errno == EINTR)
@@ -701,7 +700,7 @@ int packfs_extract_archive_entry_from_FILE_to_FILE(FILE* f, const char* entrypat
                     const char* p = buff;
                     while (size > 0)
                     {
-                        ssize_t bytes_written = fwrite(p, 1, size, h);
+                        const ssize_t bytes_written = fwrite(p, 1, size, h);
                         p += bytes_written;
                         size -= bytes_written;
                     }
@@ -906,7 +905,7 @@ int packfs_init(const char* path, const char* packfs_config)
         if(path != NULL && path[0] != '\0')
         {
             char path_normalized[packfs_path_max] = {0}; packfs_normalize_path(path_normalized, path);
-            size_t path_prefix_len = packfs_calc_archive_prefixlen(path_normalized, packfs_archives_ext);
+            const size_t path_prefix_len = packfs_calc_archive_prefixlen(path_normalized, packfs_archives_ext);
             if(path_prefix_len > 0)
             {
                 path_normalized[path_prefix_len - 1] = '\0';
