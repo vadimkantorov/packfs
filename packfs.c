@@ -83,13 +83,15 @@ char packfs_atsep = '@';
 enum
 {
     packfs_path_max = 255,
+    
     packfs_dynamic_files_num_max = 65536,
     packfs_fd_min = 1000000000,
     packfs_fd_max = packfs_fd_min + packfs_dynamic_files_num_max,
+    packfs_fd_cnt = packfs_fd_max - packfs_fd_min,
+
     packfs_static_ino_offset = 1000000000,
     packfs_dynamic_ino_offset = packfs_static_ino_offset + packfs_static_ino_offset,
     packfs_dirs_ino_offset = 1000000,
-    packfs_fd_cnt = packfs_fd_max - packfs_fd_min
 };
 
 const char packfs_static[] = "packfs_static";
