@@ -203,27 +203,7 @@ int packfs_init__real()
        __real_fdopendir== NULL || 
        __real_closedir == NULL || 
        __real_readdir  == NULL )
-    {
-        __real_open     = 
-        __real_openat   = 
-        __real_close    = 
-        __real_read     = 
-        __real_access   = 
-        __real_lseek    = 
-        __real_stat     = 
-        __real_fstat    = 
-        __real_fstatat  = 
-        __real_statx    = 
-        __real_fopen    = 
-        __real_fclose   = 
-        __real_fileno   = 
-        __real_fcntl    = 
-        __real_opendir  = 
-        __real_fdopendir= 
-        __real_closedir = 
-        __real_readdir  = NULL;
         return PACKFS_ERROR;
-    }
 #endif
     return PACKFS_OK;
 }
@@ -253,27 +233,26 @@ char   packfs_dynamic_dirs_paths            [packfs_dynamic_files_num_max * pack
 size_t packfs_dynamic_dirs_paths_len;
 size_t packfs_dynamic_dirs_num;
 
-int packfs_normpath(const char* path, char* path_normalized, size_t path_normalized_size)
+int packfs_normpath(const char* path, char* path_normalized, size_t path_normalized_sizeof)
 {
-    if(path_normalized_size == 0) return PACKFS_ERROR;
+    if(path_normalized_sizeof == 0) return PACKFS_ERROR;
     path_normalized[0] = '\0';
-
+    
     const size_t len = path != NULL ? strlen(path) : 0;
     if(len == 0) return PACKFS_OK;
+    if(path_normalized_sizeof < len) return PACKFS_ERROR;
 
     // lstrips ./ in the beginning
-    for(int i = (path != NULL && len > 2 && path[0] == packfs_extsep && path[1] == packfs_sep) ? 2 : 0, k = 0; len > 0 && i < len; i++)
+    size_t path_normalized_len = 0;
+    for(int i = (path != NULL && len > 2 && path[0] == packfs_extsep && path[1] == packfs_sep) ? 2 : 0; len > 0 && i < len; i++)
     {
         if(!(i > 1 && path[i] == packfs_sep && path[i - 1] == packfs_sep))
         {
             //collapses double consecutive slashes
-            if(k < path_normalized_size) path_normalized[k] = '\0';
-            if(k + 1 >= path_normalized_size) return PACKFS_ERROR;
-            path_normalized[k++] = path[i];
-            path_normalized[k] = '\0';
+            path_normalized[path_normalized_len++] = path[i];
+            path_normalized[path_normalized_len] = '\0';
         }
     }
-    const size_t path_normalized_len = strlen(path_normalized);
     
     // and rstrips abc/.. at the end of /path/to/abc/asd/.. 
     if(path_normalized_len >= 3 && path_normalized[path_normalized_len - 1] == packfs_extsep && path_normalized[path_normalized_len - 2] == packfs_extsep  && path_normalized[path_normalized_len - 3] == packfs_sep)
