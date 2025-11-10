@@ -270,11 +270,12 @@ int packfs_normpath(const char* path, char* path_normalized, size_t path_normali
 int packfs_dump_listing(const char* removeprefix, const char* output_path)
 {
     int res = PACKFS_OK;
-    FILE* f = fopen(output_path, "w");
-    if(!f) { res = PACKFS_ERROR; fprintf(stderr, "#could not open output file: %s\n", output_path); return res; }
-    
-    const size_t removeprefix_len = strlen(removeprefix);
+    if(PACKFS_EMPTY(output_path)) { res = PACKFS_ERROR; return res; }
 
+    const size_t removeprefix_len = PACKFS_EMPTY(removeprefix) ? 0 : strlen(removeprefix);
+
+    FILE* f = fopen(output_path, "w");
+    if(!f) { res = PACKFS_ERROR; return res; }
     fprintf(f, "[\n");
     size_t first = true;
     PACKFS_SPLIT(packfs_dynamic_dirs_paths, packfs_pathsep, entryabspath, entryabspath_len, prefix_len, i, islast)
@@ -292,14 +293,14 @@ int packfs_dump_listing(const char* removeprefix, const char* output_path)
         first = false;
     }
     fprintf(f, "]\n\n");
-
-    fclose(f);
+    if(0 != fclose(f)) { res = PACKFS_ERROR; return res; }
     return res;
 }
 
 int packfs_dump_static_package(const char* prefix, const char* removeprefix, const char* output_path, const char* ld, const char* input_path)
 {
     int res = PACKFS_OK;
+    if(PACKFS_EMPTY(output_path)) { res = PACKFS_ERROR; return res; }
 
 #ifdef PACKFS_STATIC_PACKER
     if(input_path != NULL && ld != NULL)
@@ -310,15 +311,15 @@ int packfs_dump_static_package(const char* prefix, const char* removeprefix, con
         if(res != 0) { fprintf(stderr, "#could not open invoke ld: %s.o\n", output_path); return res; }
     }
 
-    const size_t prefix_len = strlen(prefix);
+    const size_t prefix_len = PACKFS_EMPTY(prefix) ? 0 : strlen(prefix);
     const size_t prefix_len_m1 = (prefix_len >= 1 && prefix[prefix_len - 1] == packfs_sep) ? (prefix_len - 1) : prefix_len;
 
-    size_t removeprefix_len = strlen(removeprefix);
-    const size_t removeprefix_len_m1 = (removeprefix_len >= 1 && removeprefix[removeprefix_len - 1] == packfs_sep) ? (removeprefix_len - 1) : removeprefix_len;
-    removeprefix_len = removeprefix_len > 0 ? (removeprefix_len_m1 + 1) : 0;
+    const size_t removeprefix_len_ = PACKFS_EMPTY(removeprefix) ? 0 : strlen(removeprefix);
+    const size_t removeprefix_len_m1 = (removeprefix_len_ >= 1 && removeprefix[removeprefix_len_ - 1] == packfs_sep) ? (removeprefix_len_ - 1) : removeprefix_len_;
+    const size_t removeprefix_len = removeprefix_len_ > 0 ? (removeprefix_len_m1 + 1) : 0;
         
     FILE* f = fopen(output_path, "w");
-    if(!f) { res = PACKFS_ERROR; fprintf(stderr, "#could not open output file: %s\n", output_path); return res; }
+    if(!f) { res = PACKFS_ERROR; return res; }
 
     fprintf(f, "#include <stddef.h>\n\n");
     fprintf(f, "const char packfs_static_prefix[] = \"%.*s%c\";\n\n", (int)prefix_len_m1, prefix, packfs_sep);
@@ -356,7 +357,7 @@ int packfs_dump_static_package(const char* prefix, const char* removeprefix, con
         fprintf(f, "%zu,\n", packfs_dynamic_files_sizes[i]); 
     fprintf(f, "};\n\n");
 
-    fclose(f);
+    if(0 != fclose(f)) { res = PACKFS_ERROR; return res; }
 #endif
     return res;
 }
