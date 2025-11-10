@@ -235,6 +235,8 @@ size_t packfs_dynamic_dirs_num;
 
 int packfs_normpath(const char* path, char* path_normalized, size_t path_normalized_sizeof)
 {
+    if(path == NULL || path_normalized == NULL) return PACKFS_ERROR;
+        
     if(path_normalized_sizeof == 0) return PACKFS_ERROR;
     path_normalized[0] = '\0';
     
