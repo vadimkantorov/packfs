@@ -185,6 +185,45 @@ int packfs_init__real()
     __real_fdopendir = dlsym(RTLD_NEXT, "fdopendir" );
     __real_closedir  = dlsym(RTLD_NEXT, "closedir"  );
     __real_readdir   = dlsym(RTLD_NEXT, "readdir"   );
+    if(__real_open     == NULL || 
+       __real_openat   == NULL || 
+       __real_close    == NULL || 
+       __real_read     == NULL || 
+       __real_access   == NULL || 
+       __real_lseek    == NULL || 
+       __real_stat     == NULL || 
+       __real_fstat    == NULL || 
+       __real_fstatat  == NULL || 
+       __real_statx    == NULL || 
+       __real_fopen    == NULL || 
+       __real_fclose   == NULL || 
+       __real_fileno   == NULL || 
+       __real_fcntl    == NULL || 
+       __real_opendir  == NULL || 
+       __real_fdopendir== NULL || 
+       __real_closedir == NULL || 
+       __real_readdir  == NULL )
+    {
+        __real_open     = 
+        __real_openat   = 
+        __real_close    = 
+        __real_read     = 
+        __real_access   = 
+        __real_lseek    = 
+        __real_stat     = 
+        __real_fstat    = 
+        __real_fstatat  = 
+        __real_statx    = 
+        __real_fopen    = 
+        __real_fclose   = 
+        __real_fileno   = 
+        __real_fcntl    = 
+        __real_opendir  = 
+        __real_fdopendir= 
+        __real_closedir = 
+        __real_readdir  = NULL;
+        return PACKFS_ERROR;
+    }
 #endif
     return PACKFS_OK;
 }
@@ -214,14 +253,13 @@ char   packfs_dynamic_dirs_paths            [packfs_dynamic_files_num_max * pack
 size_t packfs_dynamic_dirs_paths_len;
 size_t packfs_dynamic_dirs_num;
 
-int packfs_normalize_path(char* path_normalized, const char* path)
+int packfs_normpath(const char* path, char* path_normalized, size_t path_normalized_size)
 {
+    if(path_normalized_size == 0) return PACKFS_ERROR;
+    path_normalized[0] = '\0';
+
     const size_t len = path != NULL ? strlen(path) : 0;
-    if(len == 0)
-    {
-        path_normalized[0] = '\0';
-        return PACKFS_OK;
-    }
+    if(len == 0) return PACKFS_OK;
 
     // lstrips ./ in the beginning
     for(int i = (path != NULL && len > 2 && path[0] == packfs_extsep && path[1] == packfs_sep) ? 2 : 0, k = 0; len > 0 && i < len; i++)
@@ -229,6 +267,8 @@ int packfs_normalize_path(char* path_normalized, const char* path)
         if(!(i > 1 && path[i] == packfs_sep && path[i - 1] == packfs_sep))
         {
             //collapses double consecutive slashes
+            if(k < path_normalized_size) path_normalized[k] = '\0';
+            if(k + 1 >= path_normalized_size) return PACKFS_ERROR;
             path_normalized[k++] = path[i];
             path_normalized[k] = '\0';
         }
@@ -278,8 +318,6 @@ int packfs_dump_listing(const char* removeprefix, const char* output_path)
 
 int packfs_dump_static_package(const char* prefix, const char* removeprefix, const char* output_path, const char* ld, const char* input_path)
 {
-    // TODO: in addition to .h, output .json
-
     int res = PACKFS_OK;
 
 #ifdef PACKFS_STATIC_PACKER
@@ -346,7 +384,6 @@ size_t packfs_path_len(const char* path)
 {
     if(PACKFS_EMPTY(path) || path[0] == packfs_pathsep)
         return 0;
-
     const char* sep = strchr(path, packfs_pathsep);
     if(sep == NULL)
         return strlen(path);
@@ -929,7 +966,7 @@ int packfs_init(const char* path, const char* packfs_config)
         
         if(path != NULL && path[0] != '\0')
         {
-            char path_normalized[packfs_path_max] = {0}; packfs_normalize_path(path_normalized, path);
+            char path_normalized[packfs_path_max] = {0}; packfs_normpath(path, path_normalized, sizeof(path_normalized));
             const size_t path_prefix_len = packfs_calc_archive_prefixlen(path_normalized, packfs_archives_ext);
             if(path_prefix_len > 0)
             {
@@ -1128,7 +1165,7 @@ void* packfs_readdir(void* stream)
 
 int packfs_access(const char* path)
 {
-    char path_normalized[packfs_path_max] = {0}; packfs_normalize_path(path_normalized, path); size_t path_normalized_len = strlen(path_normalized);
+    char path_normalized[packfs_path_max] = {0}; packfs_normpath(path, path_normalized, sizeof(path_normalized)); size_t path_normalized_len = strlen(path_normalized);
     bool path_in_range = false;
     
     if(packfs_path_in_range(packfs_static_prefix, path_normalized))
@@ -1160,7 +1197,7 @@ int packfs_stat(const char* path, int fd, bool* isdir, size_t* size, size_t* d_i
 {
     if(PACKFS_EMPTY(path)) return PACKFS_ERROR_NOTINRANGE;
     
-    char path_normalized[packfs_path_max] = {0}; packfs_normalize_path(path_normalized, path); size_t path_normalized_len = strlen(path_normalized);
+    char path_normalized[packfs_path_max] = {0}; packfs_normpath(path, path_normalized, sizeof(path_normalized)); size_t path_normalized_len = strlen(path_normalized);
     bool path_in_range = false;
     
     if(packfs_path_in_range(packfs_static_prefix, path_normalized))
@@ -1243,7 +1280,7 @@ int packfs_stat(const char* path, int fd, bool* isdir, size_t* size, size_t* d_i
 
 void* packfs_open(const char* path, int flags)
 {
-    char path_normalized[packfs_path_max] = {0}; packfs_normalize_path(path_normalized, path); size_t path_normalized_len = strlen(path_normalized);
+    char path_normalized[packfs_path_max] = {0}; packfs_normpath(path, path_normalized, sizeof(path_normalized)); size_t path_normalized_len = strlen(path_normalized);
     bool path_in_range = false;
     bool isdir = false;
 
