@@ -303,10 +303,10 @@ int packfs_dump_static_package(const char* prefix, const char* removeprefix, con
     if(PACKFS_EMPTY(output_path)) { res = PACKFS_ERROR; return res; }
 
 #ifdef PACKFS_STATIC_PACKER
-    if(input_path != NULL && ld != NULL)
+    if(!PACKFS_EMPTY(input_path) && !PACKFS_EMPTY(ld))
     {
         char tmp[1024];
-        sprintf(tmp, "\"%s\" -r -b binary -o \"%s.o\" \"%s\"", ld, output_path, input_path);
+        snprintf(tmp, sizeof(tmp), "\"%s\" -r -b binary -o \"%s.o\" \"%s\"", ld, output_path, input_path);
         res = system(tmp);
         if(res != 0) { fprintf(stderr, "#could not open invoke ld: %s.o\n", output_path); return res; }
     }
@@ -1807,7 +1807,7 @@ int packfs_cat_files_offsets(const char* output_path)
     PACKFS_SPLIT(packfs_dynamic_files_paths, packfs_pathsep, entryabspath, entryabspath_len, prefix_len, i, islast)
     {
         char tmp[packfs_path_max];
-        sprintf(tmp, "%.*s", (int)entryabspath_len, entryabspath);
+        snprintf(tmp, sizeof(tmp), "%.*s", (int)entryabspath_len, entryabspath);
 
         size = 0;
         FILE* h = fopen(tmp, "r");
@@ -1887,7 +1887,7 @@ int main(int argc, const char **argv)
 
         if(object)
         {
-            sprintf(tmp, "%s.h", output_path);
+            snprintf(tmp, sizeof(tmp), "%s.h", output_path);
 
             removepackage = false;
             package_path = input_path;
