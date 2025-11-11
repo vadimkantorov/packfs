@@ -5,7 +5,6 @@
 // TODO: support reading from decompressed entries by offsets and support mmap-reads 
 // TODO: write wrapper in ctypes
 // TODO: report error via a global errno / geterrno string
-// TODO: specify ino offsets for static files, static dirs, dynamic files, dynamic dirs
 
 #ifdef PACKFS_ARCHIVE
 #ifndef PACKFS_ARCHIVEREADSUPPORTEXT
