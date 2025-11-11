@@ -211,13 +211,13 @@ int packfs_init__real()
 
 bool packfs_initialized;
 bool packfs_enabled;
-int             packfs_descr_fd                [packfs_descr_fd_cnt];
-int             packfs_descr_refs              [packfs_descr_fd_cnt];
-bool            packfs_descr_isdir             [packfs_descr_fd_cnt]; // TODO: replace with checks of fd's LSB
-void*           packfs_descr_fileptr           [packfs_descr_fd_cnt];
-size_t          packfs_descr_size              [packfs_descr_fd_cnt];
-size_t          packfs_descr_ino               [packfs_descr_fd_cnt];
-struct dirent   packfs_descr_dirent            [packfs_descr_fd_cnt];
+int             packfs_descr_fd             [packfs_descr_fd_cnt];
+int             packfs_descr_refs           [packfs_descr_fd_cnt];
+bool            packfs_descr_isdir          [packfs_descr_fd_cnt]; // TODO: replace with checks of fd's LSB
+void*           packfs_descr_fileptr        [packfs_descr_fd_cnt];
+size_t          packfs_descr_size           [packfs_descr_fd_cnt];
+size_t          packfs_descr_ino            [packfs_descr_fd_cnt];
+struct dirent   packfs_descr_dirent         [packfs_descr_fd_cnt];
 char   packfs_dynamic_prefix                [packfs_dynamic_files_num_max * packfs_path_max];
 char   packfs_dynamic_archive_paths         [packfs_dynamic_files_num_max * packfs_path_max];
 size_t packfs_dynamic_archive_paths_len;
@@ -552,7 +552,7 @@ int packfs_dynamic_add_prefix(const char* prefix, size_t prefix_len)
 
 struct packfs_archive_data
 {
-    int fd;
+    FILE* f;
     size_t last_file_offset;
     uint8_t buffer[1024 * 4];
 };
@@ -560,40 +560,44 @@ struct packfs_archive_data
 int64_t packfs_archive_seek_callback(struct archive *a, void *client_data, int64_t request, int whence)
 {
     const struct packfs_archive_data *mine = (struct packfs_archive_data *)client_data;
-    const int64_t seek = request;
-    int64_t res = 0;
-    const int seek_bits = sizeof(seek) * 8 - 1;  /* off_t is a signed type. */
-
-    /* We use off_t here because lseek() is declared that way. */
+#if HAVE__FSEEKI64
+    int64_t seek = request;
+#elif HAVE_FSEEKO
+    off_t seek = (off_t)request;
+#else
+    long seek = (long)request;
+#endif
+    int seek_bits = sizeof(seek) * 8 - 1;
+    (void)a; /* UNUSED */
 
     /* Do not perform a seek which cannot be fulfilled. */
-    if (sizeof(request) > sizeof(seek))
-    {
-        const int64_t max_seek = (((int64_t)1 << (seek_bits - 1)) - 1) * 2 + 1;
+    if (sizeof(request) > sizeof(seek)) {
+        const int64_t max_seek =
+            (((int64_t)1 << (seek_bits - 1)) - 1) * 2 + 1;
         const int64_t min_seek = ~max_seek;
-        if (request < min_seek || request > max_seek)
-        {
+        if (request < min_seek || request > max_seek) {
             errno = EOVERFLOW;
             goto err;
         }
     }
 
-    res = lseek(mine->fd, seek, whence);
-    if (res >= 0)
-        return res;
-
+#if HAVE__FSEEKI64
+    if (_fseeki64(mine->f, seek, whence) == 0) {
+        return _ftelli64(mine->f);
+    }
+#elif HAVE_FSEEKO
+    if (fseeko(mine->f, seek, whence) == 0) {
+        return ftello(mine->f);
+    }
+#else
+    if (fseek(mine->f, seek, whence) == 0) {
+        return ftell(mine->f);
+    }
+#endif
+    /* If we arrive here, the input is corrupted or truncated so fail. */
 err:
-    if (errno == ESPIPE)
-    {
-        archive_set_error(a, errno, "A file descriptor(%d) is not seekable(PIPE)", mine->fd);
-        return (ARCHIVE_FAILED);
-    }
-    else
-    {
-        /* If the input is corrupted or truncated, fail. */
-        archive_set_error(a, errno, "Error seeking in a file descriptor(%d)", mine->fd);
-        return (ARCHIVE_FATAL);
-    }
+    archive_set_error(a, errno, "Error seeking in FILE* pointer");
+    return (ARCHIVE_FATAL);
 }
 
 
@@ -605,19 +609,11 @@ ssize_t packfs_archive_read_callback(struct archive *a, void *client_data, const
     mine->last_file_offset = packfs_archive_seek_callback(a, client_data, 0, SEEK_CUR);
 
     *buff = mine->buffer;
-
-    for (;;)
-    {
-        const ssize_t bytes_read = read(mine->fd, mine->buffer, sizeof(mine->buffer));
-        if (bytes_read < 0)
-        {
-            if (errno == EINTR)
-                continue;
-            archive_set_error(a, errno, "Error reading fd %d", mine->fd);
-        }
-        return (bytes_read);
+    size_t bytes_read = fread(mine->buffer, 1, sizeof(mine->buffer), mine->f);
+    if (bytes_read < sizeof(mine->buffer) && ferror(mine->f)) {
+            archive_set_error(a, errno, "Error reading file");
     }
-    return 0;
+    return (bytes_read);
 }
 
 int packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const char* prefix)
@@ -639,11 +635,10 @@ int packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const char
     packfs_dynamic_archive_paths_len += packfs_archive_filename_len + 1;
 
     struct archive_entry *entry;
+    struct packfs_archive_data client_data;
     do
     {
-        struct packfs_archive_data client_data;
-        // TODO: switch to using FILE
-        client_data.fd = open(packfs_archive_filename, O_RDONLY);
+        client_data.f = f;
         archive_read_set_seek_callback(a, packfs_archive_seek_callback);
         archive_read_set_read_callback(a, packfs_archive_read_callback);
         archive_read_set_callback_data(a, &client_data);
@@ -1869,8 +1864,8 @@ int main(int argc, const char **argv)
     {
         fprintf(stderr, "%s\n", input_path);
 
-        FILE* fileptr = fopen(output_path, "w");
-        if(!fileptr) { res = 1; fprintf(stderr, "#could not open output file: %s\n", output_path); return res; }
+        FILE* fileptr = fopen(input_path, "r");
+        if(!fileptr) { res = 1; fprintf(stderr, "#could not open input file: %s\n", input_path); return res; }
         res = packfs_scan_archive(fileptr, input_path, prefix); removeprefix = input_path;
         fclose(fileptr);
 
