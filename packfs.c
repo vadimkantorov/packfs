@@ -1,11 +1,12 @@
 // TODO: where do path normalization? add comment for every function on path string constraints
 // TODO: use safe string functions everywhere
+// TODO: check and handle various limits. if dir or prefix is considered without trailing slash - specify in varname, check path lens fit in packfs limit, check d_name length: https://unix.stackexchange.com/questions/619625/to-what-extent-does-linux-support-file-names-longer-than-255-bytes
 // TODO: prevent re-entrant packfs_init: happens when reading archive mentioned in PACKFS_CONFIG
 // TODO: support reading from decompressed entries by offsets and support mmap-reads 
-// TODO: check and handle various limits. if dir or prefix is considered without trailing slash - specify in varname, check path lens fit in packfs limit, check d_name length: https://unix.stackexchange.com/questions/619625/to-what-extent-does-linux-support-file-names-longer-than-255-bytes
-// TODO: maybe use #include <stdbool.h> / bool / true / false - write wrapper in ctypes
+// TODO: write wrapper in ctypes
 // TODO: report error via a global errno / geterrno string
-// TODO: compute offset in SPLIT
+// TODO: compute offset in SPLIT: d_off = entryabspath - packfs_static_dirs_paths;
+// TODO: specify ino offsets for static files, static dirs, dynamic files, dynamic dirs
 
 #ifdef PACKFS_ARCHIVE
 #ifndef PACKFS_ARCHIVEREADSUPPORTEXT
@@ -831,17 +832,16 @@ int packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, cons
     packfs_dynamic_archive_paths_len += packfs_archive_filename_len + 1;
         
     {
-        char entrypath[packfs_path_max];
-        size_t size, offset, entrypath_len;
         fscanf(fileptr, "[\n");
         for(;;)
         {
-            size = offset = 0;
+            char entrypath[packfs_path_max];
 
             fscanf(fileptr, "{\n");
             const int ret = fscanf(fileptr, "\"path\"\n:\n\"%[^\"]\"", entrypath);
             if(ret != 1) break;
-            entrypath_len = strlen(entrypath);
+            const size_t entrypath_len = strlen(entrypath);
+            size_t size = 0, offset = 0;
             fscanf(fileptr, ",\n");
             fscanf(fileptr, "\"size\"\n:\n%zu", &size);
             fscanf(fileptr, ",\n");
