@@ -1063,40 +1063,35 @@ void* packfs_readdir(void* stream)
     struct dirent* dir_entry = stream;
     size_t d_ino = (size_t)dir_entry->d_ino;
 
-    const bool is_static_file = packfs_static_files_ino_begin <= d_ino && d_ino < packfs_static_files_ino_end;
-    const bool is_static_dir  = packfs_static_dirs_ino_begin  <= d_ino && d_ino < packfs_static_dirs_ino_end;
-    const bool is_dynamic_file= packfs_dynamic_files_ino_begin<= d_ino && d_ino < packfs_dynamic_files_ino_end;
-    const bool is_dynamic_dir = packfs_dynamic_dirs_ino_begin <= d_ino && d_ino < packfs_dynamic_dirs_ino_end;
+    const bool listing_static_files = packfs_static_files_ino_begin <= d_ino && d_ino < packfs_static_files_ino_end;
+    const bool listing_static_dirs  = packfs_static_dirs_ino_begin  <= d_ino && d_ino < packfs_static_dirs_ino_end;
+    const bool listing_dynamic_files= packfs_dynamic_files_ino_begin<= d_ino && d_ino < packfs_dynamic_files_ino_end;
+    const bool listing_dynamic_dirs = packfs_dynamic_dirs_ino_begin <= d_ino && d_ino < packfs_dynamic_dirs_ino_end;
 
-    if(is_static_file || is_static_dir)
+    if(listing_static_files || listing_static_dirs)
     {
-        bool check_dirs = is_static_dir;
-        bool check_files = is_static_file;
-
         const char* dirabspath = packfs_static_dirs_paths + (size_t)dir_entry->d_off;
         size_t dirabspath_len = packfs_path_len(dirabspath);
         
-        PACKFS_SPLIT(packfs_static_dirs_paths, packfs_pathsep, entryabspath, entryabspath_offset, entryabspath_len, prefix_len, i, islast)
+        if(listing_static_dirs)
         {
-            const bool match = packfs_match_path(dirabspath, dirabspath_len, entryabspath, entryabspath_len, PACKFS_ENTRY_IN_DIR);
-            const int i_match = i > d_ino - packfs_static_dirs_ino_begin;
-            if(i_match && match)
+            PACKFS_SPLIT(packfs_static_dirs_paths, packfs_pathsep, entryabspath, entryabspath_offset, entryabspath_len, prefix_len, i, islast)
             {
-                PACKFS_FILL_DIRENT(dir_entry, DT_DIR, packfs_static_dirs_ino_begin + i, entryabspath, entryabspath_len)
-                return dir_entry;
+                const bool match = packfs_match_path(dirabspath, dirabspath_len, entryabspath, entryabspath_len, PACKFS_ENTRY_IN_DIR);
+                const int i_match = i > d_ino - packfs_static_dirs_ino_begin;
+                if(i_match && match)
+                {
+                    PACKFS_FILL_DIRENT(dir_entry, DT_DIR, packfs_static_dirs_ino_begin + i, entryabspath, entryabspath_len)
+                    return dir_entry;
+                }
             }
-        }
-
-        if(check_dirs)
-        {
-            check_files = true;
             d_ino = packfs_static_files_ino_begin;
         }
         
         PACKFS_SPLIT(packfs_static_files_paths, packfs_pathsep, entryabspath, entryabspath_offset, entryabspath_len, prefix_len, i, islast)
         {
             const bool match = packfs_match_path(dirabspath, dirabspath_len, entryabspath, entryabspath_len, PACKFS_ENTRY_IN_DIR);
-            const int i_match = (i > d_ino - packfs_static_files_ino_begin) || (i == 0 && check_dirs);
+            const int i_match = (i > d_ino - packfs_static_files_ino_begin) || (i == 0 && listing_static_dirs);
             if(i_match && match)
             {
                 PACKFS_FILL_DIRENT(dir_entry, DT_REG, packfs_static_files_ino_begin + i, entryabspath, entryabspath_len)
@@ -1104,35 +1099,30 @@ void* packfs_readdir(void* stream)
             }
         }
     }
-    else if(is_dynamic_file || is_dynamic_dir)
+    else if(listing_dynamic_files || listing_dynamic_dirs)
     {
-        bool check_dirs = is_dynamic_dir;
-        bool check_files = is_dynamic_file;
-
         const char* dirabspath = packfs_dynamic_dirs_paths + (size_t)dir_entry->d_off;
         const size_t dirabspath_len = packfs_path_len(dirabspath);
         
-        PACKFS_SPLIT(packfs_dynamic_dirs_paths, packfs_pathsep, entryabspath, entryabspath_offset, entryabspath_len, prefix_len, i, islast)
+        if(listing_dynamic_dirs)
         {
-            const bool match = packfs_match_path(dirabspath, dirabspath_len, entryabspath, entryabspath_len, PACKFS_ENTRY_IN_DIR);
-            const int i_match = i > d_ino - packfs_dynamic_dirs_ino_begin;
-            if(i_match && match)
+            PACKFS_SPLIT(packfs_dynamic_dirs_paths, packfs_pathsep, entryabspath, entryabspath_offset, entryabspath_len, prefix_len, i, islast)
             {
-                PACKFS_FILL_DIRENT(dir_entry, DT_DIR, packfs_dynamic_dirs_ino_begin + i, entryabspath, entryabspath_len)
-                return dir_entry;
+                const bool match = packfs_match_path(dirabspath, dirabspath_len, entryabspath, entryabspath_len, PACKFS_ENTRY_IN_DIR);
+                const int i_match = i > d_ino - packfs_dynamic_dirs_ino_begin;
+                if(i_match && match)
+                {
+                    PACKFS_FILL_DIRENT(dir_entry, DT_DIR, packfs_dynamic_dirs_ino_begin + i, entryabspath, entryabspath_len)
+                    return dir_entry;
+                }
             }
-        }
-
-        if(check_dirs)
-        {
-            check_files = true;
             d_ino = packfs_dynamic_files_ino_begin;
         }
         
         PACKFS_SPLIT(packfs_dynamic_files_paths, packfs_pathsep, entryabspath, entryabspath_offset, entryabspath_len, prefix_len, i, islast)
         {
             const bool match = packfs_match_path(dirabspath, dirabspath_len, entryabspath, entryabspath_len, PACKFS_ENTRY_IN_DIR);
-            const int i_match = (i > d_ino - packfs_dynamic_files_ino_begin) || (i == 0 && check_dirs);
+            const int i_match = (i > d_ino - packfs_dynamic_files_ino_begin) || (i == 0 && listing_dynamic_dirs);
             if(i_match && match)
             {
                 PACKFS_FILL_DIRENT(dir_entry, DT_REG, packfs_dynamic_files_ino_begin + i, entryabspath, entryabspath_len)
