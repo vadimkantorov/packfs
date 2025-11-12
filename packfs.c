@@ -996,7 +996,7 @@ void* packfs_find(int fd, void* ptr)
     return NULL;
 }
 
-int packfs_resolve_relative_path(char* dest, int dirfd, const char* path)
+int packfs_resolve_relative_path(char* dest, size_t dest_sizeof, int dirfd, const char* path)
 {
     #define PACKFS_CONCAT_PATH(dest, entryabspath, entryabspath_len, path) \
     { \
@@ -1531,7 +1531,7 @@ int PACKFS_WRAP(openat)(int dirfd, const char *path, int flags, ...)
     }
 
     packfs_init(path, NULL);
-    char path_normalized[packfs_path_max]; packfs_resolve_relative_path(path_normalized, dirfd, path);
+    char path_normalized[packfs_path_max]; packfs_resolve_relative_path(path_normalized, sizeof(path_normalized), dirfd, path);
     if(packfs_enabled && (packfs_path_in_range(packfs_static_prefix, path_normalized) || packfs_path_in_range(packfs_dynamic_prefix, path_normalized)))
     {
         void* stream = packfs_open(path_normalized, (flags & O_DIRECTORY) != 0);
@@ -1641,7 +1641,7 @@ int PACKFS_WRAP(fstat)(int fd, struct stat * statbuf)
 int PACKFS_WRAP(fstatat)(int dirfd, const char* path, struct stat * statbuf, int flags)
 {
     packfs_init(path, NULL);
-    char path_normalized[packfs_path_max]; packfs_resolve_relative_path(path_normalized, dirfd, path);
+    char path_normalized[packfs_path_max]; packfs_resolve_relative_path(path_normalized, sizeof(path_normalized), dirfd, path);
 
     if(packfs_enabled && (packfs_path_in_range(packfs_static_prefix, path_normalized) || packfs_path_in_range(packfs_dynamic_prefix, path_normalized)))
     {
@@ -1666,7 +1666,7 @@ int PACKFS_WRAP(fstatat)(int dirfd, const char* path, struct stat * statbuf, int
 int PACKFS_WRAP(statx)(int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statbuf)
 {
     packfs_init(path, NULL);
-    char path_normalized[packfs_path_max]; packfs_resolve_relative_path(path_normalized, dirfd, path);
+    char path_normalized[packfs_path_max]; packfs_resolve_relative_path(path_normalized, sizeof(path_normalized), dirfd, path);
 
     if(packfs_enabled && (packfs_path_in_range(packfs_static_prefix, path_normalized) || packfs_path_in_range(packfs_dynamic_prefix, path_normalized)))
     {
