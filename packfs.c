@@ -998,23 +998,24 @@ void* packfs_find(int fd, void* ptr)
 
 int packfs_resolve_relative_path(char* dest, size_t dest_sizeof, int dirfd, const char* path)
 {
-    #define PACKFS_CONCAT_PATH(dest, entryabspath, entryabspath_len, path) \
+    #define PACKFS_CONCAT_PATH(dest, entryabspath, entryabspath_len, path, path_len) \
     { \
-        path = (strlen(path) > 1 && path[0] == packfs_extsep && path[1] == packfs_sep) ? (path + 2) : path; \
-        const size_t path_len = strlen(path); \
-        strncpy(dest, entryabspath, entryabspath_len); \
-        strncpy(dest + entryabspath_len, path, path_len); \
-        dest[entryabspath_len + path_len] = '\0'; \
+        strncpy((dest), (entryabspath), (entryabspath_len)); \
+        strncpy((dest) + (entryabspath_len), (path), (path_len)); \
+        (dest)[(entryabspath_len) + (path_len)] = '\0'; \
     }
+    
+    if(PACKFS_EMPTY(dest) || dest_sizeof <= 1 || PACKFS_EMPTY(path) || !packfs_fd_in_range(dirfd)) return PACKFS_ERROR_NOTINRANGE;
+
+    path = (strlen(path) > 1 && path[0] == packfs_extsep && path[1] == packfs_sep) ? (path + 2) : path;
+    const size_t path_len = strlen(path);
 
     size_t d_ino = 0;
-    bool found = false;
     for(size_t k = 0; k < packfs_descr_fd_cnt; k++)
     {
         if(packfs_descr_fd[k] == dirfd)
         {
             d_ino = packfs_descr_ino[k];
-            found = true;
             break;
         }
     }
@@ -1023,7 +1024,7 @@ int packfs_resolve_relative_path(char* dest, size_t dest_sizeof, int dirfd, cons
     {
         if(d_ino == (packfs_static_dirs_ino_begin + i))
         {
-            PACKFS_CONCAT_PATH(dest, entryabspath, entryabspath_len, path)
+            PACKFS_CONCAT_PATH(dest, entryabspath, entryabspath_len, path, path_len)
             return PACKFS_OK;
         }
     }
@@ -1032,7 +1033,7 @@ int packfs_resolve_relative_path(char* dest, size_t dest_sizeof, int dirfd, cons
     {
         if(d_ino == (packfs_dynamic_dirs_ino_begin + i))
         {
-            PACKFS_CONCAT_PATH(dest, entryabspath, entryabspath_len, path)
+            PACKFS_CONCAT_PATH(dest, entryabspath, entryabspath_len, path, path_len)
             return PACKFS_OK;
         }
     }
