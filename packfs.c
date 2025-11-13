@@ -250,8 +250,7 @@ size_t packfs_dynamic_dirs_num;
 
 static size_t packfs_path_len(const char* path)
 {
-    if(PACKFS_EMPTY(path) || path[0] == packfs_pathsep)
-        return 0;
+    if(PACKFS_EMPTY(path) || path[0] == packfs_pathsep) return 0;
     const char* sep = strchr(path, packfs_pathsep);
     if(sep == NULL)
         return strlen(path);
@@ -1005,7 +1004,7 @@ int packfs_resolve_relative_path(char* dest, size_t dest_sizeof, int dirfd, cons
         (dest)[(entryabspath_len) + (path_normalized_len)] = '\0'; \
     }
     
-    if(PACKFS_EMPTY(dest) || PACKFS_EMPTY(path) || dest_sizeof <= 1 || !packfs_fd_in_range(dirfd)) return PACKFS_ERROR_NOTINRANGE;
+    if(PACKFS_EMPTY(path) || dest == NULL || dest_sizeof <= 1 || !packfs_fd_in_range(dirfd)) return PACKFS_ERROR_NOTINRANGE;
     char path_normalized[packfs_path_max] = {0}; packfs_normpath(path, path_normalized, sizeof(path_normalized)); 
     const size_t path_normalized_len = strlen(path_normalized);
 
