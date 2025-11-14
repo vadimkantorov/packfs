@@ -4,7 +4,7 @@
 // TODO: prevent re-entrant packfs_init: happens when reading archive mentioned in PACKFS_CONFIG
 // TODO: support reading from decompressed entries by offsets and support mmap-reads 
 // TODO: write wrapper in ctypes
-// TODO: report error via a global errno / geterrno string
+// TODO: improve public C API, delete FILE/DIR/len
 
 #ifdef PACKFS_ARCHIVE
 #ifndef PACKFS_ARCHIVEREADSUPPORTEXT
@@ -36,6 +36,7 @@
 #include <archive_entry.h>
 #endif
 
+//#include "packfs.h" // to ensure/test that public prototypes match actual function definitions
 
 #define PACKFS_STRING_VALUE_(x) #x
 #define PACKFS_STRING_VALUE(x) PACKFS_STRING_VALUE_(x)
@@ -400,7 +401,7 @@ bool packfs_match_ext(const char* path, size_t path_len, const char* exts)
     return false;
 }
 
-size_t packfs_calc_archive_prefixlen(const char* path, const char* exts)
+static size_t packfs_calc_archive_prefixlen(const char* path, const char* exts)
 {
     if(PACKFS_EMPTY(path) || PACKFS_EMPTY(exts)) return 0;
 
@@ -414,6 +415,8 @@ size_t packfs_calc_archive_prefixlen(const char* path, const char* exts)
 
 bool packfs_match_path(const char* haystack, size_t haystack_len, const char* needle, size_t needle_len, const enum packfs_match_path_mode mode)
 {
+    if(haystack == NULL || needle == NULL) return false;
+
     switch(mode)
     {
         case PACKFS_DIR_EXISTS:
@@ -562,7 +565,7 @@ struct packfs_archive_data
     uint8_t buffer[1024 * 4];
 };
 
-int64_t packfs_archive_seek_callback(struct archive *a, void *client_data, int64_t request, int whence)
+static int64_t packfs_archive_seek_callback(struct archive *a, void *client_data, int64_t request, int whence)
 {
     const struct packfs_archive_data *mine = (struct packfs_archive_data *)client_data;
 #if HAVE__FSEEKI64
@@ -606,7 +609,7 @@ err:
 }
 
 
-ssize_t packfs_archive_read_callback(struct archive *a, void *client_data, const void **buff)
+static ssize_t packfs_archive_read_callback(struct archive *a, void *client_data, const void **buff)
 {
     // https://github.com/libarchive/libarchive/blob/master/libarchive/archive_read_open_fd.c
     struct packfs_archive_data *mine = (struct packfs_archive_data *)client_data;
@@ -781,7 +784,7 @@ int packfs_scan_archive_dir(DIR* dirptr, const char* path_normalized, size_t pat
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-int packfs_list_files_dirs(const char *path, const struct stat *statptr, int fileflags, struct FTW *pftw)
+static int packfs_list_files_dirs(const char *path, const struct stat *statptr, int fileflags, struct FTW *pftw)
 {
     const size_t path_len = strlen(path);
     if(fileflags == FTW_F)
