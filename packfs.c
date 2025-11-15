@@ -56,9 +56,9 @@
 
 #define PACKFS_EMPTY(s) ((s) == NULL || (s)[0] == '\0')
 
-#define PACKFS_SPLIT_FOR(path, sep, entryabspath, entryabspath_offset, entryabspath_len, prefix_len, i, islast) for(size_t packfs_split_k = 0, (entryabspath_len) = 0, (prefix_len) = 0, (islast) = 0, (i) = 0, (entryabspath_offset) = 0; packfs_split_k < 1; packfs_split_k++) for(const char* (entryabspath) = (path), *end = strchr((path), (sep)), *prevend = (path), *safeend = (end != NULL ? end : ((entryabspath) + strlen((entryabspath)))); ((entryabspath_len) = safeend - (entryabspath) ), ((entryabspath_offset) = (entryabspath) - (path)), ((prefix_len) = safeend - (path) + 1), ((islast) = end == NULL), (prevend != NULL); prevend = end, (entryabspath) = ((end != NULL && *end != '\0') ? (end + 1) : NULL), end = ((end != NULL && *end != '\0') ? strchr(end + 1, (sep)) : NULL), safeend = (end != NULL ? end : ((entryabspath) != NULL ? ((entryabspath) + strlen((entryabspath))) : NULL))) if(safeend != (entryabspath))
+#define PACKFS_SPLIT_FOR(str, sep, part, part_offset, part_len, prefix_len, i, islast) for(size_t packfs_split_k = 0, (part_len) = 0, (prefix_len) = 0, (islast) = 0, (i) = 0, (part_offset) = 0; packfs_split_k < 1; packfs_split_k++) for(const char* (part) = (str), *end = strchr((str), (sep)), *prevend = (str), *safeend = (end != NULL ? end : ((part) + strlen((part)))); ((part_len) = safeend - (part) ), ((part_offset) = (part) - (str)), ((prefix_len) = safeend - (str) + 1), ((islast) = end == NULL), (prevend != NULL); prevend = end, (part) = ((end != NULL && *end != '\0') ? (end + 1) : NULL), end = ((end != NULL && *end != '\0') ? strchr(end + 1, (sep)) : NULL), safeend = (end != NULL ? end : ((part) != NULL ? ((part) + strlen((part))) : NULL))) if(safeend != (part))
 
-#define PACKFS_APPEND(paths, paths_len, path, path_len, sep)  { if((paths_len) > 0) {(paths)[(paths_len)++] = (sep); } strncpy((paths) + (paths_len), (path), (path_len)); (paths_len) += (path_len); }
+#define PACKFS_APPEND(str, sep, str_len, part, part_len)  { if((str_len) > 0) {(str)[(str_len)++] = (sep); } strncpy((str) + (str_len), (part), (part_len)); (str_len) += (part_len); }
 
 char packfs_default_prefix[] = 
 #ifdef PACKFS_PREFIX
@@ -539,7 +539,7 @@ int packfs_dynamic_add_file(const char* prefix, size_t prefix_len, const char* e
 
     if(prefix_len_m1 > 0)
     {
-        PACKFS_APPEND(packfs_dynamic_files_paths, packfs_dynamic_files_paths_len, prefix, prefix_len_m1, packfs_pathsep);
+        PACKFS_APPEND(packfs_dynamic_files_paths, packfs_pathsep, packfs_dynamic_files_paths_len, prefix, prefix_len_m1);
         packfs_dynamic_files_paths[packfs_dynamic_files_paths_len++] = packfs_sep;
         strncpy(packfs_dynamic_files_paths + packfs_dynamic_files_paths_len, entrypath, entrypath_len);
         if(entrypath[entrypath_len - 1] == packfs_sep) entrypath_len--; // FIXME: needed?
@@ -547,7 +547,7 @@ int packfs_dynamic_add_file(const char* prefix, size_t prefix_len, const char* e
     }
     else
     {
-        PACKFS_APPEND(packfs_dynamic_files_paths, packfs_dynamic_files_paths_len, entrypath, entrypath_len, packfs_pathsep);
+        PACKFS_APPEND(packfs_dynamic_files_paths, packfs_pathsep, packfs_dynamic_files_paths_len, entrypath, entrypath_len);
     }
                 
     packfs_dynamic_files_paths_prefixlen[packfs_dynamic_files_num] = prefix_len;
@@ -583,7 +583,7 @@ int packfs_dynamic_add_dirname(const char* prefix, size_t prefix_len, const char
             if(match)
                 continue;
 
-            PACKFS_APPEND(packfs_dynamic_dirs_paths, packfs_dynamic_dirs_paths_len, path, prefix_len, packfs_pathsep);
+            PACKFS_APPEND(packfs_dynamic_dirs_paths, packfs_pathsep, packfs_dynamic_dirs_paths_len, path, prefix_len);
             packfs_dynamic_dirs_num++;
         }
     }
@@ -600,7 +600,7 @@ int packfs_dynamic_add_prefix(const char* prefix, size_t prefix_len)
     if(match)
         return PACKFS_OK;
 
-    PACKFS_APPEND(packfs_dynamic_prefix, packfs_dynamic_prefix_len, prefix, prefix_len_m1, packfs_pathsep);
+    PACKFS_APPEND(packfs_dynamic_prefix, packfs_pathsep, packfs_dynamic_prefix_len, prefix, prefix_len_m1);
     packfs_dynamic_prefix[packfs_dynamic_files_paths_len] = packfs_sep;
     packfs_dynamic_prefix[packfs_dynamic_files_paths_len + 1] = '\0';
     return PACKFS_OK;
