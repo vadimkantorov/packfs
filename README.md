@@ -26,6 +26,7 @@ If `listingresolutiondir` is not empty, `mountpoint` can be empty
 - `PACKFS_CONFIG=texlive.iso:/packfs/archive/@/packfs/texlive-archive/` (mount ISO file to /packfs/, and mount all package archives as TDS without installation) ?
 - zip static-linked in the binary (two cases: compressed, uncompressed and maybe even just appended?), e.g. `PACKFS_CONFIG=/packfs/my.zip`
 - can support something json static-linked in the binary like `PACKFS_CONFIG=/packfs/listings/@/mnt/packfs/@/mnt/http/`?
+- maybe a way to pack-in packfs0.zip packfs0.zip.json
 
 
 # Overridden libc / posix functions
@@ -47,6 +48,80 @@ If `listingresolutiondir` is not empty, `mountpoint` can be empty
 - [`fdopendir`](https://man7.org/linux/man-pages/man3/fdopendir.3p.html)
 - [`readdir`](https://man7.org/linux/man-pages/man3/readdir.3.html)
 - [`closedir`](https://man7.org/linux/man-pages/man3/closedir.3.html)
+
+# Need to override 64-bit functions for python
+```
+
+sure:
+stat64
+fstat64
+open64
+lstat64
+
+suresure:
+nm -D -u $(which python) | grep '64@'
+U fcntl64@GLIBC_2.28
+U fopen64@GLIBC_2.2.5
+U fstat64@GLIBC_2.33
+U fstatat64@GLIBC_2.33
+U fstatvfs64@GLIBC_2.2.5
+U ftruncate64@GLIBC_2.2.5
+U getrlimit64@GLIBC_2.2.5
+U lockf64@GLIBC_2.2.5
+U lseek64@GLIBC_2.2.5
+U lstat64@GLIBC_2.33
+U mmap64@GLIBC_2.2.5
+U open64@GLIBC_2.2.5
+U openat64@GLIBC_2.4
+U posix_fadvise64@GLIBC_2.2.5
+U posix_fallocate64@GLIBC_2.2.5
+U pread64@GLIBC_2.2.5
+U pwrite64@GLIBC_2.2.5
+U readdir64@GLIBC_2.2.5
+U sendfile64@GLIBC_2.3
+U setrlimit64@GLIBC_2.2.5
+U stat64@GLIBC_2.33
+U statvfs64@GLIBC_2.2.5
+U truncate64@GLIBC_2.2.5
+
+all:
+int stat64 (const char *filename, struct stat64 *buf)
+int fstat64 (int filedes, struct stat64 *buf)
+int lstat64 (const char *filename, struct stat64 *buf)
+void * mmap64 (void *address, size_t length, int protect, int flags, int filedes, off64_t offset)
+struct dirent64 * readdir64 (DIR *dirstream)
+int posix_fallocate64 (int fd, off64_t offset, off64_t length)
+int open64 (const char *filename, int flags[, mode_t mode])
+int getrlimit64 (int resource, struct rlimit64 *rlp)
+int setrlimit64 (int resource, const struct rlimit64 *rlp)
+int aio_read64 (struct aiocb64 *aiocbp)
+int aio_write64 (struct aiocb64 *aiocbp)
+int lio_listio64 (int mode, struct aiocb64 *const list[], int nent, struct sigevent *sig)
+void globfree64 (glob64_t *pglob)
+off64_t lseek64 (int filedes, off64_t offset, int whence)
+ssize_t pread64 (int filedes, void *buffer, size_t size, off64_t offset)
+ssize_t pwrite64 (int filedes, const void *buffer, size_t size, off64_t offset)
+int truncate64 (const char *name, off64_t length)
+int ftruncate64 (int id, off64_t length)
+int ftw64 (const char *filename, __ftw64_func_t func, int descriptors)
+int nftw64 (const char *filename, __nftw64_func_t func, int descriptors, int flag)
+off64_t ftello64 (FILE *stream)
+int fseeko64 (FILE *stream, off64_t offset, int whence)
+int aio_error64 (const struct aiocb64 *aiocbp)
+ssize_t aio_return64 (struct aiocb64 *aiocbp)
+int aio_cancel64 (int fildes, struct aiocb64 *aiocbp)
+FILE * fopen64 (const char *filename, const char *opentype)
+FILE * freopen64 (const char *filename, const char *opentype, FILE *stream)
+int scandir64 (const char *dir, struct dirent64 ***namelist, int (*selector) (const struct dirent64 *), int (*cmp) (const struct dirent64 **, const struct dirent64 **))
+int alphasort64 (const struct dirent64 **a, const struct dirent **b)
+int versionsort64 (const struct dirent64 **a, const struct dirent64 **b)
+int fgetpos64 (FILE *stream, fpos64_t *position)
+int fsetpos64 (FILE *stream, const fpos64_t *position)
+FILE * tmpfile64 (void)
+int glob64 (const char *pattern, int flags, int (*errfunc) (const char *filename, int error-code), glob64_t *vector-ptr)
+int aio_fsync64 (int op, struct aiocb64 *aiocbp)
+int aio_suspend64 (const struct aiocb64 *const list[], int nent, const struct timespec *timeout)
+```
 
 # References
 - https://mropert.github.io/2018/02/02/pic_pie_sanitizers/
