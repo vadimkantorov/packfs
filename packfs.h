@@ -4,9 +4,9 @@ int packfs_init(const char* path, const char* packfs_config);
 
 
 int packfs_scan_archive(const char* packfs_archive_filename, const char* prefix);
+int packfs_scan_listing(const char* packfs_listing_filename, const char* prefix, const char* prefix_archive);
 int packfs_scan_archive_dir(const char* path_normalized, const char* prefix);
 int packfs_scan_path(const char* input_path);
-int packfs_scan_listing(const char* packfs_listing_filename, const char* prefix, const char* prefix_archive);
 
 
 int packfs_dynamic_add_prefix(const char* prefix, const size_t prefix_len);

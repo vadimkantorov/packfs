@@ -1,16 +1,18 @@
+LDD = ldd
+
 STATICLDFLAGS = -fPIC -Wl,--wrap=open,--wrap=openat,--wrap=close,--wrap=read,--wrap=access,--wrap=lseek,--wrap=stat,--wrap=fstat,--wrap=fstatat,--wrap=statx,--wrap=fopen,--wrap=fclose,--wrap=fileno,--wrap=fcntl,--wrap=opendir,--wrap=fdopendir,--wrap=closedir,--wrap=readdir
 
 DYNAMICLDFLAGS = -shared -fPIC -ldl -DPACKFS_DYNAMIC_LINKING
 
-ARCHIVECFLAGS = -DPACKFS_ARCHIVE -Ilibarchive -Ilibarchive/libarchive
+ARCHIVECFLAGS  = -Ilibarchive -Ilibarchive/libarchive -DPACKFS_ARCHIVE 
 
-LDD = ldd
+ARCHIVECFLAGSEXT = -D'PACKFS_ARCHIVEREADSUPPORTEXT=.iso:.zip:.tar:.tar.gz:.tar.xz' -D'PACKFS_ARCHIVEREADSUPPORTFORMAT(a)={archive_read_support_format_iso9660(a);archive_read_support_format_zip(a);archive_read_support_format_tar(a);archive_read_support_filter_gzip(a);archive_read_support_filter_xz(a);}'
 
 libpackfs.so: packfs.c libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a
-	$(CC) -o $@ $^ $(DYNAMICLDFLAGS) $(ARCHIVECFLAGS) && $(LDD) $@
+	$(CC) -o $@ $^ $(DYNAMICLDFLAGS) $(ARCHIVECFLAGS) $(ARCHIVECFLAGSEXT) && $(LDD) $@
 
 libpackfs.a : packfs.c libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a
-	$(CC) -c -o $(basename $@).o $< $(STATICLDFLAGS) $(ARCHIVECFLAGS) && $(AR) r $@ $(basename $@).o
+	$(CC) -c -o $(basename $@).o $< $(ARCHIVECFLAGS) $(ARCHIVECFLAGSEXT) $(STATICLDFLAGS) && $(AR) r $@ $(basename $@).o
 
 packfs: packfs.c libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a
 	$(CC) -o $@ $^ $(ARCHIVECFLAGS) -D'PACKFS_ARCHIVEREADSUPPORTEXT=.tar:.iso:.zip' -DPACKFS_STATIC_PACKER -D'PACKFS_ARCHIVEREADSUPPORTFORMAT(a)={archive_read_support_format_tar(a);archive_read_support_format_iso9660(a);archive_read_support_format_zip(a);}'
