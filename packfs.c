@@ -255,7 +255,6 @@ bool packfs_fd_in_range(const int fd)
     return packfs_descr_fd_min <= fd && fd < packfs_descr_fd_max;
 }
 
-
 static size_t packfs_path_len(const char* path)
 {
     if(PACKFS_EMPTY(path) || path[0] == packfs_pathsep) return 0;
@@ -343,7 +342,7 @@ static int packfs_resolve_relative_path(char* dest, const size_t dest_sizeof, co
     return PACKFS_OK;
 }
 
-int packfs_dump_listing(const char* removeprefix, const char* output_path)
+int packfs_dump_listing(const char* output_path, const char* removeprefix)
 {
     int res = PACKFS_OK;
     if(PACKFS_EMPTY(output_path)) { res = PACKFS_ERROR; return res; }
@@ -373,7 +372,7 @@ int packfs_dump_listing(const char* removeprefix, const char* output_path)
     return res;
 }
 
-int packfs_dump_static_package(const char* prefix, const char* removeprefix, const char* output_path, const char* ld, const char* input_path)
+int packfs_dump_static_package(const char* output_path, const char* removeprefix, const char* input_path, const char* prefix, const char* ld)
 {
     int res = PACKFS_OK;
     if(PACKFS_EMPTY(output_path)) { res = PACKFS_ERROR; return res; }
@@ -623,11 +622,10 @@ static int packfs_list_files_dirs(const char *path, const struct stat *statptr, 
 }
 
 // https://github.com/libarchive/libarchive/blob/master/libarchive/archive_read_open_file.c
-// https://github.com/libarchive/libarchive/blob/master/libarchive/archive_read_open_fd.c
 
 struct packfs_archive_data
 {
-    FILE* f;
+    FILE* fileptr;
     size_t last_file_offset;
     uint8_t buffer[1024 * 4];
 };
@@ -657,16 +655,16 @@ static int64_t packfs_archive_seek_callback(struct archive *a, void *client_data
     }
 
 #if HAVE__FSEEKI64
-    if (_fseeki64(mine->f, seek, whence) == 0) {
-        return _ftelli64(mine->f);
+    if (_fseeki64(mine->fileptr, seek, whence) == 0) {
+        return _ftelli64(mine->fileptr);
     }
 #elif HAVE_FSEEKO
-    if (fseeko(mine->f, seek, whence) == 0) {
-        return ftello(mine->f);
+    if (fseeko(mine->fileptr, seek, whence) == 0) {
+        return ftello(mine->fileptr);
     }
 #else
-    if (fseek(mine->f, seek, whence) == 0) {
-        return ftell(mine->f);
+    if (fseek(mine->fileptr, seek, whence) == 0) {
+        return ftell(mine->fileptr);
     }
 #endif
     /* If we arrive here, the input is corrupted or truncated so fail. */
@@ -678,22 +676,24 @@ err:
 
 static ssize_t packfs_archive_read_callback(struct archive *a, void *client_data, const void **buff)
 {
-    // https://github.com/libarchive/libarchive/blob/master/libarchive/archive_read_open_fd.c
     struct packfs_archive_data *mine = (struct packfs_archive_data *)client_data;
     
     mine->last_file_offset = packfs_archive_seek_callback(a, client_data, 0, SEEK_CUR);
 
     *buff = mine->buffer;
-    size_t bytes_read = fread(mine->buffer, 1, sizeof(mine->buffer), mine->f);
-    if (bytes_read < sizeof(mine->buffer) && ferror(mine->f)) {
+    size_t bytes_read = fread(mine->buffer, 1, sizeof(mine->buffer), mine->fileptr);
+    if (bytes_read < sizeof(mine->buffer) && ferror(mine->fileptr)) {
             archive_set_error(a, errno, "Error reading file");
     }
     return (bytes_read);
 }
 
-int packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const char* prefix)
+int packfs_scan_archive(const char* packfs_archive_filename, const char* prefix)
 {
     int res = PACKFS_OK;
+    FILE* fileptr = __real_fopen(packfs_archive_filename, "r");
+    if(fileptr == NULL) { res = PACKFS_ERROR; return res; }
+
 #ifdef PACKFS_ARCHIVE
     struct archive *a = archive_read_new();
     PACKFS_ARCHIVEREADSUPPORTFORMAT(a);
@@ -713,7 +713,7 @@ int packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const char
     struct packfs_archive_data client_data;
     do
     {
-        client_data.f = f;
+        client_data.fileptr = fileptr;
         archive_read_set_seek_callback(a, packfs_archive_seek_callback);
         archive_read_set_read_callback(a, packfs_archive_read_callback);
         archive_read_set_callback_data(a, &client_data);
@@ -759,6 +759,7 @@ int packfs_scan_archive(FILE* f, const char* packfs_archive_filename, const char
     archive_read_close(a);
     archive_read_free(a);
 #endif
+    __real_fclose(fileptr);
     return res;
 }
 
@@ -821,8 +822,15 @@ int packfs_extract_archive_entry_from_FILE_to_FILE(FILE* f, const char* entrypat
     return PACKFS_OK;
 }
 
-int packfs_scan_archive_dir(DIR* dirptr, const char* path_normalized, const size_t path_normalized_len, const char* prefix)
+int packfs_scan_archive_dir(const char* path_normalized, const char* prefix)
 {
+    int res = PACKFS_OK;
+
+    DIR* dirptr = __real_opendir(path_normalized);
+    if(dirptr == NULL) { res = PACKFS_ERROR; return res; }
+
+    size_t path_normalized_len = packfs_path_len(path_normalized);
+
     for(struct dirent* entry = __real_readdir(dirptr); entry != NULL; entry = __real_readdir(dirptr))
     {
         const size_t archive_prefixlen = packfs_calc_archive_prefixlen(entry->d_name, packfs_archives_ext);
@@ -833,18 +841,11 @@ int packfs_scan_archive_dir(DIR* dirptr, const char* path_normalized, const size
             _path_normalized[path_normalized_len] = packfs_sep;
             strcpy(_path_normalized + path_normalized_len + 1, entry->d_name);
         
-            FILE* fileptr = __real_fopen(_path_normalized, "rb");
-            if(fileptr != NULL)
-            {
-                packfs_enabled = true;
-                // something below seems to trigger again packfs_init();
-                packfs_scan_archive(fileptr, _path_normalized, prefix);
-                __real_fclose(fileptr);
-            }
-
+            packfs_scan_archive(_path_normalized, prefix); // something below seems to trigger again packfs_init();
         }
     }
-    return PACKFS_OK;
+    __real_closedir(dirptr);
+    return res;
 }
 
 int packfs_scan_path(const char* input_path)
@@ -853,7 +854,7 @@ int packfs_scan_path(const char* input_path)
     struct stat path_stat;
 
     if(PACKFS_EMPTY(input_path)) { res = PACKFS_ERROR; return res; }
-    if(input_path == NULL || 0 != stat(input_path, &path_stat)) { res = 1; return res; }
+    if(input_path == NULL || 0 != stat(input_path, &path_stat)) { res = PACKFS_ERROR; return res; }
     bool isfile = S_ISREG(path_stat.st_mode), isdir = S_ISDIR(path_stat.st_mode);
 
     if(isdir)
@@ -874,8 +875,12 @@ int packfs_scan_path(const char* input_path)
     return res;
 }
 
-int packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, const char* prefix, const char* prefix_archive)
+int packfs_scan_listing(const char* packfs_listing_filename, const char* prefix, const char* prefix_archive)
 {
+    int res = PACKFS_OK;
+    FILE* fileptr = __real_fopen(packfs_listing_filename, "rb");
+    if(fileptr == NULL) { res = PACKFS_ERROR; return res; }
+
     size_t prefix_len_m1 = prefix != NULL ? packfs_path_len(prefix) : 0;
     if(prefix_len_m1 > 0 && prefix[prefix_len_m1 - 1] == packfs_sep) prefix_len_m1--;
 
@@ -917,7 +922,8 @@ int packfs_scan_listing(FILE* fileptr, const char* packfs_listing_filename, cons
         }
         fscanf(fileptr, "]\n");
     }
-    return PACKFS_OK;
+    __real_fclose(fileptr);
+    return res;
 }
 
 int packfs_init(const char* path, const char* packfs_config)
@@ -962,9 +968,10 @@ int packfs_init(const char* path, const char* packfs_config)
                     FILE* fileptr = __real_fopen(path_normalized, "r");
                     if(fileptr != NULL)
                     {
-                        packfs_enabled = true;
-                        packfs_scan_listing(fileptr, path_normalized, prefix, prefix_archive);
                         __real_fclose(fileptr);
+
+                        packfs_enabled = true;
+                        packfs_scan_listing(path_normalized, prefix, prefix_archive);
                     }
                 }
                 else if(isdir)
@@ -972,9 +979,10 @@ int packfs_init(const char* path, const char* packfs_config)
                     DIR* dirptr = __real_opendir(path_normalized);
                     if(dirptr != NULL)
                     {
-                        packfs_enabled = true;
-                        packfs_scan_archive_dir(dirptr, path_normalized, path_normalized_len, prefix);
                         __real_closedir(dirptr);
+
+                        packfs_enabled = true;
+                        packfs_scan_archive_dir(path_normalized, prefix);
                     }
                 }
                 else
@@ -982,10 +990,10 @@ int packfs_init(const char* path, const char* packfs_config)
                     FILE* fileptr = __real_fopen(path_normalized, "rb");
                     if(fileptr != NULL)
                     {
-                        packfs_enabled = true;
-                        // something below seems to trigger again packfs_init();
-                        packfs_scan_archive(fileptr, path_normalized, prefix);
                         __real_fclose(fileptr);
+
+                        packfs_enabled = true;
+                        packfs_scan_archive(path_normalized, prefix); // FIXME: something below seems to trigger again packfs_init();
                     }
                 }
             }
@@ -1003,10 +1011,11 @@ int packfs_init(const char* path, const char* packfs_config)
                 FILE* fileptr = __real_fopen(path_normalized, "rb");
                 if(fileptr != NULL)
                 {
+                    __real_fclose(fileptr);
+
                     packfs_enabled = true;
                     // something below seems to trigger again packfs_init();
-                    packfs_scan_archive(fileptr, path_normalized, prefix);
-                    __real_fclose(fileptr);
+                    packfs_scan_archive(path_normalized, prefix);
                 }
             }
         }
@@ -1800,7 +1809,7 @@ int packfs_cat_files_offsets(const char* output_path)
 {
     int res = PACKFS_OK; 
     FILE* fileptr = fopen(output_path, "w");
-    if(!fileptr) { res = 1; fprintf(stderr, "#could not open output file: %s\n", packfs_static); return res; }
+    if(!fileptr) { res = PACKFS_ERROR; fprintf(stderr, "#could not open output file: %s\n", packfs_static); return res; }
     size_t offset = 0, size = 0;
     PACKFS_SPLIT_FOR(packfs_dynamic_files_paths, packfs_pathsep, entryabspath, entryabspath_offset, entryabspath_len, prefix_len, i, islast)
     {
@@ -1862,9 +1871,9 @@ int main(int argc, const char **argv)
     
     int res = PACKFS_OK;
     struct stat path_stat;
-    if(input_path == NULL || 0 != stat(input_path, &path_stat)) { res = 1; fprintf(stderr, "Input path not specified or does not exist\n"); return res; }
+    if(input_path == NULL || 0 != stat(input_path, &path_stat)) { res = PACKFS_ERROR; fprintf(stderr, "Input path not specified or does not exist\n"); return res; }
     bool isfile = S_ISREG(path_stat.st_mode), isdir = S_ISDIR(path_stat.st_mode);
-    if(!isfile && !isdir) { res = 1; fprintf(stderr, "Input path not file or dir\n"); return res; }
+    if(!isfile && !isdir) { res = PACKFS_ERROR; fprintf(stderr, "Input path not file or dir\n"); return res; }
     
     const char* removeprefix = "";
     const char* header_path = NULL;
@@ -1878,11 +1887,11 @@ int main(int argc, const char **argv)
         fprintf(stderr, "%s\n", input_path);
 
         FILE* fileptr = fopen(input_path, "r");
-        if(!fileptr) { res = 1; fprintf(stderr, "#could not open input file: %s\n", input_path); return res; }
+        if(!fileptr) { res = PACKFS_ERROR; fprintf(stderr, "#could not open input file: %s\n", input_path); return res; }
         res = packfs_scan_archive(fileptr, input_path, prefix); removeprefix = input_path;
         fclose(fileptr);
 
-        packfs_dump_listing(removeprefix, output_path);
+        packfs_dump_listing(output_path, removeprefix);
 
         if(object)
         {
@@ -1907,7 +1916,7 @@ int main(int argc, const char **argv)
 
     if(object)
     {
-        res = packfs_dump_static_package(prefix, removeprefix, header_path, ld, package_path);
+        res = packfs_dump_static_package(header_path, removeprefix, package_path, prefix, ld);
         fprintf(stderr, "%s\n", header_path);
         fprintf(stderr, "%s.o\n", header_path);
 
