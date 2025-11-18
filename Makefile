@@ -4,10 +4,10 @@ STATICLDFLAGS = -fPIC -Wl,--wrap=open,--wrap=openat,--wrap=close,--wrap=read,--w
 
 DYNAMICLDFLAGS = -shared -fPIC -ldl -DPACKFS_DYNAMIC_LINKING
 
-ARCHIVECFLAGS  = -Ilibarchive -Ilibarchive/libarchive -DPACKFS_ARCHIVE 
+ARCHIVECFLAGS  = -Ilibarchive -Ilibarchive/libarchive
 
-ARCHIVECFLAGSEXT = -D'PACKFS_ARCHIVEREADSUPPORTEXT=.iso:.zip:.tar:.tar.gz:.tar.xz' -D'PACKFS_ARCHIVEREADSUPPORTFORMAT(a)={archive_read_support_format_iso9660(a);archive_read_support_format_zip(a);archive_read_support_format_tar(a);archive_read_support_filter_gzip(a);archive_read_support_filter_xz(a);}'
-ARCHIVECFLAGSPACKER = -D'PACKFS_ARCHIVEREADSUPPORTEXT=.iso:.zip:.tar:.tar.gz:.tar.xz' -D'PACKFS_ARCHIVEREADSUPPORTFORMAT(a)={archive_read_support_format_iso9660(a);archive_read_support_format_zip(a);archive_read_support_format_tar(a);archive_read_support_filter_gzip(a);archive_read_support_filter_xz(a);}'
+ARCHIVECFLAGSEXT    = -D'PACKFS_ARCHIVE=.iso:.zip:.tar:.tar.gz:.tar.xz' -D'PACKFS_ARCHIVE_READ_SUPPORT_FORMAT(a)={archive_read_support_format_iso9660(a);archive_read_support_format_zip(a);archive_read_support_format_tar(a);archive_read_support_filter_gzip(a);archive_read_support_filter_xz(a);}'
+ARCHIVECFLAGSPACKER = -D'PACKFS_ARCHIVE=.iso:.zip:.tar'                 -D'PACKFS_ARCHIVE_READ_SUPPORT_FORMAT(a)={archive_read_support_format_iso9660(a);archive_read_support_format_zip(a);archive_read_support_format_tar(a);}'
 
 libpackfs.so: packfs.c libarchive/.libs/libarchive.a zlib/libz.a xz/src/liblzma/.libs/liblzma.a
 	$(CC) -o $@ $^ $(DYNAMICLDFLAGS)       $(ARCHIVECFLAGS) $(ARCHIVECFLAGSEXT) && $(LDD) $@
