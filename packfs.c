@@ -6,7 +6,6 @@
 // TODO: add explicit special handling for AT_FDCWD in packfs_resolve_relative_path
 // TODO: add dynamic file with bytes (store content as fmemopen instead of malloc?)
 // TODO: replace int -> bool as much as possible
-//static int packfs_list_files_dirs(const char *path, const struct stat *statptr, int fileflags, struct FTW *pftw)
 //int packfs_scan_archive(const char* packfs_archive_filename, const char* prefix)
 //int packfs_extract_archive_entry_from_FILE_to_FILE(FILE* f, const char* entrypath, const size_t entrypath_len, FILE* h)
 //int packfs_scan_archive_dir(const char* path_normalized, const char* prefix)
@@ -18,7 +17,6 @@
 //int packfs_close(const int fd)
 //int packfs_seek(const int fd, const long offset, const int whence)
 //int packfs_dup(const int oldfd, const int newfd)
-//int packfs_cat_files_offsets(const char* output_path)
 
 #ifdef  PACKFS_ARCHIVE
 #ifndef PACKFS_ARCHIVE_READ_SUPPORT_FORMAT
@@ -392,26 +390,26 @@ bool packfs_dump_listing(const char* output_path, const char* removeprefix)
 
     const size_t removeprefix_len = packfs_path_len(removeprefix);
 
-    FILE* f = fopen(output_path, "w");
-    if(!f) return false;
-    fprintf(f, "[\n");
+    FILE* fileptr = fopen(output_path, "w");
+    if(!fileptr) return false;
+    fprintf(fileptr, "[\n");
     size_t first = true;
     PACKFS_SPLIT_FOR(packfs_dynamic_dirs_paths, packfs_pathsep, entryabspath, entryabspath_offset, entryabspath_len, prefix_len, i, islast)
     {
         const char* relative_path = entryabspath + removeprefix_len;
         const size_t relative_len = entryabspath_len - removeprefix_len;
-        fprintf(f, "%c {\"path\": \"%.*s\"}\n", first ? ' ' : ',', (int)relative_len, relative_path);
+        fprintf(fileptr, "%c {\"path\": \"%.*s\"}\n", first ? ' ' : ',', (int)relative_len, relative_path);
         first = false;
     }
     PACKFS_SPLIT_FOR(packfs_dynamic_files_paths, packfs_pathsep, entryabspath, entryabspath_offset, entryabspath_len, prefix_len, i, islast)
     {
         const char* relative_path = entryabspath + removeprefix_len;
         const size_t relative_len = entryabspath_len - removeprefix_len;
-        fprintf(f, "%c {\"path\": \"%.*s\", \"size\": %zu, \"offset\": %zu}\n", first ? ' ' : ',', (int)relative_len, relative_path, packfs_dynamic_files_sizes[i], packfs_dynamic_files_offsets[i]);
+        fprintf(fileptr, "%c {\"path\": \"%.*s\", \"size\": %zu, \"offset\": %zu}\n", first ? ' ' : ',', (int)relative_len, relative_path, packfs_dynamic_files_sizes[i], packfs_dynamic_files_offsets[i]);
         first = false;
     }
-    fprintf(f, "]\n\n");
-    if(0 != fclose(f)) return false;
+    fprintf(fileptr, "]\n\n");
+    if(0 != fclose(fileptr)) return false;
     return true;
 }
 
@@ -434,46 +432,46 @@ bool packfs_dump_static_package(const char* output_path, const char* removeprefi
     const size_t removeprefix_len_m1 = (removeprefix_len_ >= 1 && removeprefix[removeprefix_len_ - 1] == packfs_sep) ? (removeprefix_len_ - 1) : removeprefix_len_;
     const size_t removeprefix_len = removeprefix_len_ > 0 ? (removeprefix_len_m1 + 1) : 0;
         
-    FILE* f = fopen(output_path, "w");
-    if(!f) return false;
+    FILE* fileptr = fopen(output_path, "w");
+    if(!fileptr) return false;
 
-    fprintf(f, "#include <stddef.h>\n\n");
-    fprintf(f, "const char packfs_static_prefix[] = \"%.*s%c\";\n\n", (int)prefix_len_m1, prefix, packfs_sep);
-    fprintf(f, "const size_t packfs_static_dirs_num = %zu, packfs_static_files_num = %zu;\n\n", packfs_dynamic_dirs_num, packfs_dynamic_files_num);
-    fprintf(f, "extern char _binary_%s_start[], _binary_%s_end[];\n\n", packfs_static, packfs_static);
-    fprintf(f, "const char packfs_static_dirs_paths[] =\n");
+    fprintf(fileptr, "#include <stddef.h>\n\n");
+    fprintf(fileptr, "const char packfs_static_prefix[] = \"%.*s%c\";\n\n", (int)prefix_len_m1, prefix, packfs_sep);
+    fprintf(fileptr, "const size_t packfs_static_dirs_num = %zu, packfs_static_files_num = %zu;\n\n", packfs_dynamic_dirs_num, packfs_dynamic_files_num);
+    fprintf(fileptr, "extern char _binary_%s_start[], _binary_%s_end[];\n\n", packfs_static, packfs_static);
+    fprintf(fileptr, "const char packfs_static_dirs_paths[] =\n");
     PACKFS_SPLIT_FOR(packfs_dynamic_dirs_paths, packfs_pathsep, entryabspath, entryabspath_offset, entryabspath_len, prefix_len, i, islast)
     {
         const char* relative_path = entryabspath + removeprefix_len;
         const size_t relative_len = entryabspath_len - removeprefix_len;
-        fprintf(f, "\"%.*s%c%.*s\" \"%s\"\n", (int)prefix_len_m1, prefix, packfs_sep, (int)relative_len, relative_path, islast ? "" : ":");
+        fprintf(fileptr, "\"%.*s%c%.*s\" \"%s\"\n", (int)prefix_len_m1, prefix, packfs_sep, (int)relative_len, relative_path, islast ? "" : ":");
     }
     if(packfs_dynamic_dirs_num == 0)
-        fprintf(f, "\"\"\n");
-    fprintf(f, ";\n\n");
+        fprintf(fileptr, "\"\"\n");
+    fprintf(fileptr, ";\n\n");
     
-    fprintf(f, "const char packfs_static_files_paths[] =\n");
+    fprintf(fileptr, "const char packfs_static_files_paths[] =\n");
     PACKFS_SPLIT_FOR(packfs_dynamic_files_paths, packfs_pathsep, entryabspath, entryabspath_offset, entryabspath_len, prefix_len, i, islast)
     {
         const char* relative_path = entryabspath + removeprefix_len;
         const size_t relative_len = entryabspath_len - removeprefix_len;
-        fprintf(f, "\"%.*s%c%.*s\" \"%s\"\n", (int)prefix_len_m1, prefix, packfs_sep, (int)relative_len, relative_path, islast ? "" : ":");
+        fprintf(fileptr, "\"%.*s%c%.*s\" \"%s\"\n", (int)prefix_len_m1, prefix, packfs_sep, (int)relative_len, relative_path, islast ? "" : ":");
     }
     if(packfs_dynamic_files_num == 0)
-        fprintf(f, "\"\"\n");
-    fprintf(f, ";\n\n");
+        fprintf(fileptr, "\"\"\n");
+    fprintf(fileptr, ";\n\n");
     
-    fprintf(f, "\n\nconst size_t packfs_static_files_offsets[] = {\n");
+    fprintf(fileptr, "\n\nconst size_t packfs_static_files_offsets[] = {\n");
     for(size_t i = 0; i < packfs_dynamic_files_num; i++)
-        fprintf(f, "%zu,\n", packfs_dynamic_files_offsets[i]); 
-    fprintf(f, "};\n\n");
+        fprintf(fileptr, "%zu,\n", packfs_dynamic_files_offsets[i]); 
+    fprintf(fileptr, "};\n\n");
     
-    fprintf(f, "\n\nconst size_t packfs_static_files_sizes[] = {\n");
+    fprintf(fileptr, "\n\nconst size_t packfs_static_files_sizes[] = {\n");
     for(size_t i = 0; i < packfs_dynamic_files_num; i++)
-        fprintf(f, "%zu,\n", packfs_dynamic_files_sizes[i]); 
-    fprintf(f, "};\n\n");
+        fprintf(fileptr, "%zu,\n", packfs_dynamic_files_sizes[i]); 
+    fprintf(fileptr, "};\n\n");
 
-    if(0 != fclose(f)) return false;
+    if(0 != fclose(fileptr)) return false;
 #endif
     return true;
 }
@@ -1878,11 +1876,10 @@ int PACKFS_WRAP(fcntl)(int fd, int action, ...)
     return (argtype == '0' ? __real_fcntl(fd, action, intarg) : argtype == '*' ? __real_fcntl(fd, action, ptrarg) : __real_fcntl(fd, action));
 }
 
-int packfs_cat_files_offsets(const char* output_path)
+bool packfs_cat_files_offsets(const char* output_path)
 {
-    int res = PACKFS_OK; 
     FILE* fileptr = fopen(output_path, "w");
-    if(!fileptr) { res = PACKFS_ERROR; fprintf(stderr, "#could not open output file: %s\n", packfs_static); return res; }
+    if(!fileptr) { fprintf(stderr, "#could not open output file: %s\n", packfs_static); return false; }
     size_t offset = 0, size = 0;
     PACKFS_SPLIT_FOR(packfs_dynamic_files_paths, packfs_pathsep, entryabspath, entryabspath_offset, entryabspath_len, prefix_len, i, islast)
     {
@@ -1903,8 +1900,8 @@ int packfs_cat_files_offsets(const char* output_path)
         packfs_dynamic_files_offsets[i] = offset;
         offset += size;
     }
-    fclose(fileptr);
-    return res;
+    if(0 != fclose(fileptr)) return false;
+    return true;
 }
 
 #ifdef PACKFS_STATIC_PACKER
@@ -1982,7 +1979,7 @@ int main(int argc, const char **argv)
         fprintf(stderr, "%s\n", input_path);
 
         res = packfs_scan_path(input_path); removeprefix = isdir ? input_path : "";
-        res = packfs_cat_files_offsets(packfs_static);
+        res = packfs_cat_files_offsets(packfs_static) ? PACKFS_OK : PACKFS_ERROR;
 
         removepackage = true;
         package_path = packfs_static;
