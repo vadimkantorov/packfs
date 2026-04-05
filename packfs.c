@@ -7,7 +7,6 @@
 // TODO: add dynamic file with bytes (store content as fmemopen instead of malloc?)
 // TODO: replace int -> bool as much as possible
 
-//int packfs_access(const char* path)
 //int packfs_stat(const char* path, const int fd, bool* isdir, size_t* size, size_t* d_ino)
 //int packfs_close(const int fd)
 //int packfs_seek(const int fd, const long offset, const int whence)
@@ -1210,36 +1209,33 @@ void* packfs_readdir(void* stream)
     #undef PACKFS_FILL_DIRENT
 }
 
-int packfs_access(const char* path)
+bool packfs_access(const char* path)
 {
-    if(PACKFS_EMPTY(path)) return PACKFS_ERROR_NOTINRANGE;
+    if(PACKFS_EMPTY(path)) return false;
 
     char path_normalized[packfs_path_max] = {0}; packfs_normpath(path, path_normalized, sizeof(path_normalized)); size_t path_normalized_len = strlen(path_normalized);
-    bool path_in_range = false;
     
     if(packfs_path_in_range(packfs_static_prefix, path_normalized))
     {
-        path_in_range = true;
         PACKFS_SPLIT_FOR(packfs_static_files_paths, packfs_pathsep, entryabspath, entryabspath_offset, entryabspath_len, prefix_len, i, islast)
         {
             const bool match = packfs_match_path(path_normalized, path_normalized_len, entryabspath, entryabspath_len, PACKFS_FILE_MATCHES);
             if(match)
-                return PACKFS_OK;
+                return true;
         }
     }
         
     if(packfs_path_in_range(packfs_dynamic_prefix, path_normalized))
     {
-        path_in_range = true;
         PACKFS_SPLIT_FOR(packfs_dynamic_files_paths, packfs_pathsep, entryabspath, entryabspath_offset, entryabspath_len, prefix_len, i, islast)
         {
             const bool match = packfs_match_path(path_normalized, path_normalized_len, entryabspath, entryabspath_len, PACKFS_FILE_MATCHES);
             if(match)
-                return PACKFS_OK;
+                return true;
         }
     }
 
-    return path_in_range ? PACKFS_ERROR_BAD : PACKFS_ERROR_NOTINRANGE;
+    return false;
 }
 
 int packfs_stat(const char* path, const int fd, bool* isdir, size_t* size, size_t* d_ino)
@@ -1533,7 +1529,7 @@ int packfs_dup(const int oldfd, const int newfd)
 
 FILE* PACKFS_WRAP(fopen)(const char *path, const char *mode)
 {
-    (void)(void)packfs_init(path, NULL);
+    (void)packfs_init(path, NULL);
     if(packfs_enabled && (packfs_path_in_range(packfs_static_prefix, path) || packfs_path_in_range(packfs_dynamic_prefix, path)))
     {
         FILE* res = packfs_open(path, 0);
@@ -1664,9 +1660,7 @@ int PACKFS_WRAP(access)(const char *path, int flags)
     (void)packfs_init(path, NULL);
     if(packfs_enabled && (packfs_path_in_range(packfs_static_prefix, path) || packfs_path_in_range(packfs_dynamic_prefix, path)))
     {
-        const int res = packfs_access(path);
-        if(res == PACKFS_ERROR_BAD || res == PACKFS_OK || res == PACKFS_ERROR)
-            return res;
+        return packfs_access(path) ? 0 : -1;
     }
     return __real_access(path, flags); 
 }
