@@ -8,7 +8,6 @@
 // TODO: replace int -> bool as much as possible
 
 //int packfs_stat(const char* path, const int fd, bool* isdir, size_t* size, size_t* d_ino)
-//int packfs_close(const int fd)
 //int packfs_seek(const int fd, const long offset, const int whence)
 //int packfs_dup(const int oldfd, const int newfd)
 
@@ -1446,10 +1445,10 @@ void* packfs_open(const char* path, const int flags)
     return NULL;
 }
 
-int packfs_close(const int fd)
+bool packfs_close(const int fd)
 {
     if(!packfs_fd_in_range(fd))
-        return PACKFS_ERROR_NOTINRANGE;
+        return false;
 
     for(size_t k = 0; k < packfs_descr_fd_cnt; k++)
     {
@@ -1457,7 +1456,7 @@ int packfs_close(const int fd)
         {
             packfs_descr_refs[k]--;
             if(packfs_descr_refs[k] > 0)
-                return PACKFS_OK;
+                return true;
 
             const int res = (!packfs_descr_isdir[k]) ? __real_fclose(packfs_descr_fileptr[k]) : 0;
             packfs_descr_dirent[k]  = (struct dirent){0};
@@ -1466,10 +1465,10 @@ int packfs_close(const int fd)
             packfs_descr_size[k] = 0;
             packfs_descr_fileptr[k] = NULL;
             packfs_descr_ino[k] = 0;
-            return res;
+            return res == 0;
         }
     }
-    return PACKFS_ERROR_BAD;
+    return false;
 }
 
 ssize_t packfs_read(const int fd, void* buf, const size_t count)
@@ -1558,9 +1557,8 @@ int PACKFS_WRAP(fclose)(FILE* stream)
     {
         const int* ptr = packfs_find(-1, stream);
         const int fd = ptr == NULL ? PACKFS_ERROR_BAD : *ptr;
-        const int res = packfs_close(fd);
-        if(res == PACKFS_ERROR_BAD || res == PACKFS_OK || res == PACKFS_ERROR)
-            return res;
+        bool res = packfs_close(fd);
+        return res ? 0 : -1;
     }
     return __real_fclose(stream);
 }
@@ -1624,9 +1622,8 @@ int PACKFS_WRAP(close)(int fd)
     (void)packfs_init(NULL, NULL);
     if(packfs_enabled && packfs_fd_in_range(fd))
     {
-        const int res = packfs_close(fd);
-        if(res == PACKFS_ERROR_BAD || res == PACKFS_OK || res == PACKFS_ERROR)
-            return res;
+        bool res = packfs_close(fd);
+        return res ? 0 : -1;
     }
     return __real_close(fd);
 }
